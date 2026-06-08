@@ -125,7 +125,37 @@ Tracks:
 Uses internal logic to estimate:
 - Skill point gains per session  
 - Optimal car purchase count  
-- Expected completion time  
+- Expected completion time
+
+The built-in estimator is based on repeated testing of the recommended EventLab route and vehicle setup.
+
+#### 📊 Tested EventLab Results
+
+After multiple test sessions, the EventLab race consistently produced:
+
+- Minimum observed gain: **940 Skill Points**
+- Maximum observed gain: **945 Skill Points**
+- Typical completion time: **Under 51 minutes**
+
+Due to the small variation between runs, the application uses **940 Skill Points** as the maximum target value for a single farming session. This provides a conservative estimate and helps avoid overestimating expected rewards.
+
+#### 🎯 Maximum Skill Point Calculation
+
+The in-game Skill Point cap is **999**.
+
+Because players may already have existing Skill Points before starting a session, the application calculates the desired target using:
+
+Current Skill Points + Estimated Session Gain
+
+While a single session estimate is capped at **940**, the resulting total can reach the in-game maximum of: 999 Skill Points
+
+| Current SP | Estimated Gain | Final Total  |
+| ---------- | -------------- | ------------ |
+| 0          | 940            | 940          |
+| 50         | 940            | 990          |
+| 100        | 940            | 999 (capped) |
+
+The estimator automatically accounts for this cap when calculating purchase recommendations and expected completion progress.
 
 ---
 
@@ -267,40 +297,6 @@ While the macro may still function with the Skills HUD enabled, turning it off i
 <p align="center">
   <img width="2456" height="1068" alt="image" src="https://github.com/user-attachments/assets/c92a4501-a0f7-4af7-bc0a-ebe25ece19df" />
 </p>
-
----
-
-### 🧮 Progress Estimation
-
-The built-in estimator is based on repeated testing of the recommended EventLab route and vehicle setup.
-
-#### 📊 Tested EventLab Results
-
-After multiple test sessions, the EventLab race consistently produced:
-
-- Minimum observed gain: **940 Skill Points**
-- Maximum observed gain: **945 Skill Points**
-- Typical completion time: **Under 51 minutes**
-
-Due to the small variation between runs, the application uses **940 Skill Points** as the maximum target value for a single farming session. This provides a conservative estimate and helps avoid overestimating expected rewards.
-
-#### 🎯 Maximum Skill Point Calculation
-
-The in-game Skill Point cap is **999**.
-
-Because players may already have existing Skill Points before starting a session, the application calculates the desired target using:
-
-Current Skill Points + Estimated Session Gain
-
-While a single session estimate is capped at **940**, the resulting total can reach the in-game maximum of: 999 Skill Points
-
-| Current SP | Estimated Gain | Final Total  |
-| ---------- | -------------- | ------------ |
-| 0          | 940            | 940          |
-| 50         | 940            | 990          |
-| 100        | 940            | 999 (capped) |
-
-The estimator automatically accounts for this cap when calculating purchase recommendations and expected completion progress.
 
 ---
 
