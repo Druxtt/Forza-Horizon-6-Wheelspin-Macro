@@ -9,6 +9,23 @@ An AutoHotkey v2 automation tool designed for *Forza Horizon 6*, featuring a cus
 
 ---
 
+## 📑 Table of Contents
+- [Overview](#-overview)
+- [Prerequisites](#%EF%B8%8F-prerequisites)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+- [Key Features](#-key-features)
+- [Automation Modes](#-automation-modes)
+- [Core Systems](#-core-systems)
+- [Controls](#%EF%B8%8F-controls)
+- [Setup Guide](#-setup-guide-important-before-running)
+- [Troubleshooting & FAQ](#-troubleshooting--faq)
+- [Warning & Customization](#%EF%B8%8F-important-warning-read-before-use)
+- [Credits & Contributions](#-credits)
+- [License](#-license)
+
+---
+
 ## 📌 Overview
 
 This project is a desktop automation tool built with **AutoHotkey v2**. It automates multiple in-game workflows such as racing loops, car purchasing, and reward claiming, while providing a fully custom graphical interface for monitoring progress in real time.
@@ -17,245 +34,175 @@ The original base script was developed by **6ftFish**, and this version has been
 
 ---
 
+## 🖥️ Prerequisites
+
+Before installing, ensure your system meets the following requirements:
+*   **Operating System:** Windows 10 / Windows 11
+*   **AutoHotkey:** [AutoHotkey v2](https://www.autohotkey.com/) (v1 will **not** work)
+*   **Game State:** *Forza Horizon 6* installed and running in **Borderless/Windowed Fullscreen**.
+*   **Game Language:** English (UI navigation and timing logic are optimized for the English game client. Other languages may have different UI load times or layout structures).
+
+---
+
+## 📥 Installation
+
+1. Download the latest version of AutoHotkey v2 and install it.
+2. Clone this repository or download it as a ZIP file:
+```bash
+   git clone https://github.com/M-Haziq-Iqbal/Forza-Horizon-6-Wheelspin-Macro.git
+```
+3. Extract the files (if downloaded as ZIP) to a dedicated folder.
+4. Double-click the `FH6_Macro_CyberNoir.ahk` file to launch the application.
+
+---
+
 ## 🚀 Quick Start
 
-1. Launch Forza Horizon 6 and load into Home Menu.
-2. Ensure the Subaru Impreza 22B-STi Version is your only Favorited vehicle.
-3. Verify all Car Mastery perks are unlocked.
+1. Launch Forza Horizon 6 and load into the Home Menu.
+2. Ensure the **Subaru Impreza 22B-STi Version** is your *only* Favorited vehicle.
+3. Verify all Car Mastery perks are unlocked for the vehicle.
 4. Apply Tune Share Code: `293 391 902`
-5. Apply the recommended game settings.
-6. Disable Skills HUD.
-7. Start the macro.
+5. Apply the recommended game settings (see Setup Guide below).
+6. Disable the Skills HUD in the game settings.
+7. Start the macro application.
 8. Run individual modes or start the Full Automation Loop.
+
+---
 
 ## ✨ Key Features
 
-- 🎨 Fully custom GUI with dark/light theme support  
-- 📊 Real-time session tracking and runtime statistics  
-- 🏁 Automated race loop workflow  
-- 🚗 Automated car purchasing system  
-- 🛞 Wheelspin and reward claiming automation  
-- 📈 Skill point estimation and progression calculator  
-- ⚙️ Structured process state management system  
-- ⌨️ Hotkey-driven control system  
-- 📋 Click-to-copy in-game codes integration  
-- 🔁 Flexible automation modes (Race / Buy / Claim / Full Loop)
+*   🎨 Fully custom GUI with dark/light theme support
+*   📊 Real-time session tracking and runtime statistics
+*   🏁 Automated race loop workflow
+*   🚗 Automated car purchasing system
+*   🛞 Wheelspin and reward claiming automation
+*   📈 Skill point estimation and progression calculator
+*   ⚙️ Structured process state management system
+*   ⌨️ Hotkey-driven control system
+*   📋 Click-to-copy in-game codes integration
+*   🔁 Flexible automation modes (Race / Buy / Claim / Full Loop)
 
 ---
 
 ## 🔁 Automation Modes
 
-The automation workflow is split into three independent processes that can be executed separately or combined into a continuous automation cycle.
+The automation workflow is split into three independent processes that can be executed separately or combined into a continuous cycle. 
 
-### 🏁 Race Mode
-
+### 🏁 Race Mode (Hotkey: `[`)
 Runs only the race automation process.
+*   Launches and completes the configured EventLab race
+*   Accumulates skill points
+*   Repeats race sessions until manually stopped
 
-- Launches and completes the configured EventLab race
-- Accumulates skill points
-- Repeats race sessions until stopped
-
-**Hotkey:** `[`
-
----
-
-### 🚗 Buy Mode
-
+### 🚗 Buy Mode (Hotkey: `]`)
 Runs only the vehicle purchasing process.
+*   Purchases Subaru Impreza 22B vehicles
+*   Prepares vehicles for perk claiming
+*   Repeats purchase cycles until manually stopped
 
-- Purchases Subaru Impreza 22B vehicles
-- Prepares vehicles for perk claiming
-- Repeats purchase cycles until stopped
-
-**Hotkey:** `]`
-
----
-
-### 🛞 Claim Mode
-
+### 🛞 Claim Mode (Hotkey: `\`)
 Runs only the reward claiming process.
+*   Redeems Car Mastery rewards
+*   Claims wheelspins and skill point rewards
+*   Repeats claim cycles until manually stopped
 
-- Redeems Car Mastery rewards
-- Claims wheelspins and skill point rewards
-- Repeats claim cycles until stopped
-
-**Hotkey:** `\`
-
----
-
-### ♾️ Full Automation Loop
-
-Combines all processes into a single continuous workflow.
-
-Workflow:
-
-Race → Buy → Claim → Repeat
-
-The macro will continuously cycle through all stages until manually stopped by the user.
-
-This mode is recommended for long unattended farming sessions after timing has been properly verified on your system.
-
-**Hotkey:** `` ` ``
-
----
+### ♾️ Full Automation Loop (Hotkey: `` ` ``)
+Combines all processes into a single continuous workflow (Race → Buy → Claim → Repeat). The macro will continuously cycle through all stages until stopped by the user. This mode is highly recommended for long unattended farming sessions *only after* timing has been properly verified on your system.
 
 ### 🛑 Stopping Automation
+Any running automation mode can be safely stopped through the GUI or designated stop controls. **Always supervise initial runs** to verify timing before leaving the macro unattended for extended periods.
 
-Any running automation mode can be stopped through the GUI or designated stop controls.
-
-For safety, users should supervise initial runs and verify timing before leaving the automation running for extended periods.
+---
 
 ## 🧠 Core Systems
 
 ### 🎛️ Automation Engine
-Controls in-game navigation using predefined key sequences with state validation to ensure safe execution and stop conditions.
-
----
+Controls in-game navigation using predefined key sequences, featuring robust state validation to ensure safe execution and reliable stop conditions.
 
 ### 📊 Telemetry System
-Tracks:
-- Total runtime  
-- Race session duration  
-- Buy/claim cycles  
-- Estimated skill point gains  
-
----
+Actively tracks total runtime, race session duration, buy/claim cycles, and estimated skill point gains.
 
 ### 🧮 Progress Estimation
-Uses internal logic to estimate:
-- Skill point gains per session  
-- Optimal car purchase count  
-- Expected completion time
+Uses internal logic to estimate skill point gains per session, optimal car purchase counts, and expected completion times. The built-in estimator is grounded in repeated testing of the recommended EventLab route and vehicle setup.
 
-The built-in estimator is based on repeated testing of the recommended EventLab route and vehicle setup.
+**Tested EventLab Results:**
+After multiple test sessions, the EventLab race consistently produced a minimum of **940 Skill Points** and a maximum of **945 Skill Points**, with a typical completion time of under 51 minutes. The application uses **940 Skill Points** as a conservative target value to avoid overestimating rewards.
 
-#### 📊 Tested EventLab Results
+**Maximum Skill Point Calculation:**
+The in-game Skill Point cap is **999**. The application calculates your target based on your current points plus the estimated session gain, capping out automatically.
 
-After multiple test sessions, the EventLab race consistently produced:
-
-- Minimum observed gain: **940 Skill Points**
-- Maximum observed gain: **945 Skill Points**
-- Typical completion time: **Under 51 minutes**
-
-Due to the small variation between runs, the application uses **940 Skill Points** as the maximum target value for a single farming session. This provides a conservative estimate and helps avoid overestimating expected rewards.
-
-#### 🎯 Maximum Skill Point Calculation
-
-The in-game Skill Point cap is **999**.
-
-Because players may already have existing Skill Points before starting a session, the application calculates the desired target using:
-
-Current Skill Points + Estimated Session Gain
-
-While a single session estimate is capped at **940**, the resulting total can reach the in-game maximum of: 999 Skill Points
-
-| Current SP | Estimated Gain | Final Total  |
-| ---------- | -------------- | ------------ |
-| 0          | 940            | 940          |
-| 50         | 940            | 990          |
-| 100        | 940            | 999 (capped) |
-
-The estimator automatically accounts for this cap when calculating purchase recommendations and expected completion progress.
-
----
+| Current SP | Estimated Gain | Final Total |
+| :--- | :--- | :--- |
+| 0 | 940 | 940 |
+| 50 | 940 | 990 |
+| 100 | 940 | 999 (capped) |
 
 ### 🎨 Theme System
-Dynamic UI switching between:
-
-- 🌙 Dark mode (Neon Void)  
-- ☀️ Light mode (Neon Daylight)  
+Dynamic UI switching between Dark Mode (Neon Void) and Light Mode (Neon Daylight).
 
 ---
 
 ## ⌨️ Controls
 
 | Key | Action |
-|-----|--------|
-| / | Toggle Full Automation Loop |
-| [ | Start Race Loop |
-| ] | Start Buy Loop |
-| \ | Start Claim Loop |
-| F12 | Reload Script |
+| :--- | :--- |
+| `` ` `` | Toggle Full Automation Loop |
+| `[` | Start Race Loop |
+| `]` | Start Buy Loop |
+| `\` | Start Claim Loop |
+| `F12` | Reload Script |
 
 ---
 
-# 📷 Setup Guide (Important Before Running)
+## 📷 Setup Guide (Important Before Running)
 
-Before using the macro, ensure your game is in the correct state. The automation relies on consistent menus, timing, and UI positioning.
+Before using the macro, ensure your game is properly configured. The automation relies heavily on consistent menus, timing, and UI positioning.
 
----
-
-## 🏁 Starting Position
-
-Make sure you are in:
-
-- Home Menu  
-- Fully loaded session (no loading screens)  
-- Active keyboard input  
+### 🏁 Starting Position
+Make sure you are in the **Home Menu**, loaded fully into an active session (no loading screens), with active keyboard input.
 
 <p align="center">
-  <img width="2559" height="1439" alt="image" src="https://github.com/user-attachments/assets/e6c585b4-264e-4a4c-8cf8-8d4ed7144ffc" />
+  <img width="2559" height="1439" alt="Starting Position" src="https://github.com/user-attachments/assets/e6c585b4-264e-4a4c-8cf8-8d4ed7144ffc" />
 </p>
 
----
-
-## 🎯 EventLab Menu Setup
-
-Ensure the EventLab system is accessible and ready.
-
-- EventLab menu available  
-- Search-by-code feature unlocked  
+### 🎯 EventLab Menu Setup
+Ensure the EventLab system is accessible and the search-by-code feature is unlocked. The macro will automatically input the following EventLab code: **124 198 343**
 
 <p align="center">
-  <img width="1941" height="896" alt="image" src="https://github.com/user-attachments/assets/c0dab41f-01bf-4975-99a9-bf48ff36028a" />
-</p>
-
-The macro automatically inputs this EventLab code: 124 198 343
-
-<p align="center">
-  <img width="2457" height="1268" alt="image" src="https://github.com/user-attachments/assets/ec334fc9-8e5f-4027-b7ff-3306b8d4c775" />
+  <img width="1941" height="896" alt="EventLab Setup 1" src="https://github.com/user-attachments/assets/c0dab41f-01bf-4975-99a9-bf48ff36028a" />
+  <img width="2457" height="1268" alt="EventLab Setup 2" src="https://github.com/user-attachments/assets/ec334fc9-8e5f-4027-b7ff-3306b8d4c775" />
 </p>
 
 ---
 
 ## 🚗 Required Car Setup
 
-The automation is designed to work correctly with a specific vehicle configuration.
+The automation requires a highly specific vehicle configuration to function properly.
 
-### ✔️ Required Vehicle Setup
-
-You **must** have:
-
-- Subaru Impreza 22B-STi Version (ONLY favorite car in garage)
-- All perk points fully maxed out (all mastery upgrades unlocked)
-- No other cars set as favorite (to avoid selection conflicts)
-
-This is required because the macro assumes consistent car selection behavior during automation.
-
----
+### ✔️ Required Vehicle Configuration
+*   **Subaru Impreza 22B-STi Version** must be the ONLY favorite car in your garage.
+*   All perk points must be fully maxed out (all mastery upgrades unlocked).
+*   No other cars can be favorited to avoid selection conflicts during automation.
 
 ### 🧩 Tuning Setup
-
-Use the following tuning configuration:
-
-📌 **Tuning Code:** 293 391 902
+Apply the following tuning configuration to the vehicle.
+> 📌 **Tuning Code:** `293 391 902`
 
 <p align="center">
-  <img width="2559" height="1439" alt="image" src="https://github.com/user-attachments/assets/13020a98-4b58-4c2d-862f-bf1f2982068b" />
+  <img width="2559" height="1439" alt="Tuning Setup" src="https://github.com/user-attachments/assets/13020a98-4b58-4c2d-862f-bf1f2982068b" />
 </p>
 
 ---
 
 ## ⚙️ Required Game Setting Setup
 
-Before running the macro, verify the following configuration.
+Verify your in-game configurations match the settings below for maximum consistency and reliability. 
 
 ### 🎮 Recommended Difficulty Settings
-
-For maximum consistency, use the following settings:
+*Note: These settings were used during development and testing. Deviating from them may negatively affect race timing and automation reliability.*
 
 | Setting | Recommended Value |
-|----------|----------|
+| :--- | :--- |
 | Drivatar Difficulty | UNBEATABLE |
 | Braking | ASSISTED |
 | Steering | AUTO-STEERING |
@@ -263,128 +210,72 @@ For maximum consistency, use the following settings:
 | Stability Control | OFF |
 | Shifting | AUTOMATIC |
 
-> These settings were used during development and testing. Different settings may affect race timing and automation reliability.
-
 <p align="center">
-  <img width="2559" height="1438" alt="image" src="https://github.com/user-attachments/assets/43f2059b-4fb6-4540-a573-7ff43abfd561" />
+  <img width="2559" height="1438" alt="Difficulty Settings" src="https://github.com/user-attachments/assets/43f2059b-4fb6-4540-a573-7ff43abfd561" />
 </p>
 
-### 🎮 Additional Recommended Settings
+### 🚫 Disable Skills HUD
+Navigate to **Settings → HUD & Gameplay → Skills HUD** and set it to **OFF**.
 
-For the most reliable automation experience, the following setting is strongly recommended:
-
-#### Skill Score / Skills HUD
-
-Navigate to:
-
-**Settings → HUD & Gameplay → Skills HUD**
-
-Set:
-
-**Skills HUD: OFF**
-
-### Why?
-
-During testing, disabling the Skills HUD resulted in more consistent performance and smoother Skill Point accumulation.
-
-Keeping the Skills HUD enabled may:
-
-- Introduce additional visual pop-ups during gameplay
-- Cause minor timing inconsistencies on some systems
-- Affect the consistency of long farming sessions
-
-While the macro may still function with the Skills HUD enabled, turning it off is recommended for maximum stability and repeatability.
+Disabling the Skills HUD prevents visual pop-ups during gameplay that can cause minor timing inconsistencies. While the macro *may* function with it enabled, turning it off is highly recommended for stable, repeatable farming sessions.
 
 <p align="center">
-  <img width="2456" height="1068" alt="image" src="https://github.com/user-attachments/assets/c92a4501-a0f7-4af7-bc0a-ebe25ece19df" />
+  <img width="2456" height="1068" alt="Skills HUD Off" src="https://github.com/user-attachments/assets/c92a4501-a0f7-4af7-bc0a-ebe25ece19df" />
 </p>
+
+---
+
+## 🔧 Troubleshooting & FAQ
+
+**Q: The macro keeps missing button presses in the menu.**
+> **A:** Your system's loading times might be slower than the default timing in the script. Open the `.ahk` file in a text editor, locate the `Sleep()` functions within the navigation loops, and increase the millisecond values (e.g., change `Sleep(500)` to `Sleep(800)`).
+
+**Q: The script is just typing random keys on my desktop.**
+> **A:** The macro simulates raw keyboard input. If *Forza Horizon 6* loses window focus, the keys will be sent to whatever application is currently active. Ensure you do not click outside the game window while the macro is running.
+
+**Q: My car keeps driving into walls during the EventLab.**
+> **A:** Double-check that your game settings exactly match the [Required Game Setting Setup](#%EF%B8%8F-required-game-setting-setup). "Auto-Steering" and "Assisted Braking" are strictly required for the macro to navigate the track without manual input.
 
 ---
 
 ## ⚠️ Important Warning (READ BEFORE USE)
 
-This tool relies on **timed inputs and UI navigation**, meaning:
-
-- ⏱️ Performance varies between systems  
-- 🖥️ Loading times depend on hardware (SSD/HDD/CPU/GPU)    
-- 🌐 Background processes can affect timing accuracy  
-
----
+This tool relies on **timed inputs and UI navigation**, which means:
+*   ⏱️ Performance will vary between systems.
+*   🖥️ Loading times depend entirely on your hardware (SSD/HDD/CPU/GPU).
+*   🌐 Background processes can interrupt or affect timing accuracy.
 
 ### ✔️ First-Time Setup Recommendation
-
-Before running full automation:
-
-- Run each mode manually once  
-- Observe timing carefully  
-- Adjust `Sleep()` delays if needed  
-- Watch for UI desync or missed inputs  
+Before committing to full automation, run each mode manually at least once. Observe the timing carefully, look out for UI desyncs or missed inputs, and adjust the `Sleep()` delays in the script if necessary for your hardware.
 
 ---
 
 ## 🛠️ Customization Encouraged
 
-Users are encouraged to modify and improve the script:
-
-- Adjust timing values (`Sleep()`)  
-- Modify key sequences for UI changes  
-- Tune performance for their system  
-- Improve automation logic  
+Users are strongly encouraged to dive into the code to modify and improve the script. You can adjust timing values (`Sleep()`), modify key sequences to adapt to UI changes, tune the overall performance for your specific system, and improve the underlying automation logic.
 
 ---
 
 ## 🙏 Credits
 
-### Base Script
-Original framework by:  
-👉 https://github.com/6ftfish/Forza_Horizon_6_Skill_Point_Macro  
-
-### Modifications
-This version includes:
-
-- GUI redesign  
-- Feature expansion  
-- Automation improvements  
-- Telemetry system implementation  
-- UI/UX restructuring  
-
-### EventLab & Tuning
-EventLab design and tuning configurations by:  
-👉 u/Ok-Pin-5704 on [Reddit Post](https://www.reddit.com/r/EventlabSubmissions/comments/1twfgk0/960_skill_point_race/)
+*   **Base Script:** Original framework developed by [6ftfish](https://github.com/6ftfish/Forza_Horizon_6_Skill_Point_Macro).
+*   **Modifications:** This version brings a GUI redesign, feature expansion, automation improvements, a telemetry system, and an overhaul of the UI/UX.
+*   **EventLab & Tuning:** EventLab design and tuning configurations provided by u/Ok-Pin-5704 on [Reddit](https://www.reddit.com/r/EventlabSubmissions/comments/1twfgk0/960_skill_point_race/).
 
 ---
 
 ## 💡 Contributions
 
-Feedback and improvements are welcome.
+Feedback and improvements are always welcome! If you have ideas for better timing optimization, more stable navigation routes, UI improvements, bug fixes, or additional car support, feel free to **Open an Issue** or **Submit a Pull Request**. This project is designed to evolve with community input.
 
-If you have ideas like:
+---
 
-- Better timing optimization  
-- More stable navigation routes  
-- UI improvements  
-- Bug fixes  
-- Additional car support  
+## 📄 License
 
-Feel free to:
-
-- Open an Issue  
-- Submit a Pull Request  
-
-This project is designed to evolve with community input.
+This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details. 
 
 ---
 
 ## 📌 Safety & Responsibility Notice
 
-This automation tool:
-
-- Does **not modify game files**  
-- Uses **input simulation only (keyboard)**  
-- Requires **user supervision during setup/testing**  
-
-Users are responsible for:
-
-- Adjusting timing for their system  
-- Ensuring safe usage conditions  
-- Monitoring execution during automation  
+This automation tool does **not** modify game files and strictly uses **input simulation (keyboard) only**. It requires active user supervision during setup and testing. Users are solely responsible for adjusting the macro timing for their systems, ensuring safe usage conditions, and monitoring execution during automated runs.
