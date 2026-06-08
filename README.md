@@ -39,7 +39,7 @@ The original base script was developed by **6ftFish**, and this version has been
 Before installing, ensure your system meets the following requirements:
 *   **Operating System:** Windows 10 / Windows 11
 *   **AutoHotkey:** [AutoHotkey v2](https://www.autohotkey.com/) (v1 will **not** work)
-*   **Game State:** *Forza Horizon 6* installed and running in **Borderless/Windowed Fullscreen**.
+*   **Game State:** *Forza Horizon 6* installed and running.
 *   **Game Language:** English (UI navigation and timing logic are optimized for the English game client. Other languages may have different UI load times or layout structures).
 
 ---
