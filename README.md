@@ -144,8 +144,8 @@ Make sure to purchase and unlock the Soko 78 house to get a permanent 5% discoun
 
 | Dropdown Choice | Cost Per Unit | Cost Per Unit after 5% Discount | Mastery Grid Rewards | Skill Points Cost | Optimal Strategy |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Subaru Impreza 22B-STi Version (1998)** | 86,000 CR | 81,700 CR | 1x Super Wheelspin | 30 Points | Max Yield: Dumps heavy credits to maximize total wheelspin volume as fast as possible. |
-| **Lamborghini Revuelto (2024)** | 365,000 CR | 346,750 CR | 1x Super Wheelspin + 3x Regular Wheelspins | 39 Points | **Payload Farming:** Best choice for high-roller accounts looking to quickly dump credits for massive amounts of wheelspins. |
+| **Subaru Impreza 22B-STi Version (1998)** | 86,000 CR | 81,700 CR | 1x Super Wheelspin | 30 Points | Budget Wheelspins: Low-cost entry point for farming steady Super Wheelspins. |
+| **Lamborghini Revuelto (2024)** | 365,000 CR | 346,750 CR | 1x Super Wheelspin + 3x Regular Wheelspins | 39 Points | Max Yield: Dumps heavy credits to maximize total wheelspin volume as fast as possible. |
 | **Dodge Viper GTS ACR (1999)** | 68,000 CR | 64,600 CR | 85,400 CR | 30 Points | Credit Flipping: Converts Skill Points back into raw cash for a quick return or a near-full vehicle refund. |
 
 ### 🎨 Theme System
