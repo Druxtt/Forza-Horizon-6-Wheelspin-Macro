@@ -138,7 +138,7 @@ The in-game Skill Point cap is **999**. The application calculates your target b
 | 50 | 940 | 990 |
 | 100 | 940 | 999 (capped) |
 
-### 2. The Reward Vehicles
+### 🎁 The Reward Vehicles
 You can choose which vehicle the macro purchases and unlocks perks for via the GUI dropdown menu depending on your budget and preferred reward density. 
 Make sure to purchase and unlock the Soko 78 house to get a permanent 5% discount on Autoshow purchases.
 
