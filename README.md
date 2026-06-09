@@ -88,25 +88,25 @@ Before installing, ensure your system meets the following requirements:
 
 The automation workflow is split into three independent processes that can be executed separately or combined into a continuous cycle.  
 
-### 🏁 Race Mode (Hotkey: `[`)
+### 🏁 Race Mode (Hotkey: `\`)
 Runs only the race automation process.
 *   Launches and completes the configured EventLab race
 *   Accumulates skill points
 *   Repeats race sessions until manually stopped
 
-### 🚗 Buy Mode (Hotkey: `]`)
+### 🚗 Buy Mode (Hotkey: `[`)
 Runs only the vehicle purchasing process.
 *   Purchases Subaru Impreza 22B vehicles
 *   Prepares vehicles for perk claiming
 *   Repeats purchase cycles until manually stopped
 
-### 🛞 Claim Mode (Hotkey: `\`)
+### 🛞 Claim Mode (Hotkey: `]`)
 Runs only the reward claiming process.
 *   Redeems Car Mastery rewards
 *   Claims wheelspins and skill point rewards
 *   Repeats claim cycles until manually stopped
 
-### ♾️ Full Automation Loop (Hotkey: `` ` ``)
+### ♾️ Full Automation Loop (Hotkey: `` / ``)
 Combines all processes into a single continuous workflow (Race → Buy → Claim → Repeat). The macro will continuously cycle through all stages until stopped by the user. This mode is highly recommended for long unattended farming sessions *only after* timing has been properly verified on your system.
 🎥[Watch the Full Loop Demonstration](https://www.youtube.com/watch?v=6ezhyNeIYko)
 
