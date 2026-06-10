@@ -222,9 +222,21 @@ Verify your in-game configurations match the settings below for maximum consiste
 </p>
 
 ### 🚫 Disable Skills HUD
-Navigate to **Settings → HUD & Gameplay → Skills HUD** and turn it **OFF**.
+Navigate to Settings → HUD & Gameplay → Skills HUD and set it to OFF.
 
-Disabling the Skills HUD stops screen pop-ups from causing pixel processing desyncs or frame evaluation micro-stutters during execution passes. Turning this module off is highly recommended for stable, long-running farming operations.
+Disabling the Skills HUD prevents visual pop-ups during gameplay that cause delays in building up skill points. While the macro may function with it enabled, turning it off is highly recommended for fastest farming sessions.
+
+### 🗺️ HUD Safe Frame Calibration
+Navigate to **Settings → HUD & Gameplay** and adjust the UI boundaries to the following exact values:
+* **HUD Safe Frame Horizontal:** `5`
+* **HUD Safe Frame Vertical:** `9`
+
+> **CRITICAL ALIGNMENT WARNING:** Modifying the default HUD Safe Frame values alters the physical anchor placement of on-screen UI components. Because the macro's pixel detection loops scan exact coordinate arrays, changing these frame bounds will misalign the sensor engine, resulting in persistent color identification errors and menu synchronization timeouts.
+
+### 🛑 Disable "What's Next" Feature
+Navigate to **Settings → HUD & Gameplay → What's Next** and turn it **OFF**.
+
+> **FLOW INTERRUPTION WARNING:** The "What's Next" feature must be disabled completely. Leaving it active allows the game client to break the automation flow by forcing unexpected menu states.
 
 <p align="center">
   <img width="2456" height="1068" alt="Skills HUD Off" src="https://github.com/user-attachments/assets/c92a4501-a0f7-4af7-bc0a-ebe25ece19df"> 
