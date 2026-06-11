@@ -4,7 +4,7 @@
 
 ; ╔═════════════════════════════════════════╗
 ; ║        FH6 Wheelspin Macro				║
-; ║        Cyber Noir Edition v1.2.1        ║
+; ║        Cyber Noir Edition v1.2.2        ║
 ; ╚═════════════════════════════════════════╝
 
 global ActiveMode	:= ""
@@ -177,8 +177,7 @@ BuildGui(savedVals := "") {
    
     MyGui.SetFont("s9 norm cE6F1FF", "Segoe UI")
     ;PixelCheck_UI := MyGui.Add("Checkbox", , "  Dynamic Loading  ⏳")
-    PremiumCheck_UI := MyGui.Add("Checkbox", "y+8" , "  Premium   👑")
-    PremiumCheck_UI.Enabled := false ; Placeholder for future premium features
+    PremiumCheck_UI := MyGui.Add("Checkbox", "y+8 0x200", "  PREMIUM   👑")
 
     ; ── Calculations & Targets ────────────────
     MyGui.SetFont("s9 bold", "Segoe UI")
@@ -207,9 +206,9 @@ BuildGui(savedVals := "") {
     MyGui.Add("Text", "x14 y+0  w242 Center BackgroundTrans c" p["divider"], "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
     MyGui.SetFont("s9 norm", "Segoe UI Light")
-    Key_UI          := MyGui.Add("Text", "x0 y+5 w270 Center BackgroundTrans c" p["cIdle"], "➡️ Key     —   [  ]")
-    Process_UI      := MyGui.Add("Text", "x0 y+2 w270 Center BackgroundTrans c" p["cIdle"], "⚙️ Process     —   Waiting...")
-    TotalRunTime_UI := MyGui.Add("Text", "x0 y+2 w270 Center BackgroundTrans c" p["cIdle"], "⏱   Total Time Running   —   00:00")
+    Key_UI          := MyGui.Add("Text", "x0 y+5 w270 Center BackgroundTrans c" p["cIdle"], "➡️  [  ]")
+    Process_UI      := MyGui.Add("Text", "x0 y+2 w270 Center BackgroundTrans c" p["cIdle"], "⚙️  Waiting...")
+    TotalRunTime_UI := MyGui.Add("Text", "x0 y+2 w270 Center BackgroundTrans c" p["cIdle"], "⏱ Total Time Running   —   00:00")
 
     ; ── Progress Panel ────────────────────────
     MyGui.SetFont("s9 bold", "Segoe UI")
@@ -369,11 +368,12 @@ ToggleAll() {
     global SkillPtsCount_In, SkillPtsWant_In, CarCount_In
     global PointsTotal, PointsGained, SelectedCarPoint, cHighlight, cIdle
 
+    StartIndicators()
     MasterMode := !MasterMode
 
     while MasterMode {
 	
-	MasterStart := true
+	    MasterStart := true
 
         StartRace()
         ActiveMode := ""
@@ -391,13 +391,11 @@ ToggleAll() {
             break
 
         Process("Restarting Race...")
-        PtsTotal := PointsGained + SkillPtsCount_In.Value
 
-        SkillPtsWant_In.Value += SkillPtsCount_In.Value	
-        SkillPtsCount_In.Value := PtsTotal - (CarCount_In.Value * SelectedCarPoint)
+        SkillPtsCount_In.Value := PointsTotal - (CarCount_In.Value * SelectedCarPoint)
 
-        UpdateSkillPtsWant({Value: SkillPtsWant_In.Value})
-        ValidateSkillPtsWant({Value: SkillPtsWant_In.Value})
+        UpdateSkillPtsWant({Value: PointsTotal})
+        ValidateSkillPtsWant({Value: PointsTotal})
     }
     MasterMode := ""
     MasterStart := false
@@ -408,6 +406,8 @@ StartRace() {
     global ActiveMode
     global StatusText, cActive, RaceCount, TotalRunSeconds, RaceRunSeconds, PointsCount
     global RaceRunTime_UI, RaceCount_UI, PointsCount_UI
+
+    StartIndicators()
     
     if !ToggleMode("Race") {
         StatusText.Value := "⬤  Stopping..."
@@ -422,16 +422,18 @@ StartRace() {
         ;RaceCount_UI.Value	:= "🏁   Loop Completed   —   0"
         PointsCount_UI.Value	:= "💡   Est. Skill Points Gained   —   0"
         RaceRunTime_UI.Value	:= "⏱   Race Time Running   —   00:00"
-        StatusText.Value 	:= "⬤  Running..."
-        StatusText.SetFont("c" cActive)
         RaceLoop()
     }
+
+    ResetIndicators()
 }
 
 StartBuy() {
     global ActiveMode
     global StatusText, cActive, CarCount, BuyRunSeconds
     global BuyRunTime_UI, CarCount_UI
+
+    StartIndicators()
 
     if !ToggleMode("Buy") {
         StatusText.Value := "⬤  Stopping..."
@@ -447,12 +449,16 @@ StartBuy() {
         StatusText.SetFont("c" cActive)
         BuyLoop()
     }
+
+    ResetIndicators()
 }
 
 StartUnlock() {
     global ActiveMode
     global StatusText, cActive, SWheelCount, WheelCount, CreditCount, UnlockCount, UnlockRunSeconds
     global SWheelCount_UI, WheelCount_UI, CreditCount_UI, UnlockRunTime_UI
+
+    StartIndicators()
 
     if !ToggleMode("Unlock") {
         StatusText.Value := "⬤  Stopping..."
@@ -470,35 +476,8 @@ StartUnlock() {
         StatusText.SetFont("c" cActive)
         UnlockLoop()
     }
-}
 
-; ══════════════════════════════════════════════
-;  KEY AND PROCESS
-; ══════════════════════════════════════════════
-
-PressKey(key, delay := 500) {
-    global Key_UI, cHighlight, cIdle
-
-    switch key {
-        case "Down": displayname := "↓"
-        case "Up": displayname := "↑"
-        case "Left": displayname := "←"
-        case "Right": displayname := "→"
-        case "w down": displayname := "W"
-        case "w up": displayname := "W"
-        Default : displayname := key
-    }
-
-    Key_UI.Value := "➡️ Key     —   [ " displayName " ]"
-    Send("{" key "}")
-    
-    Sleep(delay)
-}
-
-Process(text) {
-    global Process_UI
-
-    Process_UI.Value := "⚙️ Process     —   " text
+    ResetIndicators()
 }
 
 ; ══════════════════════════════════════════════
@@ -506,8 +485,8 @@ Process(text) {
 ; ══════════════════════════════════════════════
 RaceLoop() {
     global ActiveMode, MasterMode, MasterStart, SkillPtsCount_In, SkillPtsWant_In, CarCount_In
-    global Key_UI, Process_UI, cActive, cHighlight, cIdle
-    global RaceCount, RaceCount_UI, PointsCount_UI, CarCount_UI, RaceRunTime_UI, TotalRunTime_UI, PixelCheck_UI
+    global cActive, cHighlight, cIdle
+    global RaceCount, RaceCount_UI, PointsCount_UI, CarCount_UI, RaceRunTime_UI, PixelCheck_UI
     global RaceLoadingTime, FinLoadingTime, AveragePoints, Maxpoints, PointsTotal, PointsGained, PointsCount, RaceRunSeconds
 
     ; Local helper to cleanly check if the macro should stop
@@ -515,17 +494,13 @@ RaceLoop() {
 
     While (ActiveMode = "Race") {
 
-        TotalRunTime_UI.SetFont("c" cHighlight)
         RaceRunTime_UI.SetFont("c" cHighlight)
-        Process_UI.SetFont("c" cHighlight)
-        Key_UI.SetFont("c" cHighlight)
-
-        SetTimer(TotalTimerTick, 1000)
         SetTimer(RaceTimerTick, 1000)
-  
-        Process("Returning to Free Roam...")
+        
+        Sleep(1000)
         PressKey("Esc") ; Return to Free Roam
-        if !WaitForMenuRelative(0.071, 0.289, "0xFFFFFF", , 15000) {
+
+        if !WaitForMenuRelative("Returning to Free Roam...", 0.071, 0.289, "0xFFFFFF", , 20000) {
             Process("Sync Error: Unable to return to Free Roam!")
             break
         }
@@ -556,8 +531,7 @@ RaceLoop() {
         PressKey("Down") ; Navigate to Confirm
         PressKey("Enter") ; Select Confirm
 
-        Process("Waiting for EventLab to load...")
-        if !WaitForMenuRelative(0.427, 0.594, "0x000000", , 15000) {
+        if !WaitForMenuRelative("Waiting for EventLab to load...", 0.427, 0.594, "0x000000", , 10000, , true) {
             Process("Sync Error: EventLab search timed out!")
             break
         }
@@ -577,8 +551,7 @@ RaceLoop() {
         Process("Loading EventLab...")
         PressKey("Enter") ; Select Car
         
-        Process("Waiting for race to load...")
-        if !WaitForMenuRelative(0.158, 0.678, "0xFFFFFF", "", 30000) {
+        if !WaitForMenuRelative("Waiting for track to load...", 0.158, 0.678, "0xFFFFFF", "", 30000) {
             Process("Sync Error: EventLab track failed to load!")
             break
         }
@@ -617,15 +590,15 @@ RaceLoop() {
                 PressKey("w up", 50) ; Release throttle to prevent timeout
             }
         }
-
+        
         Process("Quitting the Event...")
+        Sleep(2000)
         PressKey("Esc", 1000) ; Pause Menu
         PressKey("Right") ; Navigate to Quit
         PressKey("Enter") ; Quit Event
         PressKey("Enter") ; Confirm Quit
 
-        Process("Returning to Free Roam...")
-        if !WaitForMenuRelative(0.061, 0.945, "0xFFFFFF", "", 30000) {
+        if !WaitForMenuRelative("Returning to Free Roam...", 0.061, 0.945, "0xFFFFFF", "", 20000) {
             Process("Sync Error: Unable to return to Free Roam!")
             break
         }
@@ -640,7 +613,7 @@ RaceLoop() {
         PressKey("Enter") ; Select Return Home
         PressKey("Enter") ; Confirm Travel to Home
 
-        if !WaitForMenuRelative(0.168, 0.722, "0xFFFFFF", "", 20000) {
+        if !WaitForMenuRelative("Returning to Home...", 0.168, 0.722, "0xFFFFFF", "", 20000) {
             Process("Sync Error: Unable to return Home!")
             break
         }   
@@ -650,40 +623,34 @@ RaceLoop() {
 
         break
     }
-
-    ResetIndicators()
 }
 
 ; ══════════════════════════════════════════════
 ;  BUY LOOP
 ; ══════════════════════════════════════════════
 BuyLoop() {
-    global ActiveMode, MasterMode, MasterStart, CarCount_In, SelectedCar
-    global Key_UI, Process_UI, cActive, cHighlight, cIdle
-    global CarCount, CarCount_UI, BuyRunTime_UI, TotalRunTime_UI
+    global ActiveMode, MasterMode, MasterStart
+    global cActive, cHighlight, cIdle
+    global CarCount, CarCount_In, SelectedCar, CarCount_UI, BuyRunTime_UI
 
     ; Local helper to cleanly check if the macro should stop
     CheckAbort() => (ActiveMode != "Buy" || (!MasterMode && MasterStart))
 
     While (ActiveMode = "Buy") {
 
-        Process_UI.SetFont("c" cHighlight)
-        Key_UI.SetFont("c" cHighlight)
         CarCount_UI.SetFont("c" cHighlight)
-        TotalRunTime_UI.SetFont("c" cHighlight)
         BuyRunTime_UI.SetFont("c" cHighlight)
 
-        SetTimer(TotalTimerTick, 1000)
         SetTimer(BuyTimerTick, 1000)
 
         Process("Navigating Journal...")
-        PressKey("Down")
-        PressKey("Enter", 650)
-        PressKey("Right")
-        PressKey("Enter")
-        PressKey("Down")
-        PressKey("Enter")
-        PressKey("Backspace")
+        PressKey("Down") ; Navigate to Collection Journal
+        PressKey("Enter", 650) ; Select Collection Journal
+        PressKey("Right") ; Navigate to Master Explorer
+        PressKey("Enter") ; Select Master Explorer
+        PressKey("Down") ; Navigate to Car Collection
+        PressKey("Enter") ; Select Car Collection
+        PressKey("Backspace") ; Select Manufacturers
         if CheckAbort()
             break
 
@@ -694,13 +661,13 @@ BuyLoop() {
                     PressKey("Up", 50)
                 Loop 3
                     PressKey("Right", 50)
-                PressKey("Enter")
+                PressKey("Enter") ; Select Subaru
                 PressKey("Down")
 
             Case "Lamborghini Revuelto":
                 Loop 10
                     PressKey("Down", 50)
-                PressKey("Enter")
+                PressKey("Enter") ; Select Lamborghini
                 PressKey("Right")
                 Loop 4
                     PressKey("Down", 50)
@@ -710,8 +677,13 @@ BuyLoop() {
                     PressKey("Down", 50)
                 Loop 2
                     PressKey("Right", 50)
-                PressKey("Enter")
-                PressKey("Down")
+                PressKey("Enter") ;Select Dodge
+                if !PremiumCheck_UI
+                    PressKey("Down")
+                else {
+                    PressKey("Down")
+                    PressKey("Right")
+                }
         }
 
         if CheckAbort()
@@ -720,11 +692,11 @@ BuyLoop() {
         ; ── Buying Car ───────────────
         Process("Buying " SelectedCar "...")
         While (CarCount < CarCount_In.Value) {
-            PressKey("Space")
-            PressKey("Down")
-            PressKey("Enter")
-            PressKey("Enter")
-            PressKey("Enter")
+            PressKey("Space") ; Purchase Car
+            PressKey("Down") ; Navigate to Yes
+            PressKey("Enter") ; Select Yes (Car Collection)
+            PressKey("Enter") ; Select Yes (Buy Car)
+            PressKey("Enter") ; Select Yes (Ok)
             
             CarCount++
             CarCount_UI.Value := "🚗   Car Purchased   —   " CarCount
@@ -736,14 +708,11 @@ BuyLoop() {
         ; ── Return to Home ───────────────
         Process("Returning to Home...")
         Loop 3
-            PressKey("Esc")
-        PressKey("Up")
-        PressKey("Up")
+            PressKey("Esc") ; Navigate to Home Menu
+        PressKey("Up") ; Navigate to Drive
 
         break
     }
-
-    ResetIndicators()
 }
 
 ; ══════════════════════════════════════════════
@@ -751,8 +720,8 @@ BuyLoop() {
 ; ══════════════════════════════════════════════
 UnlockLoop() {
     global ActiveMode, MasterMode, CarCount_In
-    global Key_UI, Process_UI, cActive, cHighlight, cIdle
-    global SWheelCount, SWheelCount_UI, WheelCount, WheelCount_UI, CreditCount, CreditCount_UI, UnlockRunTime_UI, TotalRunTime_UI, UnlockCount, SelectedCar
+    global cActive, cHighlight, cIdle
+    global SWheelCount, SWheelCount_UI, WheelCount, WheelCount_UI, CreditCount, CreditCount_UI, UnlockRunTime_UI, UnlockCount, SelectedCar
 
     ; 1. Helper function to clean up the repetitive break checks
     CheckAbort() => (ActiveMode != "Unlock" || (!MasterMode && MasterStart))
@@ -760,9 +729,6 @@ UnlockLoop() {
     While (ActiveMode = "Unlock") {
         
         ; 2. Initialize UI 
-        Key_UI.SetFont("c" cHighlight)
-        Process_UI.SetFont("c" cHighlight)
-        TotalRunTime_UI.SetFont("c" cHighlight)
         UnlockRunTime_UI.SetFont("c" cHighlight)
 
         Switch SelectedCar {
@@ -775,7 +741,6 @@ UnlockLoop() {
                 CreditCount_UI.SetFont("c" cHighlight)
         }
     
-        SetTimer(TotalTimerTick, 1000)
         SetTimer(UnlockTimerTick, 1000)
         
         ; 3. Initial Navigation
@@ -823,11 +788,9 @@ UnlockLoop() {
             PressKey("Enter", 700) ; Select Upgrades & Tuning
             Loop 7 
                 PressKey("Down", 50) ; Navigate to Car Mastery
-
-            Process("Opening Car Mastery...")
             PressKey("Enter") ; Select Car Mastery
 
-            if !WaitForMenuRelative(0.176, 0.545, "0xFFFFFF", "", 5000, 100) {
+            if !WaitForMenuRelative("Opening Car Mastery...", 0.176, 0.545, "0xFFFFFF", "", 5000, 100) {
                 Process("Sync Error: Car Mastery menu failed to load!")
                 break
             }
@@ -911,7 +874,13 @@ UnlockLoop() {
             PressKey("Down") ; Navigate to Next Car
             PressKey("Enter") ; Select Next Car
             PressKey("Down") ; Navigate to Get in Car 
-            PressKey("Enter", 5000) ; Select Get in Car
+            PressKey("Enter") ; Select Get in Car
+
+            if !WaitForMenuRelative("Getting in Car...", 0.067, 0.169, "0xFFFFFF", "", 10000, 100) {
+                Process("Sync Error: Unable to get in car!")
+                break
+            }
+
             if CheckAbort()
                 break
     
@@ -935,8 +904,6 @@ UnlockLoop() {
         PressKey("PgUp") ; Navigate to Campaign Menu
         break ; Forces the outer While loop to only run once, acting like a labeled block.
     }
-
-    ResetIndicators()
 }
 
 ; ══════════════════════════════════════════════
@@ -957,9 +924,32 @@ SmartCountdown(TotalSec, UIEl, ActiveText) {
 ; ══════════════════════════════════════════════
 ;  RESET
 ; ══════════════════════════════════════════════
+
+StartIndicators() {
+    global StatusText, Process_UI, Key_UI, TotalRunTime_UI
+    global SkillPtsCount_In, SkillPtsWant_In, CarCount_In, CarSelect_UI, PremiumCheck_UI
+
+    StatusText.Value 	:= "⬤  Running..."
+    StatusText.SetFont("c" cActive)
+
+    Process_UI.SetFont("c" cHighlight)
+    Key_UI.SetFont("c" cHighlight)
+    TotalRunTime_UI.SetFont("c" cHighlight)
+
+    SkillPtsCount_In.Enabled := false
+    SkillPtsWant_In.Enabled := false
+    CarCount_In.Enabled := false
+    CarSelect_UI.Enabled := false
+    PremiumCheck_UI.Enabled := false
+
+    SetTimer(TotalTimerTick, 1000)
+}
+
 ResetIndicators() {
     global Key_UI, Process_UI, StatusText, cIdle, cTextDim
     global RaceCount_UI, TotalRunTime_UI, RaceRunTime_UI, BuyRunTime_UI, UnlockRunTime_UI, RaceCount, ActiveMode, MasterMode
+    global SkillPtsCount_In, SkillPtsWant_In, CarCount_In, CarSelect_UI, PremiumCheck_UI
+
     SetTimer(RaceTimerTick, 0)
     SetTimer(BuyTimerTick, 0)
     SetTimer(UnlockTimerTick, 0)
@@ -967,28 +957,33 @@ ResetIndicators() {
         SetTimer(TotalTimerTick, 0)
     }
     ActiveMode := ""
-    try {
-        Key_UI.Value := "➡️ Key     —   [  ]"
-        Key_UI.SetFont("c" cIdle)
-        Process_UI.Value := "⚙️ Process     —   Waiting..."
-        Process_UI.SetFont("c" cIdle)
-        TotalRunTime_UI.SetFont("c" cIdle)
-		RaceRunTime_UI.SetFont("c" cIdle)
-		BuyRunTime_UI.SetFont("c" cIdle)
-		UnlockRunTime_UI.SetFont("c" cIdle)
-        ;RaceCount_UI.SetFont("c" cIdle)
-		PointsCount_UI.SetFont("c" cIdle)
-		CarCount_UI.SetFont("c" cIdle)
-		SWheelCount_UI.SetFont("c" cIdle)
-		WheelCount_UI.SetFont("c" cIdle)
-        CreditCount_UI.SetFont("c" cIdle)
-        StatusText.Value := "⬤  Stopped"
-        StatusText.SetFont("c" cTextDim)
-    }
+    Key_UI.Value := "➡️  [  ]"
+    Key_UI.SetFont("c" cIdle)
+    Process_UI.Value := "⚙️  Waiting..."
+    
+    Process_UI.SetFont("c" cIdle)
+    TotalRunTime_UI.SetFont("c" cIdle)
+    RaceRunTime_UI.SetFont("c" cIdle)
+    BuyRunTime_UI.SetFont("c" cIdle)
+    UnlockRunTime_UI.SetFont("c" cIdle)
+    ;RaceCount_UI.SetFont("c" cIdle)
+    PointsCount_UI.SetFont("c" cIdle)
+    CarCount_UI.SetFont("c" cIdle)
+    SWheelCount_UI.SetFont("c" cIdle)
+    WheelCount_UI.SetFont("c" cIdle)
+    CreditCount_UI.SetFont("c" cIdle)
+    StatusText.Value := "⬤  Stopped"
+    StatusText.SetFont("c" cTextDim)
+    
+    SkillPtsCount_In.Enabled := true
+    SkillPtsWant_In.Enabled := true
+    CarCount_In.Enabled := true
+    CarSelect_UI.Enabled := true
+    PremiumCheck_UI.Enabled := true
 }
 
 ; ══════════════════════════════════════════════
-;  UPDATE INPUT
+;  UPDATE VALUE INPUT
 ; ══════════════════════════════════════════════
 
 UpdateCar(ctrl,*) {
@@ -1148,7 +1143,7 @@ TotalTimerTick() {
     mins := TotalRunSeconds // 60
     secs := Mod(TotalRunSeconds, 60)
 
-    TotalRunTime_UI.Value := "⏱   Total Time Running   —   " Format("{:02d}:{:02d}", mins, secs)
+    TotalRunTime_UI.Value := "⏱ Total Time Running   —   " Format("{:02d}:{:02d}", mins, secs)
 }
 
 RaceTimerTick() {
@@ -1177,66 +1172,43 @@ UnlockTimerTick() {
 
     UnlockRunTime_UI.Value := "⏱   Unlock Time Running   —   " Format("{:02d}:{:02d}", mins, secs)
 }
-
 ; ══════════════════════════════════════════════
-;  MISC FUNCTIONS
+;  PIXEL DETECTION
 ; ══════════════════════════════════════════════
 
-WriteNumber(num) {
-    for digit in StrSplit(String(num))
-    {
-        Send("{" digit "}")
-        Sleep(50) ; optional delay between key presses
-    }
-}
-
-; WaitForMenuRelative(ratioX, ratioY, targetColor, targetColorHDR, timeoutMs := 8000, postDelayMs := 1000) {
-;     global ActiveMode, MasterMode, MasterStart
-;     CoordMode("Pixel", "Screen") 
-;     StartTime := A_TickCount
-    
-;     actualX := Round(ratioX * A_ScreenWidth)
-;     actualY := Round(ratioY * A_ScreenHeight)
-
-;     Loop {
-;         if (ActiveMode != "Race" && ActiveMode != "Buy" && ActiveMode != "Unlock"|| (!MasterMode && MasterStart))
-;             return false
-            
-;         if (PixelGetColor(actualX, actualY) = targetColor || PixelGetColor(actualX, actualY) = targetColorHDR) {
-;             if (postDelayMs > 0)
-;                 Sleep(postDelayMs) ; ── Added directly here! Delays before returning true.
-;             return true 
-;         }
-
-;         if (A_TickCount - StartTime > timeoutMs) {
-;             Process("Sync Error: Menu timed out!")
-;             return false
-;         }
-;         Sleep(50) 
-;     }
-; }
-
-WaitForMenuRelative(ratioX, ratioY, targetColor, targetColorHDR := "", timeoutMs := 10000, postDelayMs := 1000, isFatal := false, variation := 0) {
+WaitForMenuRelative(text, ratioX, ratioY, targetColor, targetColorHDR := "", timeoutMs := 8000, postDelayMs := 1000, isFatal := false, variation := 0) {
     global ActiveMode, MasterMode, MasterStart
     CoordMode("Pixel", "Screen") 
     StartTime := A_TickCount
+    LastSec := -1 ; ── Tracks seconds to prevent spamming your status window
     
     actualX := Round(ratioX * A_ScreenWidth)
     actualY := Round(ratioY * A_ScreenHeight)
 
     Loop {
-        ; Global safety abort check
         if (ActiveMode != "Race" && ActiveMode != "Buy" && ActiveMode != "Unlock" || (!MasterMode && MasterStart))
             return false
             
-        ; 1. Check Standard Color (with shade variation tolerance)
+        ; ── ⏳ SMOOTH COUNTDOWN LOGIC ─────────────────────────────────────────
+        RemainingSec := Ceil((timeoutMs - (A_TickCount - StartTime)) / 1000)
+        if (RemainingSec < 0) 
+            RemainingSec := 0
+            
+        ; Only calls Process() when a full second actually ticks down
+        if (RemainingSec != LastSec) {
+            Process(text " (" RemainingSec "s)")
+            LastSec := RemainingSec
+        }
+        ; ─────────────────────────────────────────────────────────────────────
+
+        ; 1. Check Standard Color
         if PixelSearch(&foundX, &foundY, actualX, actualY, actualX, actualY, targetColor, variation) {
             if (postDelayMs > 0)
                 Sleep(postDelayMs)
             return true 
         }
 
-        ; 2. Check HDR Color (if provided, with shade variation tolerance)
+        ; 2. Check HDR Color
         if (targetColorHDR != "" && PixelSearch(&foundX, &foundY, actualX, actualY, actualX, actualY, targetColorHDR, variation)) {
             if (postDelayMs > 0)
                 Sleep(postDelayMs)
@@ -1246,13 +1218,11 @@ WaitForMenuRelative(ratioX, ratioY, targetColor, targetColorHDR := "", timeoutMs
         ; 3. Handle Timeout
         if (A_TickCount - StartTime > timeoutMs) {
             if (isFatal) {
-                ; HARD FAIL: Stops the entire macro execution
                 Process("Sync Error: Menu timed out!")
                 return false
             } else {
-                ; SOFT FAIL: Logs a warning, waits a brief moment, and continues anyway!
                 Process("Sync Warning: Pixel missed. Proceeding blindly...")
-                Sleep(2000) ; Fallback safety cushion to allow slow PCs to finish loading
+                Sleep(2000)
                 return true 
             }
         }
@@ -1271,6 +1241,68 @@ GetCoordsColor() {
     
     ToolTip("Copied Relative Coords!`nRatio X: " ratioX "`nRatio Y: " ratioY "`nColor: " color)
     SetTimer(() => ToolTip(), -3000)
+}
+
+; ══════════════════════════════════════════════
+;  KEY AND PROCESS
+; ══════════════════════════════════════════════
+
+PressKey(key, delay := 500) {
+    global Key_UI, cHighlight, cIdle
+
+    ; 1. Determine UI Display Name (Supports grouping multiple cases)
+    switch key {
+        case "Down":  displayname := "↓"
+        case "Up":    displayname := "↑"
+        case "Left":  displayname := "←"
+        case "Right": displayname := "→"
+        case "w down", "w up": displayname := "W"
+        Default : displayname := key
+    }
+
+    Key_UI.Value := "➡️  [ " displayName " ]"
+
+    ; 2. Handle Space Modifiers (e.g., splitting "w" and "down")
+    cleanKey := key
+    suffix := ""
+    if InStr(key, " ") {
+        parts := StrSplit(key, " ")
+        cleanKey := parts[1]   ; Contains just "w"
+        suffix := " " parts[2] ; Contains " down" or " up"
+    }
+
+    ; 3. Convert the key to a physical Scan Code dynamically
+    if (scCode := GetKeySC(cleanKey)) {
+        ; Convert integer to 3-digit Hex string (e.g., 17 becomes "011")
+        hexSC := Format("{:03X}", scCode)
+        sendKey := "sc" hexSC suffix
+    } else {
+        ; Fallback to the original text if AHK doesn't recognize the key
+        sendKey := key
+    }
+
+    ; 4. Send the hardware level scan code
+    Send("{" sendKey "}")
+    
+    Sleep(delay)
+}
+
+Process(text) {
+    global Process_UI
+
+    Process_UI.Value := "⚙️  " text
+}
+
+; ══════════════════════════════════════════════
+;  MISC FUNCTIONS
+; ══════════════════════════════════════════════
+
+WriteNumber(num) {
+    for digit in StrSplit(String(num))
+    {
+        Send("{" digit "}")
+        Sleep(50) ; optional delay between key presses
+    }
 }
 
 ; ══════════════════════════════════════════════

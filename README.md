@@ -1,9 +1,10 @@
+# Forza Horizon 6 Wheelspin Macro
+
 An AutoHotkey v2 automation tool designed for Forza Horizon 6, featuring a custom GUI, pixel-aware session tracking, and structured automation workflows to streamline repetitive in-game progression tasks.
 
 <p align="center">
   <img width="278" height="827" alt="Screenshot 2026-06-11 030128" src="https://github.com/user-attachments/assets/cc2ce940-ee29-42fb-a972-6d39df4aa094">
   <img width="276" height="825" alt="Screenshot 2026-06-11 030139" src="https://github.com/user-attachments/assets/c20e98c0-9a2f-446e-985a-6b2e4232cb09">
-
 </p>
 
 ---
@@ -52,35 +53,24 @@ Before installing, ensure your system strictly meets the following layout and co
 1. Download the latest version of AutoHotkey v2 and install it.
 2. Clone this repository or download it as a ZIP file:
 ```bash
-   git clone https://github.com/M-Haziq-Iqbal/Forza-Horizon-6-Wheelspin-Macro.git
+   git clone [https://github.com/M-Haziq-Iqbal/Forza-Horizon-6-Wheelspin-Macro.git](https://github.com/M-Haziq-Iqbal/Forza-Horizon-6-Wheelspin-Macro.git)
 ```
 3. Extract the files (if downloaded as a ZIP) to a dedicated folder.
 4. Double-click the `FH6_Macro_CyberNoir.ahk` file to launch the application interface.
 
 ---
 
-## 🚀 Quick Start
-
-1. Launch Forza Horizon 6 and load into the Home Menu.
-2. Ensure your game is set to **16:9 Resolution** and **Fullscreen**.
-3. Verify your primary vehicle controls are bound to **WASD**.
-4. Ensure the Subaru Impreza 22B-STi Version is your only Favorited vehicle.
-5. Apply Tune Share Code `293 391 902` and disable the Skills HUD.
-6. Start the macro application and trigger your desired mode.
-
----
-
 ## ✨ Key Features
 
 * 🎨 Custom GUI layout with dark/light theme options on-the-fly.
+* ⌨️ **Hardware-Level Input:** Employs low-level physical scan codes (`GetKeySC`) inside `PressKey()` for absolute reliability, minimizing input drops and bypassing focus errors.
 * 👁️ **Pixel-Aware Engine:** Dynamic menu loading synchronization checks to systematically mitigate desync issues.
+* 💎 **Premium User Support:** Adapts purchasing pathways contextually for Premium players.
 * 📊 Real-time session runtime telemetry and calculated progress logs.
-* 🏁 Automated race loop execution with recovery checks.
+* 🏁 Automated race loop execution with structural timing cushions and recovery checks.
 * 🚗 Fast-navigation car purchasing routines.
 * 🛞 Automated wheelspin and cash reward perk unlocking.
 * 📈 Skill point estimation tracking and continuous calibration logic.
-* ⚙️ Modular process state architecture built inside performance-oriented Switch nodes.
-* ⌨️ Hotkey-driven script control mapping with instant pause tools.
 * 📋 Click-to-copy in-game share code integration.
 * 🛠️ **Developer Diagnostic Tool:** Integrated automated coordinate/color calibration utility.
 
@@ -99,6 +89,7 @@ Runs only the race automation process.
 Runs only the vehicle purchasing process.
 * Navigates to the designated vehicle layout efficiently based on your selection.
 * Buys the exact matching vehicle configuration stack up to your target count.
+* Dynamically shifts execution pathways based on the status of your `PremiumCheck_UI` checkbox toggle.
 
 ### 🛞 Unlock Mode (Hotkey `]`)
 Runs only the reward unlocking process.
@@ -114,10 +105,10 @@ Combines all processes into a single continuous workflow (Race → Buy → Unloc
 ## 🧠 Core Systems
 
 ### 🎛️ Automation Engine
-Controls in-game navigation using predefined key sequences, featuring responsive color-sampling verification layers (`WaitForMenuRelative`) to ensure menus are fully rendered before issuing subsequent commands.
+Controls in-game navigation via rock-solid hardware scan codes (`GetKeySC`), featuring responsive color-sampling verification layers (`WaitForMenuRelative`) to ensure menus are fully rendered before issuing subsequent commands.
 
 ### 📊 Telemetry System
-Actively tracks total running time, loop-specific session times, total acquired cars, and calculated point outputs.
+Actively tracks total running time, loop-specific session times, total acquired cars, and calculated point outputs with a clean, unified presentation.
 
 ### 🧮 Progress Estimation
 Uses calculated internal algorithms to estimate real-world session metrics, required item counts, and completion windows.
@@ -132,7 +123,9 @@ You can choose which vehicle the macro purchases and unlocks perks for via the G
 | --- | --- | --- | --- | --- | --- |
 | **Subaru Impreza 22B-STi Version (1998)** | 86,000 CR | 81,700 CR | 1x Super Wheelspin | 30 Points | **Budget Wheelspins:** Low-cost entry point for farming steady Super Wheelspins. |
 | **Lamborghini Revuelto (2024)** | 365,000 CR | 346,750 CR | 1x Super Wheelspin + 3x Regular Wheelspins | 39 Points | **Max Yield:** Dumps heavy credits to maximize total wheelspin volume as fast as possible. |
-| **Dodge Viper GTS ACR (1999)** | 68,000 CR | 64,600 CR | 150,000 CR | 30 Points | **Credit Flipping:** Converts Skill Points back into raw cash for a quick return or a near-full vehicle refund. |
+| **Dodge Viper GTS ACR (1999)**\* | 68,000 CR | 64,600 CR | 150,000 CR | 30 Points | **Credit Flipping:** Converts Skill Points back into raw cash for a quick return or a near-full vehicle refund. |
+
+> \* **Note on Dodge Viper GTS ACR:** If you are running a premium account that adjusts this vehicle's placement menu position, ensure you check the **Premium Check** box on the GUI to safely adjust menu tracking layouts.
 
 ---
 
@@ -226,7 +219,7 @@ Navigate to **Settings → HUD & Gameplay → What's Next** and turn it **OFF**.
 
 ---
 
-## 🖥️ Recommended Screen Settings Setup
+## 🖥️ Recommended Screen Setting Setup
 For the pixel colour synchronization system to work at maximum speed and accuracy, your setup **must** meet these conditions:
 * **Display Mode:** Fullscreen Only
 * **Aspect Ratio:** 16:9 Only (1280×720, 1920×1080, 2560×1440, etc.)
@@ -259,10 +252,32 @@ Navigate to **Settings → HUD & Gameplay** and adjust the UI boundaries to the 
 **A:** Ensure your game is in dedicated **Fullscreen** mode, using a **16:9 resolution**, and verify that absolutely no window panels, overlays, or pop-ups are obscuring the **left half of your screen**. 
 
 ### Q: The vehicle does not turn or navigate menus properly.
-**A:** Double-check your active controls configuration profile. The macro hooks onto default **WASD keyboard mappings** to manipulate menus and vehicles. If your key bindings differ, the actions will fail.
+**A:** The macro hooks into default **WASD keyboard mappings** to manipulate menus and vehicles. Version 1.2.2 now translates keys directly into hardware scan codes (`GetKeySC`) to support all keyboard layouts.
 
 ### Q: The vehicle collides with walls during the EventLab loop session.
 **A:** Double-check your simulation preferences profile setup against the difficulty parameters. Both **Auto-Steering** and **Assisted Braking** must be enabled for the vehicle path automation routine to process cleanly without human inputs.
+
+## ❓ Pixel Detection FAQ
+
+### Q: The script keeps giving me a "Menu timed out!" error, but the menu is clearly open. What's wrong?
+**A:** There are two common culprits for a false timeout:
+1. **Incorrect HUD Scale / Safe Frame:** If you adjusted your UI scale or safe frame bounds in the game settings, the menus will physically move, causing the script to look at the wrong coordinates. Reset them to **Default**.
+2. **Graphics Filters:** Programs like GeForce Experience (Alt+F3 filters), f.lux, or Windows "Night Light" alter screen colors in real time, blinding the script. Turn them off while farming.
+
+### Q: Can I turn off my monitor while running the macro overnight?
+**A:** **Yes, but only by pressing the physical power button on your monitor.**
+* **Do NOT** let Windows put the display to sleep (Power Saving Mode).
+* **Do NOT** lock your PC (`Win + L`) or sign out. 
+Doing either of these stops Windows from rendering the game engine to your graphics card's frame buffer, turning the script's vision completely black. If you want to go completely headless (unplugged), use an **HDMI Dummy Plug / EDID Emulator**.
+
+### Q: Can I use Discord, watch YouTube, or stream while it runs?
+**A:** Yes, as long as those windows do not cover the **left half of your screen**. The script reads critical UI elements situated on the left side (like the mini-map and Pause Menu tabs). Any overlay (Discord overlay, Steam overlay, Twitch chat widgets) layered on top of the game will block the script from reading the game's actual pixels.
+
+### Q: Why does this macro require a 16:9 aspect ratio?
+**A:** The script uses absolute screen-percentage math to find menu elements. On an Ultrawide (21:9) or older office monitor (16:10/4:3), the game stretches or adds black bars. This physics shift pushes the UI buttons away from their standard 16:9 geometric positions, making the script look in empty space.
+
+### Q: I keep seeing "Sync Warning: Pixel missed. Proceeding blindly..." in the console. Is the script broken?
+**A:** No! This is the built-in **Soft-Fail Safety Net**. If your PC lags or your graphic settings cause a slight color mismatch, the script recognizes it missed the pixel. Instead of crashing out and breaking the farm loop, it logs a warning, waits a brief 2-second buffer for safety, and continues running the sequence normally.
 
 ---
 
