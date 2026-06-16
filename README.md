@@ -13,7 +13,6 @@ An AutoHotkey v2 automation tool designed for Forza Horizon 6, featuring a modul
 - [Overview](#-overview)
 - [Prerequisites](#%EF%B8%8F-prerequisites)
 - [Installation](#-installation)
-- [Quick Start](#-quick-start)
 - [Key Features](#-key-features)
 - [Automation Modes](#-automation-modes)
 - [Core Systems](#-core-systems)
@@ -55,13 +54,25 @@ Before installing, ensure your system meets the following layout and control req
 
 ## 📥 Installation
 
-1. Download the latest version of AutoHotkey v2 and install it.
+> 🚀 **Don't want to deal with scripts?** 
+> You don't need to install AutoHotkey! Just head over to the **[Latest Release](https://github.com/M-Haziq-Iqbal/Forza-Horizon-6-Wheelspin-Macro/releases/latest)**, download the pre-compiled `FH6_Macro_CyberNoir.exe`, and double-click to run.
+
+### ⚡ Option A: The Easy Way (Recommended)
+1. Navigate to the **[Releases](https://github.com/M-Haziq-Iqbal/Forza-Horizon-6-Wheelspin-Macro/releases/latest)** section on the right-hand sidebar of this page.
+2. Click on the latest version (e.g., `v1.5.0`).
+3. Under the **Assets** dropdown at the bottom of the release notes, click on `FH6_Macro_CyberNoir.exe` to download it.
+4. Right-click the downloaded file launch the application interface.
+
+### 💻 Option B: Running from Source (For Devs)
+1. Download and install [AutoHotkey v2](https://www.autohotkey.com).
 2. Clone this repository or download it as a ZIP file:
 ```bash
-   `git clone https://github.com/M-Haziq-Iqbal/Forza-Horizon-6-Wheelspin-Macro.git`
+   git clone https://github.com/M-Haziq-Iqbal/Forza-Horizon-6-Wheelspin-Macro.git
 ```
 3. Extract the files (if downloaded as a ZIP) into a dedicated folder, ensuring all modular script files and dependencies (including `OCR.ahk`) remain in the same directory.
-4. Double-click the main `main.ahk` file to launch the application interface. **Note:** If the macro inputs do not register properly in-game, right-click the file and select **Run as Administrator**.
+4. Double-click the `main.ahk` file to launch the application interface.
+
+**Note:** If the macro inputs do not register properly in-game, right-click the file and select **Run as Administrator**.
 
 ---
 
