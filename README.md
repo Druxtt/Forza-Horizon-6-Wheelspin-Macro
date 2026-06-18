@@ -67,7 +67,7 @@ Before installing, ensure your system meets the following layout and control req
 1. Download and install [AutoHotkey v2](https://www.autohotkey.com).
 2. Clone this repository or download it as a ZIP file:
 ```bash
-   `git clone https://github.com/M-Haziq-Iqbal/Forza-Horizon-6-Wheelspin-Macro.git`
+   git clone https://github.com/M-Haziq-Iqbal/Forza-Horizon-6-Wheelspin-Macro.git
 ```
 3. Extract the files (if downloaded as a ZIP) into a dedicated folder, ensuring all modular script files and dependencies (including `OCR.ahk`) remain in the same directory.
 4. Double-click the `main.ahk` file to launch the application interface.
@@ -309,7 +309,7 @@ Navigate to **Settings → HUD & Gameplay** and adjust the UI boundaries to the 
 **A:** Ensure your game is in dedicated **Fullscreen** mode (or configured **Borderless Fullscreen** if using Special K background setups), using a **16:9 resolution**, and verify that absolutely no window panels, overlays, or pop-ups are obscuring the **left half of your screen**. The pixel coordinate used for identifying a successful free roam return relies on checking the active **ANNA** UI button instead of the old House icon. If issues persist, consider shifting the Delay Multiplier slider to a higher value to scale up detection timeouts.
 
 ### Q: The macro runs but clicks or keystrokes do not register in-game.
-**A:** Windows security policies often block automated inputs within high-privilege applications like games. Close the macro, right-click `FH6_Macro_CyberNoir.exe` or `Main.ahk`, and select **Run as Administrator** to grant the execution loop necessary device input privileges.
+**A:** Windows security policies often block automated inputs within high-privilege applications like games. Close the macro, right-click `FH6 Wheelspin Macro - CyberNoir.exe` or `Main.exe or` `Main.ahk`, and select **Run as Administrator** to grant the execution loop necessary device input privileges.
 
 ### Q: The vehicle does not turn or navigate menus properly.
 **A:** The macro hooks into default background mappings using hardware scan codes (`ControlSend`) targeted directly to `ahk_exe ForzaHorizon6.exe`. Ensure the target process name matches exactly. If you are attempting background execution, confirm that keyboard input has been enabled in Special K's Input Management settings.
