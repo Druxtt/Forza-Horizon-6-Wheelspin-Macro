@@ -184,12 +184,21 @@ You can choose which vehicle the macro purchases and unlocks perks for via the G
 Before using the macro, ensure your game is properly configured. The automation relies on consistent menus, pixel checking, and layout positioning.
 
 ### 🏁 Starting Position
-Make sure you are in the Home Menu, loaded fully into an active session (no loading screens), with active keyboard input before starting any session. 
 
-📌 All sessions use this identical baseline starting structure.
+Depending on the automation mode you intend to execute, make sure your game client is positioned at the correct baseline menu structure:
+
+#### For Full Loop / Race / Buy / Unlock Modes
+Make sure you are in the Home Menu, loaded fully into an active session (no loading screens), with active keyboard input before starting any session.
 
 <p align="center">
   <img width="2559" height="1439" alt="Starting Position" src="https://github.com/user-attachments/assets/e6c585b4-264e-4a4c-8cf8-8d4ed7144ffc"> 
+</p>
+
+#### For Wheelspin / Spin Mode
+Open the pause menu and navigate over to the **My Horizon** tab. Use your keyboard controls to highlight/hover over the specific wheelspin tile (Regular Wheelspin or Super Wheelspin) that you intend to farm, **without actually entering or clicking into the menu selection**.
+
+<p align="center">
+  <img width="2559" height="1439" alt="image" src="https://github.com/user-attachments/assets/3a4ce3b7-f695-4cf4-a174-64ee42cd2c29" />
 </p>
 
 ### 🔁 Special K Background Play Setup (Optional)
