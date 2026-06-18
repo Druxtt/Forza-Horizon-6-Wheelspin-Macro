@@ -3,8 +3,9 @@
 An AutoHotkey v2 automation tool designed for Forza Horizon 6, featuring a modular architecture, custom GUI, optical character recognition (OCR), pixel-aware session tracking, and structured automation workflows to streamline repetitive in-game progression tasks.
 
 <p align="center">
-  <img width="277" height="1162" alt="Screenshot 2026-06-17 032307" src="https://github.com/user-attachments/assets/0d939947-2cf9-4ac3-89ad-2247654b03a3" />
-  <img width="276" height="1160" alt="Screenshot 2026-06-17 032322" src="https://github.com/user-attachments/assets/3d3733cc-311c-4646-89ba-c064a09ffa47" />
+  <img width="274" height="758" alt="Screenshot 2026-06-18 163359" src="https://github.com/user-attachments/assets/0fdd608c-444c-4395-854a-54655f1e1e4e" />
+  <img width="274" height="886" alt="Screenshot 2026-06-18 163413" src="https://github.com/user-attachments/assets/c36c5266-73a0-4ae3-91e8-848f1a65e1fa" />
+  <img width="274" height="758" alt="Screenshot 2026-06-18 163343" src="https://github.com/user-attachments/assets/2a9e6afb-8014-46c8-9d36-b8df9d225cfc" />
 </p>
 
 ---
@@ -209,7 +210,7 @@ To enable background execution so that the macro functions seamlessly while you 
 Ensure the EventLab system is accessible. **The automatic share-code entry mechanism has been completely removed.**
 
 *   **CRITICAL ENTRY SELECTION REQUIREMENT:** You **must** add your preferred EventLab track to your in-game Favorites list and make sure it is sorted as the **very first entry (index 1)** in that list. The script uses precise grid paging (`pgDn`) to select the first option instantly.
-*   **AMMAGEDON (Default Profile):** Now the default track profile. Highly optimized using dynamic pixel color evaluations for automated turning adjustments and structured braking parameters to prevent wall crashing. This profile delivers reliable max-score processing of up to 990 points across 100 sections, averaging 9.9 points per section. Ensure your game is locked to a **minimum of 60 FPS** to preserve physics timing and prevent synchronization drops.
+*   **AMMAGEDON (Default Profile):** Now the default track profile. Highly optimized using dynamic pixel color evaluations for automated turning adjustments and structured braking parameters to prevent wall crashing. This profile delivers reliable max-score processing of up to 990 points across 100 sections, averaging 9.9 points per section. Ensure your game is locked to a **recommended 60 FPS** to preserve physics timing and prevent synchronization drops.
 *   **LIQUIDPOTATO:** Available as an alternate legacy profile layout known for high structural path consistency during long overnight runs.
 
 <p align="center">
@@ -254,10 +255,10 @@ Verify your in-game configurations match the settings below for maximum consiste
 | Braking | ASSISTED |
 | Steering | AUTO-STEERING |
 | Shifting | AUTOMATIC |
-| Framerate | **60 FPS Minimum** |
+| Framerate | **60 FPS Recommended** |
 
 <p align="center">
-  <img width="2559" height="1438" alt="Difficulty Settings" src="https://github.com/user-attachments/assets/43f2059b-4fb6-4540-a573-7ff43abfd561">
+  <img width="2559" height="1439" alt="Screenshot 2026-06-17 215443" src="https://github.com/user-attachments/assets/3d48c1f9-904d-434b-8bcf-fe21cc16cffc" />
 </p>
 
 ### 🚫 Disable Skills HUD
@@ -278,11 +279,17 @@ Navigate to **Settings → HUD & Gameplay → What's Next** and turn it **OFF**.
 
 ## 🖥️ Recommended Screen Setting Setup
 For the pixel colour synchronization system to work at maximum speed and accuracy, your setup **must** meet these conditions:
+* **HDR:** Off
+* **Brighness:** 50
 * **Display Mode:** Fullscreen Only (Or Borderless Fullscreen when using Special K setup)
 * **Aspect Ratio:** 16:9 Only (1280×720, 1920×1080, 2560×1440, etc.)
 * **HUD Safe Frame:** Default Calibration
 * **Screen Clearance:** The **left half of your screen must be completely clear**. Turn off any Discord overlays, stream chat widgets, or floating windows, as they may block the script from reading the HUD pixels.
- 
+
+<p align="center">
+  <img width="2559" height="1439" alt="Screenshot 2026-06-17 215625" src="https://github.com/user-attachments/assets/46265802-0e86-4b81-90fe-5329ab5245e9" />
+</p>
+
 > *Note: If these requirements are not met, the script will automatically switch to a slower, time-based fallback mode to prevent crashing, but your farming speed will drop noticably and some flows might not work correctly.*
 
 ### ⚠️ Keep Left Half of Screen Uncovered!
