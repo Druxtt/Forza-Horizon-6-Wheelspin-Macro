@@ -36,6 +36,7 @@ global SectorCount_UI   := ""
 global SpinRunTime_UI   := ""
 global SpinOpenCount_UI := ""
 global SpinLeftCount_UI := ""
+global MonitorSelect_UI := ""
 
 ; ══════════════════════════════════════════════
 ;  PALETTE COMPOSER
@@ -207,7 +208,7 @@ BuildGui(savedVals := "") {
     global SpinRunTime_UI, SpinOpenCount_UI, SpinLeftCount_UI
     global TotalRunTime_UI, RaceRunTime_UI, BuyRunTime_UI, UnlockRunTime_UI, SectorCount_UI
     global PointsLabel_UI, TimeLabel_UI, CarsLabel_UI, SectorLabel_UI
-    global CodeSelect_UI, DelaySlider_UI, SpeedLabel_UI
+    global CodeSelect_UI, DelaySlider_UI, SpeedLabel_UI, MonitorSelect_UI
     global Key_UI, Process_UI, CodeTune_UI, CodeEventLab_UI, CarSelect_UI
     global SkillPtsCount_In, SkillPtsWant_In, CarCount_In, LoopCount_In
     global AveragePoints, MaxPoints, PointsTotal, PointsGain, TimeTotal
@@ -392,6 +393,17 @@ BuildGui(savedVals := "") {
     
     DelaySlider_UI.OnEvent("Change", UpdateSpeed)
 
+    ; ── Monitor Selector ──────────────────────
+    SetFixedFont(MyGui, 9, "norm", "Light")
+    MyGui.Add("Text", "x30 y+25 w155 BackgroundTrans c" p["text"], "⟡  Game Monitor")
+    MonitorSelect_UI := MyGui.Add("Text", "x179 yp-3 w63 Center 0x200 Background" p["editBg"] " c" p["text"], "")
+    MonitorSelect_UI.DefineProp("Value", {
+        get: (this) => this.HasOwnProp("ctrlMonitor") ? this.ctrlMonitor : 1,
+        set: (this, val) => (this.ctrlMonitor := val, ControlSetText(val "   ▼", this.Hwnd, this.Gui.Hwnd))
+    })
+    MonitorSelect_UI.Value := GameMonitor
+    MonitorSelect_UI.OnEvent("Click", ShowMonitorMenu)
+
     ; ── Cyber Dropdown: Code Selector ─────────
     SetFixedFont(MyGui, 8, "bold")
     CodeSelect_UI := MyGui.Add("Text", "x85 y+25 w100 h24 Center 0x200 Background" p["editBg"] " c" p["text"])
@@ -533,6 +545,21 @@ MenuSelectCode(index, *) {
     global CodeSelect_UI
     CodeSelect_UI.Value := index 
     try UpdateCode(CodeSelect_UI, "")
+}
+
+ShowMonitorMenu(ctrl, *) {
+    monMenu := Menu()
+    count := MonitorGetCount()
+    Loop count {
+        monMenu.Add("Monitor " A_Index, MenuSelectMonitor.Bind(A_Index))
+    }
+    monMenu.Show()
+}
+
+MenuSelectMonitor(index, *) {
+    global GameMonitor, MonitorSelect_UI
+    GameMonitor := index
+    MonitorSelect_UI.Value := index
 }
 
 ; ══════════════════════════════════════════════

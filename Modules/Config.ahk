@@ -67,3 +67,9 @@ global CodeTune         := "293391902"
 global CodeEventLab     := "102089819"
 
 global GuiWidth         := "w270"
+
+; ══════════════════════════════════════════════
+;  MONITOR SETTINGS
+; ══════════════════════════════════════════════
+; Set to 1 for primary monitor, 2 for second monitor, etc.
+global GameMonitor      := 1

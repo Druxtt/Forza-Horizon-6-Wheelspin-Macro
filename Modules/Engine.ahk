@@ -383,13 +383,23 @@ SpinTimerTick() {
 ;  PIXEL DETECTION
 ; ══════════════════════════════════════════════
 
+GetMonitorOffset(&mLeft, &mTop, &mWidth, &mHeight) {
+    global GameMonitor
+    MonitorGet(GameMonitor, &Left, &Top, &Right, &Bottom)
+    mLeft   := Left
+    mTop    := Top
+    mWidth  := Right - Left
+    mHeight := Bottom - Top
+}
+
 GetCoordsColor() {
     CoordMode("Mouse", "Screen")
     CoordMode("Pixel", "Screen")
     MouseGetPos(&x, &y)
     color := PixelGetColor(x, y)
-    ratioX := x / A_ScreenWidth
-    ratioY := y / A_ScreenHeight
+    GetMonitorOffset(&mLeft, &mTop, &mWidth, &mHeight)
+    ratioX := (x - mLeft) / mWidth
+    ratioY := (y - mTop)  / mHeight
     A_Clipboard := Format("{:.3f}, {:.3f}, `"{}`"", ratioX, ratioY, color)
     
     ToolTip("Copied Relative Coords!`nRatio X: " ratioX "`nRatio Y: " ratioY "`nColor: " color)
@@ -402,8 +412,9 @@ WaitForMenuRelative(text, ratioX, ratioY, targetColor, targetColorHDR := "", tim
     StartTime := A_TickCount
     LastSec := -1 ; ── Tracks seconds to prevent spamming your status window
     
-    actualX := Round(ratioX * A_ScreenWidth)
-    actualY := Round(ratioY * A_ScreenHeight)
+    GetMonitorOffset(&mLeft, &mTop, &mWidth, &mHeight)
+    actualX := mLeft + Round(ratioX * mWidth)
+    actualY := mTop  + Round(ratioY * mHeight)
 
     timeoutMs *= CurrentMultiplier
     postDelayMs *= CurrentMultiplier
@@ -488,10 +499,11 @@ SkillPtsScan(ratioX, ratioY, ratioW, ratioH, delay:= 1000) {
 
 ScanNumber(ratioX, ratioY, ratioW, ratioH) {
     ; 1. Setup the bounding box based on your exact coordinates
-    startX := Round(ratioX * A_ScreenWidth)
-    startY := Round(ratioY * A_ScreenHeight)
-    width  := Round(ratioW * A_ScreenWidth)
-    height := Round(ratioH * A_ScreenHeight)
+    GetMonitorOffset(&mLeft, &mTop, &mWidth, &mHeight)
+    startX := mLeft + Round(ratioX * mWidth)
+    startY := mTop  + Round(ratioY * mHeight)
+    width  := Round(ratioW * mWidth)
+    height := Round(ratioH * mHeight)
 
     try {
         ; Scan the box
@@ -526,10 +538,11 @@ ScanNumber(ratioX, ratioY, ratioW, ratioH) {
 
 ScanText(ratioX, ratioY, ratioW, ratioH, waitTime:= 0, targetText:="", searchNumber:=false) {
     ; 1. Setup the bounding box based on your exact coordinates
-    startX := Round(ratioX * A_ScreenWidth)
-    startY := Round(ratioY * A_ScreenHeight)
-    width  := Round(ratioW * A_ScreenWidth)
-    height := Round(ratioH * A_ScreenHeight)
+    GetMonitorOffset(&mLeft, &mTop, &mWidth, &mHeight)
+    startX := mLeft + Round(ratioX * mWidth)
+    startY := mTop  + Round(ratioY * mHeight)
+    width  := Round(ratioW * mWidth)
+    height := Round(ratioH * mHeight)
 
     deadline := A_TickCount + waitTime
 
