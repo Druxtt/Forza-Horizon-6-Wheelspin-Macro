@@ -1,6 +1,6 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro		║
-; ║        Cyber Noir Edition v1.6.0        ║
+; ║        Cyber Noir Edition v1.6.1        ║
 ; ╚═════════════════════════════════════════╝
 
 #Requires AutoHotkey v2.0
@@ -69,7 +69,7 @@ RaceLoop() {
         PressKey("PgDn", 100) ; Navigate to Cars Menu
 
         Process("Scanning Skill Points")
-        SkillPtsRaceScan(0.284, 0.717, 0.145, 0.035)
+        SkillPtsRaceScan(0.283, 0.708, 0.060, 0.041)
 
         Process("Navigating to EventLab Menu")
         Loop 2
@@ -94,7 +94,7 @@ RaceLoop() {
         if CheckAbort()
             break
 
-        if !WaitForMenuRelative("Choosing Race Type...", 0.427, 0.594, "0xFFFFFF", , 10000) {
+        if !WaitForMenuRelative("Choosing Race Type...",0.441, 0.609, "0xFFFFFF", , 10000) {
             Process("Sync Error: EventLab search timed out!")
             break
         }
@@ -253,7 +253,8 @@ RaceLoop() {
         PressKey("PgDn") ; Navigate to Cars Menu
 
         Process("Scanning Skill Points")
-        SkillPtsRaceScan(0.284, 0.717, 0.145, 0.035)
+        SkillPtsRaceScan(0.283, 0.708, 0.060, 0.041)
+        ;SkillPtsRaceScan(0.284, 0.717, 0.145, 0.035)
 
         PressKey("PgDn") ; Navigate to My Horizon Menu
         PressKey("Enter") ; Select Return Home
@@ -282,13 +283,17 @@ SkillPtsRaceScan(ratioX, ratioY, ratioW, ratioH, delay:= 1000) {
     points := ScanNumber(ratioX, ratioY, ratioW, ratioH)
 
     if RaceStart {
-        SkillPtsCount_In.Value := points = -1 ?  SkillPtsCount_In.Value : points
-        SkillPtsWant_In.Value := CustomSkillPts ? Min(SkillPtsWant_In.Value, MaxPoints - SkillPtsCount_In.Value) : Min(999 - points, MaxPoints)
 
-        if points = -1
+        if points = -1 {
+            SkillPtsCount_In.Value := SkillPtsCount_In.Value
+            SkillPtsWant_In.Value := CustomSkillPts ? Min(SkillPtsWant_In.Value, MaxPoints - SkillPtsCount_In.Value) : Min(999 - SkillPtsCount_In.Value, MaxPoints)
             ShowNotif("fail", "EventLab Race", "Skill Points Scan Failed. `nDefaulting to previous Skill Points value...")
-        else 
+        }
+        else {
+            SkillPtsCount_In.Value := points
+            SkillPtsWant_In.Value := CustomSkillPts ? Min(SkillPtsWant_In.Value, MaxPoints - points) : Min(999 - points, MaxPoints)
             ShowNotif("info", "EventLab Race", "Starting the EventLab Race with " SkillPtsCount_In.Value " Skill Points.")
+        }
 
         PointsGain := GetMinScore(SkillPtsWant_In.Value)
         PointsTotal := Min(PointsGain + SkillPtsCount_In.Value, 999)
@@ -303,15 +308,20 @@ SkillPtsRaceScan(ratioX, ratioY, ratioW, ratioH, delay:= 1000) {
     }
 
     if !RaceStart {
-        SkillPtsCount_InPrev := SkillPtsCount_In.Value
-        SkillPtsCount_In.Value := points = -1 ? PointsGain : points
-        SkillPtsCount_InNew := SkillPtsCount_In.Value - SkillPtsCount_InPrev
-        SkillPtsWant_In.Value := Min(999 - points, MaxPoints)
 
-        if points = -1
+        SkillPtsCount_InPrev := SkillPtsCount_In.Value
+        SkillPtsCount_InNew := SkillPtsCount_In.Value - SkillPtsCount_InPrev
+    
+        if points = -1 {
+            SkillPtsCount_In.Value := PointsGain
             ShowNotif("fail", "EventLab Race", "Skill Points Scan Failed. `nDefaulting to estimated Skill Points gained...")
-        else 
+        }
+        else {
+            SkillPtsCount_In.Value := points
             ShowNotif("success", "EventLab Race", SkillPtsCount_InNew " Skill Points have been obtained.")
+        }
+
+        SkillPtsWant_In.Value := Min(999 - SkillPtsCount_In.Value, MaxPoints)
     }
 
     return points

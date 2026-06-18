@@ -1,6 +1,6 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro		║
-; ║        Cyber Noir Edition v1.6.0        ║
+; ║        Cyber Noir Edition v1.6.1        ║
 ; ╚═════════════════════════════════════════╝
 
 #Requires AutoHotkey v2.0
@@ -198,7 +198,7 @@ UpdateCar(ctrl,*) {
     CarPurchaseCount := Floor(PointsTotal / SelectedCarPoint)
         
     CarCount_In.Value :=  CarPurchaseCount
-    CarsLabel_UI.Value := "Recommended Car Purchase  —  " CarPurchaseCount
+    CarsLabel_UI.Value := CarPurchaseCount
 }
 
 UpdateSkillPts(ctrl, *) {
@@ -510,7 +510,7 @@ ScanNumber(ratioX, ratioY, ratioW, ratioH) {
         ; ─────────────────────────────────────────────────────────────────────
         
         ; Fallback for 0 points / text-only messages
-        if InStr(scannedText, "Skil") || InStr(scannedText, "Avail") || InStr(scannedText, "No") {
+        if InStr(scannedText, "No") { ; InStr(scannedText, "Skil") || InStr(scannedText, "Avail") || 
             return 0
         }
 

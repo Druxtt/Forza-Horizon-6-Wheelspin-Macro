@@ -1,6 +1,6 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro		║
-; ║        Cyber Noir Edition v1.6.0        ║
+; ║        Cyber Noir Edition v1.6.1        ║
 ; ╚═════════════════════════════════════════╝
 
 #Requires AutoHotkey v2.0
@@ -20,9 +20,9 @@ StartSpin() {
     if (ActiveMode = "Spin") {
         SpinCount             := 0
         SpinRunSeconds        := 0
-        SpinOpenCount_UI.Value    := "🎊   Wheelspin Opened  —   0" 
-        SpinLeftCount_UI.Value    := "🎁   Wheelspin Left  —   0"  
-        SpinRunTime_UI.Value  := "🕓   Spin Time Running   —   00:00"
+        SpinOpenCount_UI.Value    := "0" 
+        SpinLeftCount_UI.Value    := "0"  
+        SpinRunTime_UI.Value  := "00:00"
         
         SpinRunTime_UI.SetFont("c" cHighlight)
         SpinLeftCount_UI.SetFont("c" cHighlight)
@@ -70,8 +70,8 @@ SpinLoop() {
                 PressKey("Enter", 50) ; Skip`
 
             SpinOpenCount++
-            SpinOpenCount_UI.Value    := "🎊   Wheelspin Opened  —   " SpinOpenCount
-            SpinLeftCount_UI.Value    := "🎁   Wheelspin Left  —   " SpinLeftCount
+            SpinOpenCount_UI.Value    := SpinOpenCount
+            SpinLeftCount_UI.Value    := SpinLeftCount
             if (WaitForMenuRelative("Collecting...", 0.058, 0.926, "0xFFFFFF", , 4000, 50, true, , "Collecting...")) {
 
                 if Mod(SpinOpenCount, SpinToOpen) = 0 && SpinOpenCount > 0 {

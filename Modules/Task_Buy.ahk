@@ -1,6 +1,6 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro		║
-; ║        Cyber Noir Edition v1.6.0        ║
+; ║        Cyber Noir Edition v1.6.1        ║
 ; ╚═════════════════════════════════════════╝
 
 #Requires AutoHotkey v2.0
@@ -34,9 +34,6 @@ StartBuy() {
         BuyLoop()
     }
     ResetIndicators()
-
-    if (!MasterMode && CarCount_In.Value > 0)
-        StartUnlock()
 }
 
 BuyLoop() {

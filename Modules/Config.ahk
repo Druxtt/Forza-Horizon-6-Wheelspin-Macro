@@ -1,6 +1,6 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro		║
-; ║        Cyber Noir Edition v1.6.0        ║
+; ║        Cyber Noir Edition v1.6.1        ║
 ; ╚═════════════════════════════════════════╝
 
 #Requires AutoHotkey v2.0
@@ -60,7 +60,7 @@ global MaxSections      := 100
 
 global SpeedLabel_UI    := ""
 global DelaySlider_UI   := ""
-global Multipliers      := [0.25, 0.5, 0.75, 1, 1.5, 2, 2.5]
+global Multipliers      := [0.25, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
 global CurrentMultiplier := 1
 
 global CodeTune         := "293391902"

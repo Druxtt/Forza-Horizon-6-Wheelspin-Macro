@@ -1,6 +1,6 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro		║
-; ║        Cyber Noir Edition v1.6.0        ║
+; ║        Cyber Noir Edition v1.6.1        ║
 ; ╚═════════════════════════════════════════╝
 
 #Requires AutoHotkey v2.0
@@ -25,7 +25,7 @@ StartUnlock() {
         UnlockRunSeconds       := 0
         SkillPtsScanSuccess := false
         CarCount_In.Value      := Floor(SkillPtsCount_In.Value / SelectedCarPoint)
-        CarsLabel_UI.Value     := "Recommended Car Purchase  —  " CarCount_In.Value
+        CarsLabel_UI.Value     := CarCount_In.Value
         SWheelCount_UI.Value   := "0"
         WheelCount_UI.Value    := "0"
         CreditCount_UI.Value   := "0 CR"

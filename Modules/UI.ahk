@@ -1,6 +1,6 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro        ║
-; ║        Cyber Noir Edition v1.6.1       ║
+; ║        Cyber Noir Edition v1.6.1        ║
 ; ╚═════════════════════════════════════════╝
 
 #Requires AutoHotkey v2.0
@@ -387,8 +387,8 @@ BuildGui(savedVals := "") {
     
     SetFixedFont(MyGui, 8, "norm")
     MyGui.Add("Text", "x15 y+8 w25 Right c" p["textDim"], "0.25x")
-    DelaySlider_UI := MyGui.Add("Slider", "x45 yp-3 w180 Range1-7 +NoTicks", 4)
-    MyGui.Add("Text", "x230 yp+3 w25 Left c" p["textDim"], "2.5x")
+    DelaySlider_UI := MyGui.Add("Slider", "x45 yp-3 w180 Range1-12 +NoTicks", 4)
+    MyGui.Add("Text", "x230 yp+3 w25 Left c" p["textDim"], "5x")
     
     DelaySlider_UI.OnEvent("Change", UpdateSpeed)
 
