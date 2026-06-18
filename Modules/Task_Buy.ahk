@@ -23,9 +23,9 @@ StartBuy() {
         BuyCount            := 0
         SkillPtsScanSuccess := false
         CarCount_In.Value   := Floor(SkillPtsCount_In.Value / SelectedCarPoint)
-        CarsLabel_UI.Value  := "Recommended Car Purchase  —  " CarCount_In.Value
-        CarCount_UI.Value   := "🚗   Car Purchased   —   0"
-        BuyRunTime_UI.Value := "🕓   Buy Time Running   —   00:00"
+        CarsLabel_UI.Value  := CarCount_In.Value
+        CarCount_UI.Value   := "0"
+        BuyRunTime_UI.Value := "00:00"
 
         CarCount_UI.SetFont("c" cHighlight)
         BuyRunTime_UI.SetFont("c" cHighlight)
@@ -149,7 +149,7 @@ BuyLoop() {
             PressKey("Enter") ; Select Yes (Ok)
             
             BuyCount++
-            CarCount_UI.Value := "🚗   Car Purchased   —   " BuyCount
+            CarCount_UI.Value := BuyCount
         }
 
         ShowNotif("success", "Car Purchase", BuyCount " " SelectedCar " have been purchased.")
