@@ -1,6 +1,6 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro		║
-; ║        Cyber Noir Edition v1.5.0        ║
+; ║        Cyber Noir Edition v1.6.0        ║
 ; ╚═════════════════════════════════════════╝
 
 #Requires AutoHotkey v2.0
@@ -19,15 +19,17 @@ StartRace() {
     }
     
     StartIndicators()
-    if (ActiveMode = "Race" && SkillPtsWant_In.Value > 0) {
+    if (ActiveMode = "Race" && SkillPtsWant_In.Value > 0 && SkillPtsCount_In.Value < 999) {
         SectorCount          := 0
         TotalRunSeconds      := 0
         RaceRunSeconds       := 0
         PointsCount          := 0
-        SectorCount_UI.Value := "🏁   Sectors Completed   —   0"
-        PointsCount_UI.Value := "💡   Est. Skill Points Gained   —   0"
-        RaceRunTime_UI.Value := "🕓   Race Time Running   —   00:00"
+        SectorCount_UI.Value := "0"
+        PointsCount_UI.Value := "0"
+        RaceRunTime_UI.Value := "00:00"
 
+        PointsCount_UI.SetFont("c" cHighlight)
+        SectorCount_UI.SetFont("c" cHighlight)
         RaceRunTime_UI.SetFont("c" cHighlight)
         SetTimer(RaceTimerTick, 1000)
         RaceLoop()
@@ -42,6 +44,9 @@ RaceLoop() {
     global AveragePoints, Maxpoints, PointsGain, PointsCount, RaceRunSeconds
     global CodeEventLab_UI, CodeEventLab, CodeSelect_UI
 
+    FailedTurn := 0
+    NotiFreqInterv := 5
+
     ; Local helper to cleanly check if the macro should stop
     CheckAbort() => (ActiveMode != "Race" || (!MasterMode && MasterStart))
 
@@ -51,7 +56,7 @@ RaceLoop() {
         Sleep(1000)
         PressKey("Esc") ; Return to Free Roam
 
-        if !WaitForMenuRelative("Returning to Free Roam...", 0.137, 0.950, "0xFFFFFF", , 20000) {
+        if !WaitForMenuRelative("Returning to Free Roam...", 0.137, 0.950, "0xFFFFFF", , 20000, 2000) {
             Process("Sync Error: Unable to return to Free Roam!")
             break
         }
@@ -61,7 +66,7 @@ RaceLoop() {
             
         Process("Navigating Menu...")
         PressKey("Esc", 1000) ; Open Menu
-        PressKey("PgDn", 100) ; Naigate to Cars Menu
+        PressKey("PgDn", 100) ; Navigate to Cars Menu
 
         Process("Scanning Skill Points")
         SkillPtsRaceScan(0.284, 0.717, 0.145, 0.035)
@@ -73,7 +78,7 @@ RaceLoop() {
 
         Process("Opening EventLab Menu...")
         PressKey("Enter", 1000) ; Select EventLab
-        PressKey("Enter", 1500) ; Select Play Event
+        PressKey("Enter", 2500) ; Select Play Event
         if CheckAbort()
             break
 
@@ -120,9 +125,6 @@ RaceLoop() {
         PressKey("W", 50) ; Early throttle
         Process("Countdown...", 3000)
 
-        PointsCount_UI.SetFont("c" cHighlight)
-        SectorCount_UI.SetFont("c" cHighlight)
-
         if CodeSelect_UI.Text = "LIQUIDPOTATO" {
 
             While (PointsCount < PointsGain) {
@@ -138,14 +140,17 @@ RaceLoop() {
                 SectorCount++
 
                 PointsCount := Floor(SectorCount * AveragePoints) ; Using average points per race for estimation to account for variability
-                PointsCount_UI.Value    := "💡   Est. Skill Points Gained  —   " PointsCount
-                SectorCount_UI.Value     := "🏁   Sectors Completed   —   " SectorCount
+                PointsCount_UI.Value    := PointsCount
+                SectorCount_UI.Value     := SectorCount
                 
                 if (Mod(SectorCount, 4) = 0 && PointsCount < PointsGain) {
                     PressKey("w down", 50) ; Press throttle to move forward
                     Sleep(7700) ; 7.7 seconds of extra throttle for the car to turn around
                     PressKey("w up", 50) ; Release throttle to prevent timeout
                 }
+
+                if (Mod(SectorCount, NotiFreqInterv) = 0)
+                    ShowNotif("info", "EventLab Race", SectorCount " sectors of EventLab Race completed.")
             }
 
             Process("Quitting the Event...", 2000)
@@ -174,6 +179,10 @@ RaceLoop() {
 
                     Process("Throttling...")
                     PressKey("w down", 2000)
+                } else {
+                    FailedTurn++
+                    if FailedTurn > 2
+                        ShowNotif("fail", "EventLab Race", FailedTurn " times failed braking on time. `nConsider checking current progress.")
                 }
 
                 if CheckAbort()
@@ -181,9 +190,12 @@ RaceLoop() {
                 
                 SectorCount++
 
+                if (Mod(SectorCount, NotiFreqInterv) = 0)
+                    ShowNotif("info", "EventLab Race", SectorCount " sectors of EventLab Race completed.")
+
                 PointsCount := Floor(SectorCount * AveragePoints) ; Using average points per race for estimation to account for variability
-                PointsCount_UI.Value    := "💡   Est. Skill Points Gained  —   " PointsCount
-                SectorCount_UI.Value    := "🏁   Sectors Completed   —   " SectorCount
+                PointsCount_UI.Value    := PointsCount
+                SectorCount_UI.Value    := SectorCount
                 
                 if (Mod(SectorCount, 50) = 0) {
 
@@ -224,6 +236,8 @@ RaceLoop() {
             }
         }
 
+        ShowNotif("success", "EventLab Race", SectorCount " sectors EventLab Race completed.")
+
         RaceStart := false
 
         if !WaitForMenuRelative("Returning to Free Roam...", 0.061, 0.945, "0xFFFFFF", "", 30000) {
@@ -256,4 +270,49 @@ RaceLoop() {
 
         break
     }
+}
+
+SkillPtsRaceScan(ratioX, ratioY, ratioW, ratioH, delay:= 1000) {
+    global SkillPtsCount_In, SkillPtsWant_In, CarCount_In
+    global PointsLabel_UI, SectorLabel_UI, TimeLabel_UI, CarsLabel_UI
+    global ActiveMode, MaxPoints, CustomSkillPts, PointsGain, PointsTotal, TimeTotal, SelectedCarPoint, RaceStart
+
+    Sleep(delay)
+
+    points := ScanNumber(ratioX, ratioY, ratioW, ratioH)
+
+    if RaceStart {
+        SkillPtsCount_In.Value := points = -1 ?  SkillPtsCount_In.Value : points
+        SkillPtsWant_In.Value := CustomSkillPts ? Min(SkillPtsWant_In.Value, MaxPoints - SkillPtsCount_In.Value) : Min(999 - points, MaxPoints)
+
+        if points = -1
+            ShowNotif("fail", "EventLab Race", "Skill Points Scan Failed. `nDefaulting to previous Skill Points value...")
+        else 
+            ShowNotif("info", "EventLab Race", "Starting the EventLab Race with " SkillPtsCount_In.Value " Skill Points.")
+
+        PointsGain := GetMinScore(SkillPtsWant_In.Value)
+        PointsTotal := Min(PointsGain + SkillPtsCount_In.Value, 999)
+        CarCount_In.Value := Floor(PointsTotal / SelectedCarPoint)
+
+        TimeTotal := CalcTimeRace(SkillPtsWant_In.Value)  + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
+
+        PointsLabel_UI.Value := PointsGain
+        SectorLabel_UI.Value := Ceil(PointsGain/AveragePoints)
+        TimeLabel_UI.Value := Format("{:02}:{:02}", Floor(TimeTotal) , Round((TimeTotal - Floor(TimeTotal)) * 60))
+        CarsLabel_UI.Value := Floor(PointsTotal / SelectedCarPoint)
+    }
+
+    if !RaceStart {
+        SkillPtsCount_InPrev := SkillPtsCount_In.Value
+        SkillPtsCount_In.Value := points = -1 ? PointsGain : points
+        SkillPtsCount_InNew := SkillPtsCount_In.Value - SkillPtsCount_InPrev
+        SkillPtsWant_In.Value := Min(999 - points, MaxPoints)
+
+        if points = -1
+            ShowNotif("fail", "EventLab Race", "Skill Points Scan Failed. `nDefaulting to estimated Skill Points gained...")
+        else 
+            ShowNotif("success", "EventLab Race", SkillPtsCount_InNew " Skill Points have been obtained.")
+    }
+
+    return points
 }

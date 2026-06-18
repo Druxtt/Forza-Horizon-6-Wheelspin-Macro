@@ -1,6 +1,6 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro		║
-; ║        Cyber Noir Edition v1.5.0        ║
+; ║        Cyber Noir Edition v1.6.0        ║
 ; ╚═════════════════════════════════════════╝
 
 #Requires AutoHotkey v2.0
@@ -9,7 +9,7 @@ global SpinCount    := 0
 
 StartSpin() {
     
-    global ActiveMode, StatusText, cActive, SpinCount, SpinOpenCount_UI, SpinLeftCount_UI, SpinRunTime_Ui, SpinRunSeconds, LoopCount_In
+    global ActiveMode, StatusText, cActive, SpinCount, SpinOpenCount_UI, SpinLeftCount_UI, SpinRunTime_Ui, SpinRunSeconds
     
     if !ToggleMode("Spin") {
         StatusText.Value := "⬤  Stopping..."
@@ -35,7 +35,7 @@ StartSpin() {
 
 SpinLoop() {
 
-    global SpinMode
+    global SpinMode, LoopCount_In
 
     SpinToOpen      := LoopCount_In.Value
     SpinLeftCount   := 0

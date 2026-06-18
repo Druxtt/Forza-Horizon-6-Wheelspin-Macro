@@ -1,6 +1,6 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro		║
-; ║        Cyber Noir Edition v1.5.0        ║
+; ║        Cyber Noir Edition v1.6.0        ║
 ; ╚═════════════════════════════════════════╝
 
 #Requires AutoHotkey v2.0
@@ -18,10 +18,9 @@ StartBuy() {
     }
     
     StartIndicators()
-    if (ActiveMode = "Buy" && CarCount_In.Value > 0) {
+    if (ActiveMode = "Buy") {
         
         BuyCount            := 0
-        BuyRunSeconds       := 0
         SkillPtsScanSuccess := false
         CarCount_In.Value   := Floor(SkillPtsCount_In.Value / SelectedCarPoint)
         CarsLabel_UI.Value  := "Recommended Car Purchase  —  " CarCount_In.Value
@@ -35,6 +34,9 @@ StartBuy() {
         BuyLoop()
     }
     ResetIndicators()
+
+    if (!MasterMode && CarCount_In.Value > 0)
+        StartUnlock()
 }
 
 BuyLoop() {
@@ -46,6 +48,9 @@ BuyLoop() {
     CheckAbort() => (ActiveMode != "Buy" || (!MasterMode && MasterStart))
 
     While (ActiveMode = "Buy") {
+
+        Loop 4
+            PressKey("Up", 50) ; Navigate to Drive selection
         
         if(!MasterMode && !SkillPtsScanSuccess && SkillPtsCount_In.Value = 0) {
             Process("Checking Available Skill Points..")
@@ -60,22 +65,30 @@ BuyLoop() {
             Process("Scanning Skill Points...")
             points := SkillPtsScan(0.331, 0.851, 0.054, 0.033) 
 
-            if points != -1
+            if points != -1 {
                 SkillPtsScanSuccess := true
-            else
+            }
+            else {
                 SkillPtsScanSuccess := false
+                ShowNotif("fail","Car Purchase", "Unable to scan Current Skill Points amount. `nManual input required.")
+            }
             
             Process("Returning to Campaign Menu...")
             PressKey("Esc", 1500) ; Navigate to Upgrades Menu
             PressKey("Esc", 1500) ; Navigate to Cars Menu
             PressKey("PgUp", 50) ; Navigate to Buy & Sell Menu
             PressKey("PgUp") ; Navigate to Campaign Menu
-
-            if points < SelectedCarPoint
-                break
         }
 
         CarCount_In.Value := Floor(SkillPtsCount_In.Value / SelectedCarPoint)
+        if CarCount_In.Value > 0
+            ShowNotif("info", "Car Purchase", CarCount_In.Value " " SelectedCar " will be purchased.")
+        else {
+            ShowNotif("error", "Car Purchase", "Insufficient Skill Points.")
+            break
+        }
+
+        ShowNotif("info", "Car Purchase", CarCount_In.Value " " SelectedCar " will be purchased.")
 
         Process("Navigating Journal...")
         Loop 3
@@ -120,6 +133,7 @@ BuyLoop() {
                     PressKey("Down")
                     PressKey("Right")
                 }
+            break
         }
 
         if CheckAbort()
@@ -137,6 +151,8 @@ BuyLoop() {
             BuyCount++
             CarCount_UI.Value := "🚗   Car Purchased   —   " BuyCount
         }
+
+        ShowNotif("success", "Car Purchase", BuyCount " " SelectedCar " have been purchased.")
 
         if CheckAbort()
             break

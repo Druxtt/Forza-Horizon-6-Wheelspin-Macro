@@ -1,6 +1,6 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro		║
-; ║        Cyber Noir Edition v1.5.0        ║
+; ║        Cyber Noir Edition v1.6.0        ║
 ; ╚═════════════════════════════════════════╝
 
 #Requires AutoHotkey v2.0
@@ -24,14 +24,18 @@ TogglePause() {
 }
 
 ToggleMode(mode) {
-    global ActiveMode
+    global ActiveMode, MiniMode_UI
     if (ActiveMode = mode) {
         ActiveMode := ""
+        MiniMode_UI.Value := "🔀  Mode:"
         return false
     }
-    if ActiveMode
+    if ActiveMode {
+        MiniMode_UI.Value := "🔀  Mode:"
         return false
+    }
     ActiveMode := mode
+    MiniMode_UI.Value := "🔀  Mode: " ActiveMode
     return true
 }
 
@@ -42,9 +46,8 @@ ToggleAll() {
 
     StartIndicators()
     MasterMode := !MasterMode
-    LoopCount := 0
 
-    while (MasterMode && LoopCount < LoopCount_In.Value) {
+    while (MasterMode && LoopCount_In.Value > 0) {
         MasterStart := true
 
         StartRace()
@@ -63,8 +66,7 @@ ToggleAll() {
             break
 
         Process("Restarting Race...")
-        LoopCount++
-        LoopCount_In.Value -= LoopCount
+        LoopCount_In.Value -= 1
     }
     MasterMode := ""
     MasterStart := false
@@ -135,6 +137,10 @@ ResetIndicators() {
     Key_UI.Value := "⌨  [   ]"
     Key_UI.SetFont("c" cIdle)
     Process_UI.Value := "⚙️  Waiting..."
+
+    MiniKey_UI.Value := "⌨  [   ]"
+    MiniProcess_UI.Value := "⚙️  Waiting..."
+    MiniMode_UI.Value := "🔀  Mode:"
     
     Process_UI.SetFont("c" cIdle)
     TotalRunTime_UI.SetFont("c" cIdle)
@@ -199,6 +205,9 @@ UpdateSkillPts(ctrl, *) {
     global SelectedCarPoint, TimeTotal, PointsTotal, CarCount_In, SkillPtsWant_In, SelectedCarPoint, AveragePoints, PointsGain, MaxPoints
     global PointsLabel_UI, TimeLabel_UI, CarsLabel_UI, SectorLabel_UI, ActiveMode, CustomSkillPts
 
+    if CustomSkillPts = true
+        ShowNotif("info", "EventLab Race", "Mode: Automatic Desired Skill Point.")
+
     CustomSkillPts := false
 
     value := ctrl.value
@@ -212,16 +221,19 @@ UpdateSkillPts(ctrl, *) {
     CarCount_In.Value := Floor(PointsTotal / SelectedCarPoint)
 	TimeTotal := CalcTimeRace(SkillPtsWant_In.Value)  + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
 
-    PointsLabel_UI.Value := "Est. Skill Points Gain  —  " PointsGain
-    SectorLabel_UI.Value := "Est. Sectors Count  —  " Ceil(PointsGain/AveragePoints)
-    TimeLabel_UI.Value :=  "Est. Total Time Completion  —  " Format("{:02}:{:02}", Floor(TimeTotal) , Round((TimeTotal - Floor(TimeTotal)) * 60))
-    CarsLabel_UI.Value := "Recommended Car Purchase  —  " Floor(PointsTotal / SelectedCarPoint)
+    PointsLabel_UI.Value := PointsGain
+    SectorLabel_UI.Value := Ceil(PointsGain/AveragePoints)
+    TimeLabel_UI.Value :=  Format("{:02}:{:02}", Floor(TimeTotal) , Round((TimeTotal - Floor(TimeTotal)) * 60))
+    CarsLabel_UI.Value := Floor(PointsTotal / SelectedCarPoint)
 }
     
 UpdateSkillPtsWant(ctrl, *) {
 
     global SelectedCarPoint, TimeTotal, PointsTotal, CarCount_In, SkillPtsCount_In, SelectedCarPoint, AveragePoints, PointsGain, MaxPoints
     global PointsLabel_UI, TimeLabel_UI, CarsLabel_UI, PointsCount_UI, SectorLabel_UI, CustomSkillPts
+
+    if CustomSkillPts = false
+        ShowNotif("info", "EventLab Race", "Mode: Custom Desired Skill Point.")
 
     CustomSkillPts := true
 
@@ -240,10 +252,10 @@ UpdateSkillPtsWant(ctrl, *) {
     CarCount_In.Value := Floor(PointsTotal / SelectedCarPoint)
 	TimeTotal := CalcTimeRace(value) + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
     
-    PointsLabel_UI.Value := "Est. Skill Points Gain  —  " PointsGain
-    SectorLabel_UI.Value := "Est. Sectors Count  —  " Ceil(PointsGain/AveragePoints)
-    TimeLabel_UI.Value :=  "Est. Total Time Completion  —  " Format("{:02}:{:02}", Floor(TimeTotal) , Round((TimeTotal - Floor(TimeTotal)) * 60))
-    CarsLabel_UI.Value := "Recommended Car Purchase  —  " Floor(PointsTotal / SelectedCarPoint)
+    PointsLabel_UI.Value := PointsGain
+    SectorLabel_UI.Value := Ceil(PointsGain/AveragePoints)
+    TimeLabel_UI.Value := Format("{:02}:{:02}", Floor(TimeTotal) , Round((TimeTotal - Floor(TimeTotal)) * 60))
+    CarsLabel_UI.Value := Floor(PointsTotal / SelectedCarPoint)
 
     return value
 }
@@ -328,6 +340,7 @@ TotalTimerTick() {
     secs := Mod(TotalRunSeconds, 60)
 
     TotalRunTime_UI.Value := "🕓  " Format("{:02d}:{:02d}", mins, secs)
+    MiniTotalRunTime_UI.Value := "🕓  " Format("{:02d}:{:02d}", mins, secs)
 }
 
 RaceTimerTick() {
@@ -336,7 +349,7 @@ RaceTimerTick() {
     mins := RaceRunSeconds // 60
     secs := Mod(RaceRunSeconds, 60)
 
-    RaceRunTime_UI.Value := "🕓   Race Time Running   —   " Format("{:02d}:{:02d}", mins, secs)
+    RaceRunTime_UI.Value := Format("{:02d}:{:02d}", mins, secs)
 }
 
 BuyTimerTick() {
@@ -345,7 +358,7 @@ BuyTimerTick() {
     mins := BuyRunSeconds // 60
     secs := Mod(BuyRunSeconds, 60)
 
-    BuyRunTime_UI.Value := "🕓   Buy Time Running   —   " Format("{:02d}:{:02d}", mins, secs)
+    BuyRunTime_UI.Value := Format("{:02d}:{:02d}", mins, secs)
 }
 
 UnlockTimerTick() {
@@ -354,7 +367,7 @@ UnlockTimerTick() {
     mins := UnlockRunSeconds // 60
     secs := Mod(UnlockRunSeconds, 60)
 
-    UnlockRunTime_UI.Value := "🕓   Unlock Time Running   —   " Format("{:02d}:{:02d}", mins, secs)
+    UnlockRunTime_UI.Value := Format("{:02d}:{:02d}", mins, secs)
 }
 
 SpinTimerTick() {
@@ -363,7 +376,7 @@ SpinTimerTick() {
     mins := SpinRunSeconds // 60
     secs := Mod(SpinRunSeconds, 60)
 
-    SpinRunTime_UI.Value := "🕓   Spin Time Running   —   " Format("{:02d}:{:02d}", mins, secs)
+    SpinRunTime_UI.Value := Format("{:02d}:{:02d}", mins, secs)
 }
 
 ; ══════════════════════════════════════════════
@@ -442,57 +455,18 @@ WaitForMenuRelative(text, ratioX, ratioY, targetColor, targetColorHDR := "", tim
     }
 }
 
-SkillPtsRaceScan(ratioX, ratioY, ratioW, ratioH, delay:= 1000) {
-    global SkillPtsCount_In, SkillPtsWant_In, CarCount_In
-    global PointsLabel_UI, SectorLabel_UI, TimeLabel_UI, CarsLabel_UI
-    global ActiveMode, MaxPoints, CustomSkillPts, PointsGain, PointsTotal, TimeTotal, SelectedCarPoint
-
-    Sleep(delay)
-
-    points := ScanNumber(ratioX, ratioY, ratioW, ratioH)
-
-    if (points = -1)
-        points := SkillPtsCount_In.Value
-
-    ToolTip "Current Skill Points: " points
-    SetTimer(() => ToolTip(), -2000)
-
-    SkillPtsCount_In.Value := points
-
-    if RaceStart {
-        SkillPtsWant_In.Value := CustomSkillPts ? Min(SkillPtsWant_In.Value, MaxPoints - SkillPtsCount_In.Value) : Min(999 - points, MaxPoints)
-
-        PointsGain := GetMinScore(SkillPtsWant_In.Value)
-        PointsTotal := Min(PointsGain + SkillPtsCount_In.Value, 999)
-        CarCount_In.Value := Floor(PointsTotal / SelectedCarPoint)
-
-        TimeTotal := CalcTimeRace(SkillPtsWant_In.Value)  + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
-
-        PointsLabel_UI.Value := "Est. Skill Points Gain  —  " PointsGain
-        SectorLabel_UI.Value := "Est. Sectors Count  —  " Ceil(PointsGain/AveragePoints)
-        TimeLabel_UI.Value :=  "Est. Total Time Completion  —  " Format("{:02}:{:02}", Floor(TimeTotal) , Round((TimeTotal - Floor(TimeTotal)) * 60))
-        CarsLabel_UI.Value := "Recommended Car Purchase  —  " Floor(PointsTotal / SelectedCarPoint)
-    }
-
-    return points
-}
-
 SkillPtsScan(ratioX, ratioY, ratioW, ratioH, delay:= 1000) {
     global SkillPtsCount_In, SkillPtsWant_In, CarCount_In
     global PointsLabel_UI, SectorLabel_UI, TimeLabel_UI, CarsLabel_UI
-    global ActiveMode, MaxPoints, CustomSkillPts, PointsGain, PointsTotal, TimeTotal, SelectedCarPoint
+    global ActiveMode, MaxPoints, PointsGain, PointsTotal, TimeTotal, SelectedCarPoint
 
     Sleep(delay)
 
     points := ScanNumber(ratioX, ratioY, ratioW, ratioH)
 
     if (points = -1) {
-        ToolTip "Current Skill Points cannot be detected"
-        SetTimer(() => ToolTip(), -2000)
         SkillPtsCount_In.Value := 0
     } else {
-        ToolTip "Current Skill Points: " points
-        SetTimer(() => ToolTip(), -2000)
         SkillPtsCount_In.Value := points
     }
 
@@ -504,10 +478,10 @@ SkillPtsScan(ratioX, ratioY, ratioW, ratioH, delay:= 1000) {
 
     TimeTotal := CalcTimeRace(SkillPtsWant_In.Value)  + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
 
-    PointsLabel_UI.Value := "Est. Skill Points Gain  —  " PointsGain
-    SectorLabel_UI.Value := "Est. Sectors Count  —  " Ceil(PointsGain/AveragePoints)
-    TimeLabel_UI.Value :=  "Est. Total Time Completion  —  " Format("{:02}:{:02}", Floor(TimeTotal) , Round((TimeTotal - Floor(TimeTotal)) * 60))
-    CarsLabel_UI.Value := "Recommended Car Purchase  —  " Floor(PointsTotal / SelectedCarPoint)
+    PointsLabel_UI.Value := PointsGain
+    SectorLabel_UI.Value := Ceil(PointsGain/AveragePoints)
+    TimeLabel_UI.Value :=  Format("{:02}:{:02}", Floor(TimeTotal) , Round((TimeTotal - Floor(TimeTotal)) * 60))
+    CarsLabel_UI.Value := Floor(PointsTotal / SelectedCarPoint)
 
     return points
 }
@@ -526,8 +500,8 @@ ScanNumber(ratioX, ratioY, ratioW, ratioH) {
         cleanNumber := RegExReplace(scannedText, "\D") 
 
         ; ── 🔎 TEMPORARY DEBUG TOOL ──────────────────────────────────────────
-        ToolTip("OCR Sees: '" scannedText "'") 
-        SetTimer () => ToolTip(), -4000 
+        ; ToolTip("OCR Sees: '" scannedText "'") 
+        ; SetTimer () => ToolTip(), -4000 
         ; ─────────────────────────────────────────────────────────────────────
 
         if (cleanNumber != "") {
@@ -593,7 +567,7 @@ ScanText(ratioX, ratioY, ratioW, ratioH, waitTime:= 0, targetText:="", searchNum
     return false ; Return false if the loop finished without finding anything
 }
 ; ══════════════════════════════════════════════
-;  KEY AND PROCESS
+;  SESSION UPDATE
 ; ══════════════════════════════════════════════
 
 PressKey(key, delay := 500) {
@@ -613,6 +587,7 @@ PressKey(key, delay := 500) {
     }
 
     Key_UI.Value := "⌨  [ " displayName " ]"
+    MiniKey_UI.Value := "⌨  [ " displayName " ]"
 
     ; 2. Handle Space Modifiers (e.g., splitting "w" and "down")
     cleanKey := key
@@ -648,6 +623,7 @@ Process(text, delay := 0) {
     global Process_UI
 
     Process_UI.Value := "⚙️  " text
+    MiniProcess_UI.Value := "⚙️  " text
     Sleep(delay)
 }
 

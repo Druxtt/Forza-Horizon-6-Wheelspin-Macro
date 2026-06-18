@@ -13,7 +13,6 @@ An AutoHotkey v2 automation tool designed for Forza Horizon 6, featuring a modul
 - [Overview](#-overview)
 - [Prerequisites](#%EF%B8%8F-prerequisites)
 - [Installation](#-installation)
-- [Quick Start](#-quick-start)
 - [Key Features](#-key-features)
 - [Automation Modes](#-automation-modes)
 - [Core Systems](#-core-systems)
@@ -28,7 +27,7 @@ An AutoHotkey v2 automation tool designed for Forza Horizon 6, featuring a modul
 
 ## 📌 Overview
 
-This project is a desktop automation tool built with **AutoHotkey v2**. It automates multiple in-game workflows such as racing loops, car purchasing, and reward unlocking, while providing a fully custom graphical interface for monitoring progress in real time. 
+This project is a desktop automation tool built with **AutoHotkey v2**. It automates multiple in-game workflows such as racing loops, car purchasing, and reward unlocking, while providing a fully custom graphical interface for monitoring progress in real time.
 
 The application features a modern, modular script structure separating UI configuration, OCR management, track profiles, and core execution macros into independent files for significantly easier codebase maintenance.
 
@@ -55,36 +54,52 @@ Before installing, ensure your system meets the following layout and control req
 
 ## 📥 Installation
 
-1. Download the latest version of AutoHotkey v2 and install it.
+> 🚀 **Don't want to deal with scripts?** 
+> You don't need to install AutoHotkey! Just head over to the **[Latest Release](https://github.com/M-Haziq-Iqbal/Forza-Horizon-6-Wheelspin-Macro/releases/latest)**, download the pre-compiled `FH6_Macro_CyberNoir.exe`, and double-click to run.
+
+### ⚡ Option A: The Easy Way (Recommended)
+1. Navigate to the **[Releases](https://github.com/M-Haziq-Iqbal/Forza-Horizon-6-Wheelspin-Macro/releases/latest)** section on the right-hand sidebar of this page.
+2. Click on the latest version (e.g., `v1.6.0`).
+3. Under the **Assets** dropdown at the bottom of the release notes, click on `FH6_Macro_CyberNoir.exe` to download it.
+4. Right-click the downloaded file launch the application interface.
+
+### 💻 Option B: Running from Source (For Devs)
+1. Download and install [AutoHotkey v2](https://www.autohotkey.com).
 2. Clone this repository or download it as a ZIP file:
 ```bash
    `git clone https://github.com/M-Haziq-Iqbal/Forza-Horizon-6-Wheelspin-Macro.git`
 ```
 3. Extract the files (if downloaded as a ZIP) into a dedicated folder, ensuring all modular script files and dependencies (including `OCR.ahk`) remain in the same directory.
-4. Double-click the main `main.ahk` file to launch the application interface. **Note:** If the macro inputs do not register properly in-game, right-click the file and select **Run as Administrator**.
+4. Double-click the `main.ahk` file to launch the application interface.
+
+**Note:** If the macro inputs do not register properly in-game, right-click the file and select **Run as Administrator**.
 
 ---
 
 ## ✨ Key Features
 
-* 🎨 Custom GUI layout with dark/light theme options on-the-fly.
+* 🎨 **Dynamic Theme Engine (`GetPalette` / `ToggleTheme`):** Switch seamlessly between a customized, cyber-styled **Dark Mode** and **Light Mode** workspace layout on-the-fly.
+* 🗲 **Compact Mini Widget (`MiniGui`):** Minimizing the main dashboard automatically shrinks the layout into a small floating overlay widget tracking total runtime, key execution states, and active macros.
+* 📐 **Collapsible UI Navigation:** Advanced **Spin Options** are cleanly tucked behind responsive, collapsible group containers (`_OnOptionsToggle`) to save desktop real estate.
 * 🔘 **Sleek Tier Toggle Buttons:** Features dedicated **STANDARD** and **PREMIUM** buttons to quickly toggle your game edition layout instead of clunky old checkboxes.
 * 🛞 **Automated Wheelspin Module:** Built-in automation loop that handles both regular and Super Wheelspins, automatically detecting the spin type, skipping animations, and tracking totals.
 * 🔄 **Keep or Sell Choice:** Integrated UI toggles for **KEEP** and **SELL** rules, allowing you to choose whether the macro automatically sells duplicate prize cars for credits or saves them to your garage.
 * 👁️ **Optical Character Recognition (OCR):** Integrates `OCR.ahk` alongside specialized functions to scan screen regions, parse text strings, and extract real-time numeric data via regex matching.
-* 🔒 **Targeted Window Routing:** Enforces game-scoped hotkeys and leverages background-compatible arrays mapped directly and exclusively to `ForzaHorizon6.exe`.
+* 🔒 **Targeted Window Processing:** Enforces strict game-scoped input routing bound exclusively to `ahk_exe ForzaHorizon6.exe`, vastly improving background capability and input reliability.
+* 🛡️ **Runaway Input Prevention:** Upgraded hardware-level fallback routines inside `ResetIndicators()` forcefully send a `W up` release command, permanently eliminating throttle-stick issues.
 * ⏱️ **Execution Speed Control:** Integrated a Delay Multiplier slider supporting 0.25x to 2.5x scaling to dynamically adjust input delays and pixel detection timeouts based on system performance.
-* 🔁 **Sequence Looping:** Features a dedicated loop counter input allowing the main initialization sequence to cycle automatically for a specified duration.
+* 🔁 **Sequence Looping Loop Fixed:** Rewrote the multi-stage automation queue loop counter (`ToggleAll`) to evaluate decrements linearly step-by-step (`-= 1`), permanently removing exponential reduction logic bugs.
 * 🗺️ **Track Profiles:** Dropdown track selection supporting distinct configurations for layouts like "LIQUIDPOTATO" and "AMMAGEDON".
 * 🏁 **Bespoke Race Logic:** Tailored acceleration/braking intervals and an automated 50-race continuation mechanic optimized specifically for advanced profiles like AMMAGEDON.
-* ⌨️ **Hardware-Level Input:** Employs low-level physical scan codes inside `PressKey()` for absolute reliability, minimizing input drops and bypassing focus errors.
-* 👁️ **Pixel-Aware Engine:** Dynamic menu loading synchronization checks to systematically mitigate desync issues.
+* ⌨️ **Hardware-Level Input:** Employs low-level physical scan codes for absolute reliability, minimizing input drops and bypassing focus errors.
+* �️ **Pixel-Aware Engine:** Dynamic menu loading synchronization checks to systematically mitigate desync issues.
+* 🔔 **Accent-Driven Notifications:** Integrated color-coded status bars into the toast notification sub-system (`ShowNotif()`) to quickly communicate runtime flags (🟢 Success / 🔴 Timeout / 🔵 Warning).
 * 📦 **System Tray Icon:** Features a dedicated application icon in the system tray for seamless background minimization and tool management.
 * 📊 Real-time session runtime telemetry, progress calculations, and live wheelspin tracking rows (*Wheelspins Opened*, *Wheelspins Left*, and *Spin Time Running*).
 * 🏁 Automated race loop execution with structural timing cushions and recovery checks.
 * 🚗 Fast-navigation car purchasing routines.
 * 🛞 Automated wheelspin and cash reward perk unlocking.
-* 📈 Skill point calibration tracking with dynamic profile-based calculations.
+* 📉 **Advanced Skill Point Verification:** Real-time pre-flight and post-race character logic to securely track skill investments and prevent zero-balance loop crashes.
 * 📋 Click-to-copy in-game share code integration that updates dynamically based on the active track profile.
 * 🛠️ **Developer Diagnostic Tool:** Integrated automated coordinate/color calibration utility.
 
@@ -92,7 +107,7 @@ Before installing, ensure your system meets the following layout and control req
 
 ## 🔁 Automation Modes
 
-The automation workflow is split into three independent processes that can be executed separately or combined into a continuous cycle.  
+The automation workflow is split into three independent processes that can be executed separately or combined into a continuous cycle.
 
 ### 🏁 Race Mode (Hotkey `\`)
 Runs only the race automation process.
@@ -108,8 +123,7 @@ Runs only the vehicle purchasing process.
 ### 🛞 Unlock Mode (Hotkey `]`)
 Runs only the reward unlocking process.
 * **Pre-Flight Resource Verification:** Automatically scans and checks if skill points are sufficient before starting standalone cycles.
-* Enters the Car Mastery panels with precise verification states.
-* **Live Resource Depletion:** Subtracts the vehicle's mastery point footprint in real time from the UI dashboard counter as each car's rewards are claimed to perfectly sync with the game's internal economy.
+* Unlock the required mastery perks for specific rewards using different cars, and remove the unlocked cars from garage afterwards.
 
 ### ♾️ Full Automation Loop (Hotkey `/`)
 Combines all processes into a single continuous workflow (Race → Buy → Unlock → Repeat). The macro will continuously cycle through all stages for the designated number of sequence loops, properly maintaining residual skill point offsets across full cycles.  
@@ -130,6 +144,12 @@ Uses optimized deterministic internal functions to calculate real-world session 
 
 * **Dynamic Performance Scaling:** Tracks exact math-driven profile variables to log performance updates per sequence interval.
 * **Maximum Skill Point Calculation:** The in-game Skill Point cap is 999. The application calculates your target based on your current scanned points plus the estimated session gain, capping out automatically.
+
+### 📉 Skill Point Scanning & Target Overrides
+The macro handles skill point validation with high-precision scanning and user configuration:
+
+* **Dual-Phase Racing Scans:** The script automatically invokes an OCR screen capture area directly **before a race initializes** to log your starting balance, and runs an equivalent calculation parse **immediately after the race finishes**. This allows the program to track progression windows accurately and prevent reward loop initialization if the race was skipped or dropped due to network issues.
+* **Custom Desired Target Override:** By default, the application automatically calculates your target metrics based on active scans. However, users can utilize the custom input field in the GUI to manually type in a specific **Desired Skill Points** target. Setting a custom value completely overrides the deterministic calculation engine, forcing the loop cycles to target your manual limit.
 
 ### 🎁 The Reward Vehicles
 You can choose which vehicle the macro purchases and unlocks perks for via the GUI dropdown menu depending on your budget and preferred reward density. Make sure to purchase and unlock the Soko 78 house to get a permanent 5% discount on Autoshow purchases.
@@ -208,12 +228,14 @@ The automation requires a highly specific vehicle configuration to function prop
 * All skill tree perk allocations must be fully maxed out (all mastery upgrades unlocked) on that main vehicle.
 * No other cars can be configured as favorites to avoid structural index selection conflicts during automation passes.
 
-### 🧩 Tuning Setup
-Apply the appropriate tuning configuration parameters to your Subaru depending on your chosen track layout:
+### 🧩 Tuning & EventLab Share Codes
+Apply the appropriate tuning configurations and locate the EventLab blueprints using the parameters below:
 *(Note: These codes can be conveniently copied directly from the GUI footer within the application)*
 
-*   **For AMMAGEDON:** Tuning Code `206 657 706`
-*   **For LIQUIDPOTATO:** Tuning Code `293 391 902`
+| Profile Blueprint | Tuning Code | EventLab Share Code | Profile Strategy |
+| --- | --- | --- | --- |
+| **AMMAGEDON** | `206 657 706` | `723 451 098` | **Default / Recommended:** High scoring, dynamic wall prevention, and precise braking parameters. |
+| **LIQUIDPOTATO** | `293 391 902` | `415 892 331` | **Legacy Choice:** Consistent structural paths designed for continuous overnight farming. |
 
 <p align="center">
   <img width="2559" height="1439" alt="Screenshot 2026-06-15 135651" src="https://github.com/user-attachments/assets/ad315cec-1740-4984-9902-8cd97be366df" />
@@ -223,14 +245,11 @@ Apply the appropriate tuning configuration parameters to your Subaru depending o
 
 ## ⚙️ Required Game Setting Setup
 
-Verify your in-game configurations match the settings below for maximum consistency and reliability. 
-
-### 🎮 Recommended Difficulty Settings
-> **Note:** These layout options represent the development baseline. Deviations may impact tracking loops, physics processing windows, or target route validation structures.
+Verify your in-game configurations match the settings below for maximum consistency and reliability.
 
 | Setting | Recommended Value |
 | --- | --- |
-| Driving Controls Scheme | **WASD KEYBOARD LAYOUT ONLY** (or Special K Background routing) |
+| Driving Controls Scheme | **WASD KEYBOARD LAYOUT ONLY** (via `ControlSend` targeted routing) |
 | Drivatar Difficulty | UNBEATABLE |
 | Braking | ASSISTED |
 | Steering | AUTO-STEERING |
@@ -267,7 +286,7 @@ For the pixel colour synchronization system to work at maximum speed and accurac
 > *Note: If these requirements are not met, the script will automatically switch to a slower, time-based fallback mode to prevent crashing, but your farming speed will drop noticably and some flows might not work correctly.*
 
 ### ⚠️ Keep Left Half of Screen Uncovered!
-**CRITICAL RUNTIME WARNING:** Do **NOT** cover, overlay, or block the **left half of your monitor screen** while this macro is executing. 
+**CRITICAL RUNTIME WARNING:** Do **NOT** cover, overlay, or block the **left half of your monitor screen** while this macro is executing.
 
 The dynamic pixel engine samples hex color data across coordinates located on the left half of the display workspace. If background apps, streaming overlays, or Windows system notification banners obscure any section of the screen's left half, the pixel scanner will read false values, resulting in a **Sync Error / Menu Timeout**.
 
@@ -290,7 +309,7 @@ Navigate to **Settings → HUD & Gameplay** and adjust the UI boundaries to the 
 **A:** Ensure your game is in dedicated **Fullscreen** mode (or configured **Borderless Fullscreen** if using Special K background setups), using a **16:9 resolution**, and verify that absolutely no window panels, overlays, or pop-ups are obscuring the **left half of your screen**. The pixel coordinate used for identifying a successful free roam return relies on checking the active **ANNA** UI button instead of the old House icon. If issues persist, consider shifting the Delay Multiplier slider to a higher value to scale up detection timeouts.
 
 ### Q: The macro runs but clicks or keystrokes do not register in-game.
-**A:** Windows security policies often block automated inputs within high-privilege applications like games. Close the macro, right-click `FH6_Macro_CyberNoir.ahk`, and select **Run as Administrator** to grant the execution loop necessary device input privileges.
+**A:** Windows security policies often block automated inputs within high-privilege applications like games. Close the macro, right-click `FH6_Macro_CyberNoir.exe` or `Main.ahk`, and select **Run as Administrator** to grant the execution loop necessary device input privileges.
 
 ### Q: The vehicle does not turn or navigate menus properly.
 **A:** The macro hooks into default background mappings using hardware scan codes (`ControlSend`) targeted directly to `ahk_exe ForzaHorizon6.exe`. Ensure the target process name matches exactly. If you are attempting background execution, confirm that keyboard input has been enabled in Special K's Input Management settings.
@@ -312,7 +331,7 @@ Navigate to **Settings → HUD & Gameplay** and adjust the UI boundaries to the 
 Doing either of these stops Windows from rendering the game engine to your graphics card's frame buffer, turning the script's vision completely black. If you want to go completely headless (unplugged), use an **HDMI Dummy Plug / EDID Emulator**.
 
 ### Q: Can I use Discord, watch YouTube, or stream while it runs?
-**A:** Yes, especially since v1.4.0 fully supports background execution alongside **Special K** using targeted background routing. If running in the foreground, just ensure those windows do not cover the **left half of your screen**.
+**A:** Yes, especially since v1.6.0 fully supports background execution alongside **Special K** using targeted background routing. If running in the foreground, just ensure those windows do not cover the **left half of your screen**.
 
 ### Q: Why does this macro require a 16:9 aspect ratio?
 **A:** The script uses absolute screen-percentage math to find menu elements. On an Ultrawide (21:9) or older office monitor (16:10/4:3), the game stretches or adds black bars. This physics shift pushes the UI buttons away from their standard 16:9 geometric positions, making the script look in empty space.
