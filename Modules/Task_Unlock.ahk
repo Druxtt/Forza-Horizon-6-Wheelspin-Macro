@@ -250,7 +250,7 @@ UnlockLoop() {
             Process("Sort by Recently Added...")
             PressKey("X") ; Sort
             Loop 6 
-                PressKey("Down", 150) ; Navigate to Recently Added
+                PressKey("Down", 50) ; Navigate to Recently Added
             PressKey("Enter") ; Select Recently Added
             if CheckAbort()
                 break
