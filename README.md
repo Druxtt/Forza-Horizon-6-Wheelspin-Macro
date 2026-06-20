@@ -3,9 +3,9 @@
 An AutoHotkey v2 automation tool designed for Forza Horizon 6, featuring a modular architecture, custom GUI, optical character recognition (OCR), pixel-aware session tracking, and structured automation workflows to streamline repetitive in-game progression tasks.
 
 <p align="center">
-  <img width="274" height="758" alt="Screenshot 2026-06-18 163359" src="https://github.com/user-attachments/assets/0fdd608c-444c-4395-854a-54655f1e1e4e" />
-  <img width="274" height="886" alt="Screenshot 2026-06-18 163413" src="https://github.com/user-attachments/assets/c36c5266-73a0-4ae3-91e8-848f1a65e1fa" />
-  <img width="274" height="758" alt="Screenshot 2026-06-18 163343" src="https://github.com/user-attachments/assets/2a9e6afb-8014-46c8-9d36-b8df9d225cfc" />
+  <img width="276" height="783" alt="image" src="https://github.com/user-attachments/assets/995e4a4f-18a1-4983-9cd6-1dc468389d10" />
+  <img width="275" height="912" alt="image" src="https://github.com/user-attachments/assets/c1b774ca-51b8-4c9d-8b42-a5f1f95d0af5" />
+  <img width="279" height="783" alt="image" src="https://github.com/user-attachments/assets/5c1738fd-8cb3-4add-ac64-ea1a0f72e6e7" />
 </p>
 
 ---
