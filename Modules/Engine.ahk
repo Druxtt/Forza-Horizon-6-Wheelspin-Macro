@@ -16,7 +16,7 @@ TogglePause() {
         StatusText.Value := "⬤  Paused..."
         StatusText.SetFont("c" cPaused)
         ShowNotif("info", "Macro Paused", "Execution has been temporarily suspended.")
-    } else if ActiveMode {
+    } else if !PauseMode && ActiveMode {
         StatusText.Value := "⬤  Running..."
         StatusText.SetFont("c" cStat)
         ShowNotif("success", "Macro Resumed", "Resuming automated sequence.")

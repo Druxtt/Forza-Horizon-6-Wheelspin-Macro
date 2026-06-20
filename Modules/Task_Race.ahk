@@ -194,6 +194,8 @@ RaceLoop() {
                 } else {
                     Process("Releasing throttle...")
                     PressKey("w up", 2000)
+                    Process("Throttling...")
+                    PressKey("w down", 2000)
                 }
 
                 if CheckAbort()
