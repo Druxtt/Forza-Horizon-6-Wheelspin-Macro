@@ -1,18 +1,14 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro        ║
-; ║        Cyber Noir Edition v1.7.0        ║
+; ║        Cyber Noir Edition v1.8.0        ║
 ; ╚═════════════════════════════════════════╝
 
-#Requires AutoHotkey v2.0
-
-global UnlockCount    := 0
-global SWheelCount    := 0
-global WheelCount     := 0
-global CreditCount    := 0
-
 StartUnlock() {
-    global ActiveMode, StatusText, CreditCount, UnlockCount, UnlockRunSeconds
-    global SWheelCount_UI, WheelCount_UI, CreditCount_UI, UnlockRunTime_UI, CarsLabel_UI, CarCount_In, SkillPtsCount_In, SelectedCarPoint
+    global ActiveMode, StatusText, UnlockRunSeconds, SelectedCarPoint
+    global SWheelCount_UI, WheelCount_UI, CreditCount_UI, UnlockRunTime_UI, CarsLabel_UI, CarCount_In, SkillPtsCount_In
+
+    if FindGame() = 0
+        return
 
     if !ToggleMode("Unlock") {
         StatusText.Value := "⬤  Stopping..."
@@ -22,7 +18,6 @@ StartUnlock() {
     StartIndicators()
     UpdateMiniWidgetMode(activeMode)
     if (ActiveMode = "Unlock") {
-        UnlockCount            := 0
         UnlockRunSeconds       := 0
         SkillPtsScanSuccess := false
         CarCount_In.Value      := Floor(SkillPtsCount_In.Value / SelectedCarPoint)
@@ -48,12 +43,16 @@ StartUnlock() {
 UnlockLoop() {
     global ActiveMode, MasterMode, SkillPtsScanSuccess
     global cActive, cHighlight, cIdle
-    global SWheelCount, SWheelCount_UI, WheelCount_UI, CreditCount_UI, UnlockRunTime_UI
-    global UnlockCount, WheelCount, CreditCount, SelectedCar, SelectedCarPoint, SkillPtsCount_In, CarCount_In
+    global SWheelCount_UI, WheelCount_UI, CreditCount_UI, UnlockRunTime_UI
+    global SelectedCar, SelectedCarPoint, SkillPtsCount_In, CarCount_In
 
+    UnlockCount    := 0
+    SWheelCount    := 0
+    WheelCount     := 0
+    CreditCount    := 0
     NotiFreqInterv := 5
+    CarMismatch    := false
 
-    ; 1. Helper function to clean up the repetitive break checks
     CheckAbort() => (ActiveMode != "Unlock" || (!MasterMode && MasterStart))
 
     While (ActiveMode = "Unlock") {
@@ -67,114 +66,138 @@ UnlockLoop() {
             Case "Dodge Viper GTS ACR":
                 CreditCount_UI.SetFont("c" cHighlight)
         }
+        
+        CarMenu := ScanOCR(0.060, 0.090, 0.156-0.060, 0.135-0.090)
 
-        ; 3. Initial Navigation
-        Process("Navigating Home...")
-        Loop 4
-            PressKey("Up", 50) ; Navigate to Drive selection
+        ; Check if currently in My Cars menu for custom starting point
+        if !InStr(CarMenu, "My Cars", 0) {
 
-        if(!MasterMode && !SkillPtsScanSuccess && SkillPtsCount_In.Value = 0) {
-            Process("Checking Available Skill Points..")
-            PressKey("PgDn") ; Navigate to Buy & Sell Menu
-            PressKey("PgDn") ; Navigate to Cars Menu
-            PressKey("Down", 50) ; Navigate to Upgrades & Tuning
-            PressKey("Enter", 800) ; Select Upgrades & Tuning
-            Loop 7 
-                PressKey("Down", 50) ; Navigate to Car Mastery
-            PressKey("Enter") ; Select Car Mastery
+            ; Initial Navigation
+            Process("Navigating Home...")
+            Loop 4
+                PressKey("Up", 50) ; Navigate to Drive selection
+
+            if CheckAbort()
+                break
+
+            if(!MasterMode && !SkillPtsScanSuccess && SkillPtsCount_In.Value = 0) {
+                Process("Checking Available Skill Points..")
+                PressKey("PgDn") ; Navigate to Buy & Sell Menu
+                PressKey("PgDn") ; Navigate to Cars Menu
+                PressKey("Down", 50) ; Navigate to Upgrades & Tuning
+                PressKey("Enter", 800) ; Select Upgrades & Tuning
+                Loop 7 
+                    PressKey("Down", 50) ; Navigate to Car Mastery
+                PressKey("Enter") ; Select Car Mastery
+
+                if CheckAbort()
+                    break
+                
+                Process("Scanning Skill Points...")
+                points := SkillPtsScan(0.331, 0.851, 0.054, 0.033, 1500, 1500)
+
+                if points != -1 {
+                    SkillPtsScanSuccess := true
+                }
+                else {
+                    SkillPtsScanSuccess := false
+                    ShowNotif("fail", "Reward Unlock", "Unable to scan Current Skill Points amount. `nManual input required.")
+                }
+
+                if CheckAbort()
+                    break            
+
+                Process("Returning to Campaign Menu...")
+                PressKey("Esc", 1500) ; Navigate to Upgrades Menu
+                PressKey("Esc", 1500) ; Navigate to Cars Menu
+                PressKey("PgUp", 50) ; Navigate to Buy & Sell Menu
+                PressKey("PgUp") ; Navigate to Campaign Menu
+            }
             
-            Process("Scanning Skill Points...")
-            points := SkillPtsScan(0.331, 0.851, 0.054, 0.033, 1500, 1500)
-
-            if points != -1 {
-                SkillPtsScanSuccess := true
-            }
+            CarCount_In.Value := Floor(SkillPtsCount_In.Value / SelectedCarPoint)
+            if CarCount_In.Value > 0
+                Switch SelectedCar {
+                    Case "Subaru Impreza 22B-STi":
+                        ShowNotif("info", "Reward Unlock", CarCount_In.Value " Super Wheelspins will be obtained." )
+                        
+                    Case "Lamborghini Revuelto":
+                        ShowNotif("info", "Reward Unlock", CarCount_In.Value " Super Wheelspins and`n" CarCount_In.Value*3 " Wheelspins will be obtained." )
+                        
+                    Case "Dodge Viper GTS ACR":
+                        ShowNotif("info", "Reward Unlock", FormatCommas(CarCount_In.Value*85400) " CR will be obtained.")
+                }
             else {
-                SkillPtsScanSuccess := false
-                ShowNotif("fail", "Reward Unlock", "Unable to scan Current Skill Points amount. `nManual input required.")
+                ShowNotif("error", "Reward Unlock", "Insufficient Skill Points")
+                break
             }
 
-            Process("Returning to Campaign Menu...")
-            PressKey("Esc", 1500) ; Navigate to Upgrades Menu
-            PressKey("Esc", 1500) ; Navigate to Cars Menu
-            PressKey("PgUp", 50) ; Navigate to Buy & Sell Menu
-            PressKey("PgUp") ; Navigate to Campaign Menu
-        }
+            if CheckAbort()
+                break
+            
+            PressKey("PgDn") ; Navigate to Buy & Sell Menu
+            PressKey("Down", 50) ; Navigate to Auction House
+
+            if CheckAbort()
+                break
         
-        CarCount_In.Value := Floor(SkillPtsCount_In.Value / SelectedCarPoint)
-        if CarCount_In.Value > 0
-            Switch SelectedCar {
-                Case "Subaru Impreza 22B-STi":
-                    ShowNotif("info", "Reward Unlock", CarCount_In.Value " Super Wheelspins will be obtained." )
-                    
-                Case "Lamborghini Revuelto":
-                    ShowNotif("info", "Reward Unlock", CarCount_In.Value " Super Wheelspins and`n" CarCount_In.Value*3 " Wheelspins will be obtained." )
-                    
-                Case "Dodge Viper GTS ACR":
-                    ShowNotif("info", "Reward Unlock", FormatCommas(CarCount_In.Value*85400) " CR will be obtained.")
-            }
-        else {
-            ShowNotif("error", "Reward Unlock", "Insufficient Skill Points")
-            break
-        }
+            Process("Navigating Auction House...")
+            PressKey("Enter", 800) ; Select Auction House
+            PressKey("Down", 50) ; Navigate to Start Auction
+            PressKey("Enter", 800) ; Select Start Auction
+
+            if CheckAbort()
+                break
         
-        PressKey("PgDn") ; Navigate to Buy & Sell Menu
-        PressKey("Down", 50) ; Navigate to Auction House
-        if CheckAbort()
-            break
-    
-        Process("Navigating Auction House...")
-        PressKey("Enter", 700) ; Select Auction House
-        PressKey("Down") ; Navigate to Start Auction
-        PressKey("Enter", 700) ; Select Start Auction
-        if CheckAbort()
-            break
-    
-        Process("Sort by Recently Added...")
-        PressKey("X") ; Sort
-        Loop 6 
-            PressKey("Down", 50) ; Navigate to Recently Added
-        PressKey("Enter") ; Select Recently Added
-        PressKey("Backspace") ; Jump to Recently Added
-        PressKey("Enter") ; Select All Cars
-        if CheckAbort()
-            break
-    
+            Process("Sort by Recently Added...")
+            PressKey("X") ; Sort
+            Loop 6 
+                PressKey("Down", 50) ; Navigate to Recently Added
+            PressKey("Enter") ; Select Recently Added
+            PressKey("Backspace") ; Jump to Recently Added
+            PressKey("Enter") ; Select All Cars
+
+            if CheckAbort()
+                break
+        }
+
         Process("Choosing First Car...")
         PressKey("Enter") ; Select First Car
         PressKey("Down") ; Navigate to Get in Car
         PressKey("Enter", 5000) ; Select Get in Car
 
-        Process("Scanning the right car...")
-        scannedCar := ScanOCR(0.333, 0.250, 0.260, 0.233, 1000)
+        if CheckAbort()
+            break
 
-        if scannedCar
-        if InStr(scannedCar,"1998 Subaru", 1) && SelectedCar = CarList[1] {
+        Process("Scanning the right car...")
+        scannedCar := ScanOCR(0.080, 0.040, (0.290-0.080), (0.070-0.040), 1000)
+
+        if  SelectedCar = CarList[1] && !InStr(scannedCar, "1998 Subaru", 0) {
             ShowNotif("error", "Reward Unlock", "The first car is not 1998 Subaru!`nEmergency break!")
-            Process("Exiting the process...")
+            CarMismatch := true
             break
-        } else if InStr(scannedCar, "2021 Lamborghini", 1) && SelectedCar = CarList[2] {
+        } else if SelectedCar = CarList[2] && !InStr(scannedCar, "2024 Lamborghini", 0) {
             ShowNotif("error", "Reward Unlock", "The first car is not 2021 Lamborghini!`nEmergency break!")
-            Process("Exiting the process...")
+            CarMismatch := true
             break
-        } else if InStr(scannedCar,"1999 Dodge", 1) && SelectedCar = CarList[3] {
+        } else if SelectedCar = CarList[3] && !InStr(scannedCar, "1999 Dodge", 0) {
             ShowNotif("error", "Reward Unlock", "The first car is not 1999 Dodge!`nEmergency break!")
-            Process("Exiting the process...")
+            CarMismatch := true
             break
-        } 
+        }
 
         PressKey("Esc", 1500) ; Navigate to Auction House Menu
         PressKey("Esc", 1500) ; Navigate to Buy & Sell Menu
+
         if CheckAbort()
             break
     
         ; 4. Main Unlocking Loop
         Loop CarCount_In.Value {
+
+            if CheckAbort()
+                break
             
             Process("Navigating Upgrade...")
-            if CheckAbort() 
-                break
-    
             PressKey("PgDn") ; Navigate to Cars Menu
             PressKey("Down", 50) ; Navigate to Upgrades & Tuning
             PressKey("Enter", 800) ; Select Upgrades & Tuning
@@ -267,15 +290,17 @@ UnlockLoop() {
             Process("Navigating Home...")
             PressKey("Esc", 1500) ; Navigate to Upgrades Menu
             PressKey("Esc", 1500) ; Navigate to Cars Menu
-            PressKey("PgUp", 50) ; Navigate to Buy & Sell Menu
+            PressKey("PgUp") ; Navigate to Buy & Sell Menu
             PressKey("Down", 1000) ; Navigate to Auction House
+
             if CheckAbort()
                 break
     
             Process("Navigating Auction House...")
-            PressKey("Enter", 700) ; Select Auction House
+            PressKey("Enter", 800) ; Select Auction House
             PressKey("Down") ; Navigate to Start Auction
-            PressKey("Enter", 700) ; Select Start Auction
+            PressKey("Enter", 800) ; Select Start Auction
+            
             if CheckAbort()
                 break
     
@@ -284,6 +309,7 @@ UnlockLoop() {
             Loop 6 
                 PressKey("Down", 50) ; Navigate to Recently Added
             PressKey("Enter") ; Select Recently Added
+
             if CheckAbort()
                 break
     
@@ -298,22 +324,25 @@ UnlockLoop() {
                 break
             }
 
-            Process("Scanning the right car...")
-            scannedCar := ScanOCR(0.333, 0.250, 0.260, 0.233, 1000)
+            if CheckAbort()
+                break
 
-            if InStr(scannedCar,"1998 Subaru", 1) && SelectedCar = CarList[1] {
-                ShowNotif("error", "Reward Unlock", "The first car is not 1998 Subaru!`nEmergency break!")
-                Process("Exiting the process...")
+            Process("Scanning the right car...")
+            scannedCar := ScanOCR(0.080, 0.040, (0.290-0.080), (0.070-0.040), 1000)
+
+            if  SelectedCar = CarList[1] && !InStr(scannedCar, "1998 Subaru", 0) {
+                ShowNotif("error", "Reward Unlock", "The current car is not 1998 Subaru!`nEmergency break!")
+                CarMismatch := true
                 break
-            } else if InStr(scannedCar, "2021 Lamborghini", 1) && SelectedCar = CarList[2] {
-                ShowNotif("error", "Reward Unlock", "The first car is not 2021 Lamborghini!`nEmergency break!")
-                Process("Exiting the process...")
+            } else if SelectedCar = CarList[2] && !InStr(scannedCar, "2024 Lamborghini", 0) {
+                ShowNotif("error", "Reward Unlock", "The current car is not 2021 Lamborghini!`nEmergency break!")
+                CarMismatch := true
                 break
-            } else if InStr(scannedCar,"1999 Dodge", 1) && SelectedCar = CarList[3] {
-                ShowNotif("error", "Reward Unlock", "The first car is not 1999 Dodge!`nEmergency break!")
-                Process("Exiting the process...")
+            } else if SelectedCar = CarList[3] && !InStr(scannedCar, "1999 Dodge", 0) {
+                ShowNotif("error", "Reward Unlock", "The current car is not 1999 Dodge!`nEmergency break!")
+                CarMismatch := true
                 break
-            } 
+            }
 
             if CheckAbort()
                 break
@@ -326,15 +355,20 @@ UnlockLoop() {
             PressKey("Enter") ; Select Remove from Garage
             PressKey("Down") ; Navigate to Confirm
             PressKey("Enter", 1000) ; Confirm Remove from Garage
+
             if CheckAbort()
                 break
     
             Process("Returning to Home...")
             PressKey("Esc", 1600) ; Navigate to Auction House Menu
             PressKey("Esc", 1600) ; Navigate to Buy & Sell Menu
+            
             if CheckAbort()
                 break
         }
+
+        if CheckAbort()
+            break
 
         Switch SelectedCar {
             Case "Subaru Impreza 22B-STi":
@@ -345,6 +379,12 @@ UnlockLoop() {
                 
             Case "Dodge Viper GTS ACR":
                 ShowNotif("success", "Reward Unlock", FormatCommas(CreditCount) " CR have been obtained.")
+        }
+
+        if CarMismatch {
+            Process("Returning to Home...")
+            PressKey("Esc", 1600) ; Navigate to Auction House Menu
+            PressKey("Esc", 1600) ; Navigate to Buy & Sell Menu
         }
         
         PressKey("PgUp") ; Navigate to Campaign Menu

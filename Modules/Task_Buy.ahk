@@ -1,14 +1,14 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro        ║
-; ║        Cyber Noir Edition v1.7.0        ║
+; ║        Cyber Noir Edition v1.8.0        ║
 ; ╚═════════════════════════════════════════╝
 
-global BuyCount := 0
-global SkillPtsScanSuccess := false
-
 StartBuy() {
-    global ActiveMode, MasterMode, StatusText, cActive, BuyCount, BuyRunSeconds
+    global ActiveMode, MasterMode, StatusText, cActive, BuyRunSeconds
     global BuyRunTime_UI, CarCount_UI, CarsLabel_UI, SkillPtsWant_In, CarCount_In, SkillPtsCount_In, SelectedCarPoint
+
+    if FindGame() = 0
+        return
 
     if !ToggleMode("Buy") {
         StatusText.Value := "⬤  Stopping..."
@@ -41,7 +41,9 @@ StartBuy() {
 BuyLoop() {
     global ActiveMode, MasterMode, MasterStart, UserTier, SkillPtsScanSuccess
     global cActive, cHighlight, cIdle
-    global BuyCount, CarCount_In, SelectedCar, CarCount_UI, BuyRunTime_UI, SkillPtsCount_In
+    global CarCount_In, SelectedCar, CarCount_UI, BuyRunTime_UI, SkillPtsCount_In
+
+    BuyCount := 0
 
     ; Local helper to cleanly check if the macro should stop
     CheckAbort() => (ActiveMode != "Buy" || (!MasterMode && MasterStart))
@@ -81,13 +83,11 @@ BuyLoop() {
 
         CarCount_In.Value := Floor(SkillPtsCount_In.Value / SelectedCarPoint)
         if CarCount_In.Value > 0
-            ShowNotif("info", "Car Purchase", CarCount_In.Value " " SelectedCar " will be purchased.")
+            ShowNotif("info", "Car Purchase", CarCount_In.Value " " SelectedCar " will be purchased.`nAn extra car will be purchased for safety measure.")
         else {
             ShowNotif("error", "Car Purchase", "Insufficient Skill Points.")
             break
         }
-
-        ShowNotif("info", "Car Purchase", CarCount_In.Value " " SelectedCar " will be purchased.")
 
         Process("Navigating Journal...")
         Loop 3
@@ -95,9 +95,9 @@ BuyLoop() {
         PressKey("Down", 50) ; Navigate to Collection Journal
         PressKey("Enter", 650) ; Select Collection Journal
         PressKey("Right") ; Navigate to Master Explorer
-        PressKey("Enter") ; Select Master Explorer
+        PressKey("Enter", 650) ; Select Master Explorer
         PressKey("Down") ; Navigate to Car Collection
-        PressKey("Enter") ; Select Car Collection
+        PressKey("Enter", 650) ; Select Car Collection
         PressKey("Backspace") ; Select Manufacturers
         if CheckAbort()
             break
@@ -139,7 +139,7 @@ BuyLoop() {
 
         ; ── Buying Car ───────────────
         Process("Buying " SelectedCar "...")
-        While (BuyCount < CarCount_In.Value) {
+        While (BuyCount < CarCount_In.Value+1) {
             PressKey("Space") ; Purchase Car
             PressKey("Down") ; Navigate to Yes
             PressKey("Enter") ; Select Yes (Car Collection)

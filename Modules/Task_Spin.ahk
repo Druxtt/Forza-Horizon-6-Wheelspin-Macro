@@ -1,15 +1,14 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro        ║
-; ║        Cyber Noir Edition v1.7.0        ║
+; ║        Cyber Noir Edition v1.8.0        ║
 ; ╚═════════════════════════════════════════╝
 
-#Requires AutoHotkey v2.0
-
-global SpinCount    := 0
-
 StartSpin() {
-    
-    global ActiveMode, StatusText, cActive, SpinCount, SpinOpenCount_UI, SpinLeftCount_UI, SpinRunTime_Ui, SpinRunSeconds
+    global ActiveMode, StatusText, cActive, SpinRunSeconds
+    global SpinOpenCount_UI, SpinLeftCount_UI, SpinRunTime_Ui
+
+    if FindGame() = 0
+        return
     
     if !ToggleMode("Spin") {
         StatusText.Value := "⬤  Stopping..."
@@ -18,7 +17,6 @@ StartSpin() {
 
     StartIndicators()
     if (ActiveMode = "Spin") {
-        SpinCount             := 0
         SpinRunSeconds        := 0
         SpinOpenCount_UI.Value    := "0" 
         SpinLeftCount_UI.Value    := "0"  
@@ -45,9 +43,9 @@ SpinLoop() {
 
     CheckAbort() => (ActiveMode != "Spin")
 
-    if WaitForPixel("Checking Wheelspin type...", 0.121, 0.312, "0xC7FD05", , 1000, 50, true, 5, "Super Wheelspinning...")
+    if WaitForPixel("Checking Wheelspin type...", 0.121, 0.312, "0xC7FD05", , 1000, 50, true, 25, "Super Wheelspinning...")
         SpinType := "Super Wheelspin"
-    else if WaitForPixel("Checking Wheelspin type...", 0.879, 0.462, "0xC9FE03", , 1000, 50, true, 5, "Wheelspinning...")
+    else if WaitForPixel("Checking Wheelspin type...", 0.879, 0.462, "0xC9FE03", , 1000, 50, true, 25, "Wheelspinning...")
         SpinType := "Wheelspin"
     else
         return
@@ -56,9 +54,9 @@ SpinLoop() {
     PressKey("Enter") ; Enter Wheelspin
 
     if SpinType = "Super Wheelspin"
-        SpinLeftCount   := ScanOCR(0.107, 0.622, 0.071, 0.052, 5000, , true)
+        SpinLeftCount   := ScanOCR(0.107, 0.622, 0.071, 0.052, 3000, , true)
     else if SpinType = "Wheelspin"
-        SpinLeftCount   := ScanOCR(0.148, 0.624, 0.075, 0.054, 5000, , true)
+        SpinLeftCount   := ScanOCR(0.148, 0.624, 0.075, 0.054, 3000, , true)
 
     SpinLeftCount := SpinLeftCount = -1 ? SpinToOpen : SpinLeftCount
 
@@ -69,18 +67,25 @@ SpinLoop() {
             if ScanOCR(0.072, 0.916, 0.027, 0.034, 2000, "Skip")
                 PressKey("Enter", 50) ; Skip`
 
+            if CheckAbort()
+                break
+
             ; Rescan Wheelspin amount to avoid desync
             SpinOpenCount++
             if Mod(SpinOpenCount, 5) = 0 && SpinOpenCount > 0 {
                 if SpinType = "Super Wheelspin"
-                    SpinLeftCount   := ScanOCR(0.107, 0.622, 0.071, 0.052, 5000, , true)
+                    spin := ScanOCR(0.107, 0.622, 0.071, 0.052, 5000, , true)
                 else if SpinType = "Wheelspin"
-                    SpinLeftCount   := ScanOCR(0.148, 0.624, 0.075, 0.054, 5000, , true)
+                    spin := ScanOCR(0.148, 0.624, 0.075, 0.054, 5000, , true)
+                SpinLeftCount := spin = -1 ? SpinLeftCount : spin
             }
+
+            if CheckAbort()
+                break
 
             SpinOpenCount_UI.Value    := SpinOpenCount
             SpinLeftCount_UI.Value    := SpinLeftCount
-            if (WaitForPixel("Collecting...", 0.058, 0.926, "0xFFFFFF", , 4000, 50, true, , "Collecting...")) {
+            if (WaitForPixel("Collecting...", 0.058, 0.926, "0xFFFFFF", , 4000, 50, true, , 0)) {
 
                 if Mod(SpinOpenCount, SpinToOpen) = 0 && SpinOpenCount > 0 {
                     PressKey("Esc", 50) ; Collect Prize
@@ -88,9 +93,12 @@ SpinLoop() {
                     PressKey("Enter", 50) ; Collect Prize and Spin Again
                 }
             }
+
+            if CheckAbort()
+                break
             
             while (RewardCount < 3) {
-                if (WaitForPixel("Selling...", 0.450, 0.695, "0x000000", , 1000, 50, true, , "Info: No duplicate car found!")) {
+                if WaitForPixel("Selling...", 0.450, 0.695, "0x000000", , 1000, 50, true, , 0) {
                     if SpinMode = "SELL" {
                         PressKey("Down", 50)
                         PressKey("Down", 50)
@@ -117,10 +125,16 @@ SpinLoop() {
         
         WaitForPixel("Returning to Free Roam...", 0.137, 0.950, "0xFFFFFF", , 10000)
 
+        if CheckAbort()
+            break
+
         Process("Navigating Menu...")
         PressKey("Esc", 1000) ; Open Menu
         PressKey("PgDn", 50) ; Navigate to Cars Menu
         PressKey("PgDn", 50) ; Navigate to My Horizon Menu
+
+        if CheckAbort()
+            break
         
         if SpinType = "Super Wheelspin"
             PressKey("Left", 500) ; Navigate to Super Wheelspin
@@ -128,5 +142,15 @@ SpinLoop() {
             PressKey("Right", 500) ; Navigate to Wheelspin
 
         PressKey("Enter", 50)
+    }
+}
+
+IsSpinGuiOpen() {
+    global SpinGUI
+    try {
+        ; Check if variable is initialized, not null, and has an active OS window handle
+        return IsSet(SpinGUI) && SpinGUI && WinExist("ahk_id " SpinGUI.Hwnd)
+    } catch {
+        return false
     }
 }

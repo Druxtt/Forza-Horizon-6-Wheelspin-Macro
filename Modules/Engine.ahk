@@ -1,6 +1,6 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro        ║
-; ║        Cyber Noir Edition v1.7.0        ║
+; ║        Cyber Noir Edition v1.8.0        ║
 ; ╚═════════════════════════════════════════╝
 
 ; ══════════════════════════════════════════════
@@ -12,13 +12,15 @@ TogglePause() {
     Pause(-1)
     ;PauseMode := ActiveMode ? !PauseMode : PauseMode
 
-    if (PauseMode && ActiveMode) {
+    if !PauseMode && ActiveMode {
         StatusText.Value := "⬤  Paused..."
         StatusText.SetFont("c" cPaused)
+        PauseMode := true
         ShowNotif("info", "Macro Paused", "Execution has been temporarily suspended.")
-    } else if !PauseMode && ActiveMode {
+    } else if PauseMode && ActiveMode {
         StatusText.Value := "⬤  Running..."
         StatusText.SetFont("c" cStat)
+        PauseMode := false
         ShowNotif("success", "Macro Resumed", "Resuming automated sequence.")
     }
 }
@@ -41,7 +43,10 @@ ToggleMode(mode) {
 ToggleAll() {
     global ActiveMode, MasterMode, MasterStart
     global SkillPtsCount_In, SkillPtsWant_In, CarCount_In, LoopCount_In
-    global MaxPoints, PointsGain, SelectedCarPoint, cHighlight, cIdle
+    global MaxPoints, PointsGain, SelectedCarPoint, cHighlight, cIdle, InitStartBtn
+
+    if FindGame() = 0
+        return
 
     StartIndicators()
     MasterMode := !MasterMode
@@ -119,14 +124,14 @@ StartIndicators() {
         DelaySlider_UI.Enabled   := false
         LoopCount_In.Enabled     := false
     }
-    CodeSelect_UI.Enabled := false
+    EventLabSelect_UI.Enabled := false
 
     SetTimer(TotalTimerTick, 1000)
 }
 
 ResetIndicators() {
     global Key_UI, Process_UI, StatusText, cIdle, cTextDim
-    global TotalRunTime_UI, RaceRunTime_UI, BuyRunTime_UI, UnlockRunTime_UI, SectorCount, ActiveMode, MasterMode
+    global TotalRunTime_UI, RaceRunTime_UI, BuyRunTime_UI, UnlockRunTime_UI, SectorCount_UI, ActiveMode, MasterMode
     global SkillPtsCount_In, SkillPtsWant_In, CarCount_In, CarSelect_UI
 
     SetTimer(RaceTimerTick, 0)
@@ -157,9 +162,6 @@ ResetIndicators() {
     SWheelCount_UI.SetFont("c" cIdle)
     WheelCount_UI.SetFont("c" cIdle)
     CreditCount_UI.SetFont("c" cIdle)
-    SpinRunTime_UI.SetFont("c" cIdle)
-    SpinOpenCount_UI.SetFont("c" cIdle)
-    SpinLeftCount_UI.SetFont("c" cIdle)
     
     StatusText.Value := "⬤  Stopped"
     StatusText.SetFont("c" cTextDim)
@@ -169,7 +171,7 @@ ResetIndicators() {
     CarCount_In.Enabled      := true
     CarSelect_UI.Enabled     := true
     DelaySlider_UI.Enabled   := true
-    CodeSelect_UI.Enabled    := true
+    EventLabSelect_UI.Enabled    := true
     LoopCount_In.Enabled     := true
 
     PressKey("W up")
@@ -179,30 +181,44 @@ ResetIndicators() {
 ;  UPDATE VALUE INPUT
 ; ══════════════════════════════════════════════
 
-UpdateCode(ctrl, *) {
-    global SelectedCode, MaxPoints, MaxSections, AveragePoints, SkillPtsCount_In, SkillPtsWant_In, CarCount_In, PointsTotal, CodeTune, CodeEventLab
+UpdateEventLab(ctrl, *) {
+    global EventLab, EventLabData, MaxPoints, MaxSections, AveragePoints, SkillPtsWant_In, CarCount_In, PointsTotal, CodeTune, CodeEventLab, SelectedCarPoint
 
-    SelectedCode  := ctrl.Text
-    MaxSections   := (SelectedCode = "AMMAGEDON") ? 100 : 96
-    MaxPoints     := (SelectedCode = "AMMAGEDON") ? 990 : 940
-    AveragePoints := (SelectedCode = "AMMAGEDON") ? 9.9 : 9.8
-    
-    CodeTune      := (CodeSelect_UI.Text = "AMMAGEDON") ? "206657706" : "293391902"
-    CodeEventLab  := (CodeSelect_UI.Text = "AMMAGEDON") ? "102089819" : "124198343"
+    EventLab        := ctrl.Text
+
+    data := EventLabData[EventLab]
+    MaxSections     := data.MaxSections
+    MaxPoints       := data.MaxPoints
+    AveragePoints   := data.AveragePoints
+    CodeTune        := data.CodeTune
+    CodeEventLab    := data.CodeEvent
     
     SkillPtsWant_In.Value := UpdateSkillPtsWant({Value: MaxPoints})
     CarCount_In.Value     := Floor(PointsTotal / SelectedCarPoint)
+
+    WriteMacroIni("Settings", "EventLab", EventLab)
 }
 
 UpdateCar(ctrl, *) {
-    global SelectedCar, SelectedCarPoint, PointsTotal, CarSelect_UI, CarsLabel_UI, CarCount_In
+    global SelectedCar, SelectedCarPoint, PointsTotal, CarSelect_UI, CarsLabel_UI, CarCount_In, CarData
     
     SelectedCar      := ctrl.Text
-    SelectedCarPoint := (CarSelect_UI.Text = "Lamborghini Revuelto") ? 39 : 30
+    
+    SelectedCarPoint := CarData[SelectedCar].SkillPtsCost
     CarPurchaseCount := Floor(PointsTotal / SelectedCarPoint)
         
     CarCount_In.Value  := CarPurchaseCount
     CarsLabel_UI.Value := CarPurchaseCount
+
+    WriteMacroIni("Settings", "Car", SelectedCar)
+}
+
+UpdateReso(ctrl, *) {
+    global SelectedReso
+
+    SelectedReso := ctrl.Text
+
+    WriteMacroIni("Settings", "Resolution", SelectedReso)
 }
 
 UpdateSkillPts(ctrl, *) {
@@ -292,7 +308,7 @@ ValidateSkillPtsWant(ctrl, *) {
 ; ══════════════════════════════════════════════
 
 GetMinScore(score) {
-    global SelectedCode, MaxPoints, MaxSections
+    global EventLab, MaxPoints, MaxSections
 
     pointsPerSection := MaxPoints / MaxSections
     sections         := Ceil(score / pointsPerSection)
@@ -300,16 +316,18 @@ GetMinScore(score) {
 }
 
 CalcTimeRace(score) {
-    global MaxSections, SelectedCode
+    global MaxSections, EventLab, EventLabData
 
     StartLoadingTime := 52
     MidLoadingTime   := 20
     FinLoadingTime   := 40
 
     pointsPerSection := MaxPoints / MaxSections
-    secPerSection    := (SelectedCode = "AMMAGEDON") ? 20 : 30
-    secPerRow        := (SelectedCode = "AMMAGEDON") ? 4 : 7
-    sectionsPerRow   := (SelectedCode = "AMMAGEDON") ? 1 : 4
+
+    data := EventLabData[EventLab]
+    secPerSection       := data.SecPerSection
+    secPerRow           := data.SecPerRow
+    sectionsPerRow      := data.SectionsPerRow
 
     sections  := Ceil(score / pointsPerSection)
     rows      := Ceil(sections / sectionsPerRow)
@@ -500,8 +518,8 @@ WaitForPixel(text, ratioX, ratioY, targetColor, targetColorHDR := "", timeoutMs 
             return false
 
         WinGetClientPos(&mLeft, &mTop, &mWidth, &mHeight, GameTitle)
-        centerX := mLeft + Round(ratioX * mWidth)
-        centerY := mTop  + Round(ratioY * mHeight)
+        centerX := mLeft + (ratioX * mWidth)
+        centerY := mTop  + (ratioY * mHeight)
             
         ; Define a tiny bounding box based on your radius
         x1 := centerX - radius
@@ -533,10 +551,11 @@ WaitForPixel(text, ratioX, ratioY, targetColor, targetColorHDR := "", timeoutMs 
         }
 
         if (A_TickCount - StartTime > timeoutMs) {
-            if (isFatal) {
-                failMsg := note ? note : "Menu interaction timed out!"
+            if isFatal {
+                failMsg := note!="" ? note : "Menu interaction timed out!"
                 Process("Sync Error: " failMsg)
-                ShowNotif("error", "Sync Failure", failMsg)
+                if note!=0
+                    ShowNotif("error", "Sync Failure", failMsg)
                 return false
             } else {
                 Process("Sync Warning: Pixel missed. Proceeding...", 2000)
@@ -576,8 +595,13 @@ LocatePixelInArea(ratioX, ratioY, ratioW, ratioH, targetColor, variation := 5) {
 ;  CONTROL OUTPUTS & HARDWARE ACTIONS
 ; ══════════════════════════════════════════════
 
+; --- Put this at the very top of your main script file ---
+global GameHwnd := 0  ; Initializes the permanent window pointer handle
+
+; --- Your Updated PressKey Function ---
 PressKey(key, delay := 500) {
-    global Key_UI, cHighlight, cIdle, CurrentMultiplier, GameTitle
+    ; OPTIMIZATION: Added GameHwnd and MiniKey_UI to your global list
+    global Key_UI, MiniKey_UI, cHighlight, cIdle, CurrentMultiplier, GameTitle, GameHwnd
 
     switch key {
         case "Down":      displayname := "↓"
@@ -609,13 +633,27 @@ PressKey(key, delay := 500) {
         sendKey := key
     }
 
-    try {
-        ControlSend("{" sendKey "}", , GameTitle)
-    } catch {
-        Process("Game Window Not Found!")
-        ShowNotif("error", "Target Error", "Keystroke missed because game canvas was lost.")
+    ; SMART HWND CACHING:
+    ; If we don't have the handle yet, or the old handle died (game restarted), find it once.
+    if (!GameHwnd || !WinExist(GameHwnd)) {
+        GameHwnd := WinExist(GameTitle)
     }
 
+    ; If the game isn't running at all, throw the warning safely
+    if (!GameHwnd) {
+        ShowNotif("error", "Target Error", "Keystroke missed because game window was not found.")
+        return
+    }
+
+    try {
+        ; CRUCIAL CHANGE: We target GameHwnd directly instead of the GameTitle string text.
+        ; This makes background input delivery 100% immune to focus changes.
+        ControlSend("{" sendKey "}", , GameHwnd)
+    } catch {
+        ShowNotif("error", "Target Error", "Keystroke missed because game canvas was lost.")
+    }
+    
+    delay := Random(delay, delay + 50)
     Sleep(CurrentMultiplier * delay)
 }
 
@@ -643,6 +681,8 @@ UpdateSpeed(*) {
     
     Global CurrentMultiplier := Multipliers[sliderPosition]
     SpeedLabel_UI.Text       := "Delay Multiplier: " CurrentMultiplier "x"
+
+    WriteMacroIni("Settings", "CurrentMultiplier", CurrentMultiplier)
 }
 
 GetGameMonitor() {
@@ -687,12 +727,10 @@ FormatCommas(val) {
 
 OnMessage(0x0201, WM_LBUTTONDOWN)
 
-; ══════════════════════════════════════════════
-;  MASTER MOUSE ROUTING CONTROLLER (NON-BLOCKING)
-; ══════════════════════════════════════════════
 WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
-    global MainGUI, MiniGui, RestoreBtn, PauseBtn, StopBtn, DragOffsetX, DragOffsetY
+    global MainGUI, MiniGui, SpinGUI, RestoreBtn, PauseBtn, StopBtn, DragOffsetX, DragOffsetY
     global SliderCfg, SliderKnob, SliderTrack, MainDragOffsetX, MainDragOffsetY
+    global SpinDragOffsetX, SpinDragOffsetY ; Scoped asynchronous position matrix
 
     ; ── 1. MINI GUI ROUTING ──
     if (IsSet(MiniGui) && WinExist("ahk_id " MiniGui.Hwnd)) {
@@ -712,7 +750,22 @@ WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
         }
     }
 
-    ; ── 2. MAIN GUI ROUTING ──
+    ; ── 2. SPIN GUI ROUTING (Asynchronous Hand-off) ──
+    try {
+        if (IsSet(SpinGUI) && SpinGUI && hwnd == SpinGUI.Hwnd) {
+            CoordMode("Mouse", "Screen")
+            MouseGetPos(&mouseX, &mouseY)
+            WinGetPos(&guiX, &guiY, , , SpinGUI.Hwnd)
+            SpinDragOffsetX := mouseX - guiX
+            SpinDragOffsetY := mouseY - guiY
+            SetTimer(DragSpinGUI, 10)
+            return
+        }
+    } catch {
+        ; Quietly catch and discard "Windowless GUI" exceptions if the panel was destroyed
+    }
+
+    ; ── 3. MAIN GUI ROUTING ──
     if (!IsSet(MainGUI) || !WinExist("ahk_id " MainGUI.Hwnd))
         return
 
@@ -738,4 +791,389 @@ WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
         SetTimer(DragMainGUI, 10)
         return
     }
+}
+
+; ══════════════════════════════════════════════
+;  GAME WINDOW MANIPULATION
+; ══════════════════════════════════════════════
+
+SetGameResolution(ctrl) {
+    global WindowedMode, GameTitle, SelectedReso
+    global IsGameAlwaysOnTop, AlwaysOnTopBtn
+
+    if !WinExist(GameTitle) {
+        ShowNotif("error", "Resolution Resizing Error", "Game window could not be found.")
+        return
+    }
+
+    ; if SpecialKCheck() = false {
+    ;     ShowNotif("error", "Resolution Resizing Error", "Special K is not enabled.")
+    ;     return
+    ; }
+
+    resParts := StrSplit(SelectedReso, "x", " ")
+
+    TargetWidth := Integer(resParts[1])
+    TargetHeight := Integer(resParts[2])
+
+    if !WindowedMode {
+
+        WindowedMode := !WindowedMode ; Toggle the true/false state
+        
+        ; Calculate coordinates to center the window on the primary monitor
+        ; TargetX := (A_ScreenWidth - TargetWidth) // 2
+        TargetX := (A_ScreenWidth) - (TargetWidth // 3)
+        ;TargetY := (A_ScreenHeight - TargetHeight) // 2
+        TargetY := (A_ScreenHeight - TargetHeight)
+        
+        ; Reposition and apply resolution boundaries
+        WinMove(TargetX, TargetY, TargetWidth, TargetHeight, GameTitle)
+
+        ctrl.Opt("c3B82F6")
+        ShowNotif("info", "Windowed Mode", "Press Alt + Left Click to hold and drag the game window.")
+    }
+    else {
+        WindowedMode := !WindowedMode ; Toggle the true/false state
+
+        ; --- STEP 3: Stretch the window to fill your entire monitor space ---
+        WinMove(0, 0, A_ScreenWidth, A_ScreenHeight, GameTitle)
+
+        ctrl.Opt("c94A3B8")
+        ShowNotif("info", "Fullscreen Mode", "Press 🗗 button to enable windowed mode.")
+
+        WinSetAlwaysOnTop(0, GameTitle)
+        IsGameAlwaysOnTop := false
+        AlwaysOnTopBtn.Opt("c94A3B8")
+    }
+}
+
+; ToggleBackgroundLock() {
+;     global ForceBackgroundMode
+;     ForceBackgroundMode := !ForceBackgroundMode
+    
+;     if (ForceBackgroundMode) {
+;         TrayTip("Background Lock ON", "The game is now locked out of focus.")
+;         SetTimer(AnchorFocusToDesktop, 50) ; Check focus every 50 milliseconds
+;     } else {
+;         TrayTip("Background Lock OFF", "Game focus behavior returned to normal.")
+;         SetTimer(AnchorFocusToDesktop, 0) ; Turn off the loop
+;     }
+; }
+
+; AnchorFocusToDesktop() {
+;     global GameTitle
+    
+;     ; If Windows tries to force the game to become active...
+;     if WinActive(GameTitle) {
+;         ; Immediately pass focus to the Windows Desktop shell layers instead!
+;         ; This satisfies Windows' focus rule without activating the game.
+;         if WinExist("ahk_class WorkerW")
+;             WinActivate("ahk_class WorkerW")
+;         else if WinExist("ahk_class Progman")
+;             WinActivate("ahk_class Progman")
+;     }
+; }
+
+ToggleWindowLock(ctrl) {
+    global IsGameLocked, GameTitle
+    
+    if !WinExist(GameTitle) {
+        ShowNotif("error","Lock Error", "Game window could not be found.")
+        return
+    }
+    
+    IsGameLocked := !IsGameLocked
+    
+    if (IsGameLocked) {
+        ; 1. Tell Windows to disable the window. 
+        ; It remains completely visible, but becomes completely immune to focus vacuuming and clicks.
+        WinSetEnabled(false, GameTitle)
+        
+        ; 2. Instantly pass focus to the desktop wallpaper layer to clear the screen
+        if WinExist("ahk_class WorkerW")
+            WinActivate("ahk_class WorkerW")
+        else if WinExist("ahk_class Progman")
+            WinActivate("ahk_class Progman")
+        
+        ctrl.Opt("cF59E0B")
+        ShowNotif("info", "Background Lock ON", "Game is locked open but completely inactive.")
+    } else {
+        ; 3. Re-enable the window so it can accept normal clicks and focus again
+        WinSetEnabled(true, GameTitle)
+        
+        ; Bring it back to the front
+        WinActivate(GameTitle) 
+        
+        ctrl.Opt("c94A3B8")
+        ShowNotif("info", "Background Lock OFF", "Game control restored to normal.")
+    }
+}
+
+AlwaysOnTopEnable(ctrl) {
+    global IsGameAlwaysOnTop, GameTitle, WindowedMode
+    
+    if !WinExist(GameTitle) {
+        ShowNotif("error","Always On Top", "Game window could not be found.")
+        return
+    }
+    
+    if !WindowedMode {
+        ShowNotif("error","Always On Top", "Always On Top mode is disabled on Fullscreen mode.")
+        return
+    }
+    
+    IsGameAlwaysOnTop := !IsGameAlwaysOnTop
+    
+    if (IsGameAlwaysOnTop) {
+        WinSetAlwaysOnTop(1, GameTitle)
+        ctrl.Opt("cF7507F")
+        ShowNotif("info", "Always On Top ON", "Game is set to be Always On Top other windows.")
+    } else {
+        WinSetAlwaysOnTop(0, GameTitle)
+        ctrl.Opt("c94A3B8")
+        ShowNotif("info", "Always On Top OFF", "Game is set to be normal.")
+    }
+}
+
+MoveWindow() {
+    CoordMode "Mouse", "Screen"
+    MouseGetPos &startX, &startY, &targetWin
+    WinGetPos &winX, &winY, , , targetWin
+    
+    while GetKeyState("LButton", "P") {
+        MouseGetPos &currentX, &currentY
+        WinMove winX + (currentX - startX), winY + (currentY - startY), , , targetWin
+        Sleep 10 ; Smooth tracking without eating CPU
+    }
+}
+
+
+; ══════════════════════════════════════════════
+;  MISC SETTINGS
+; ══════════════════════════════════════════════
+
+; Calculates the similarity percentage between two strings (0 to 100)
+GetTextSimilarity(str1, str2) {
+    s := Format("{:L}", str1) ; Convert to lowercase for case-insensitivity
+    t := Format("{:L}", str2)
+    
+    lenS := StrLen(s)
+    lenT := StrLen(t)
+    
+    if (s == t) 
+        return 100.0
+    if (lenS == 0 || lenT == 0) 
+        return 0.0
+    
+    v0 := []
+    v1 := []
+    loop lenT + 1 {
+        v0.Push(A_Index - 1)
+        v1.Push(0)
+    }
+    
+    loop lenS {
+        i := A_Index
+        v1[1] := i
+        chS := SubStr(s, i, 1)
+        
+        loop lenT {
+            j := A_Index
+            chT := SubStr(t, j, 1)
+            cost := (chS == chT) ? 0 : 1
+            v1[j + 1] := Min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost)
+        }
+        loop lenT + 1 {
+            v0[A_Index] := v1[A_Index]
+        }
+    }
+    
+    maxLen := Max(lenS, lenT)
+    return (1 - (v0[lenT + 1] / maxLen)) * 100
+}
+
+_LinkNoirTelemetry(ctrl, initialValue) {
+    ctrl.DefineProp("Text", {
+        get: (this) => ControlGetText(this.Hwnd, this.Gui.Hwnd),
+        set: (this, val) => (
+            RegExMatch(val, "[—–-]\s*(.*)$", &match) 
+            ? ControlSetText(match[1], this.Hwnd, this.Gui.Hwnd) 
+            : ControlSetText(val, this.Hwnd, this.Gui.Hwnd)
+        )
+    })
+    ctrl.Text := initialValue
+    return ctrl
+}
+
+_CopyToClip(text, label) {
+    A_Clipboard := text
+    ToolTip(label " Copied!`n" text)
+    SetTimer(() => ToolTip(), -2000)
+}
+
+LaunchGame(ctrl, *) {
+    global GameDir, GameExe
+    
+    ; Ensure we have a working directory before trying to launch
+    if (GameDir == "" || !DirExist(GameDir)) {
+        if (!LocateGameDir(false)) {
+            return ; Abort launch if directory wasn't found/selected
+        }
+    }
+    
+    try {
+        Run(GameDir "\" GameExe)
+        ShowNotif("success", "Launcher", "Launching Forza Horizon 6...")
+    } catch Error as err {
+        MsgBox("Failed to execute game binary:`n" err.Message, "Launcher Error", 16)
+    }
+}
+
+FindGame() {
+    global GameTitle
+
+    if !WinExist(GameTitle) {
+        ShowNotif("error", "Error", "Game process could not be found.")
+        return 0
+    }
+}
+
+LocateGameDir(forceManual := false) {
+    global GameDir, GameExe
+    targetFolder := ""
+
+    if (!forceManual) {
+        targetFolder := AutoLocateGameDir()
+    }
+
+    if (targetFolder == "") {
+        if (!forceManual) {
+            MsgBox("Forza Horizon 6 directory could not be auto-detected.`nPlease select your installation folder manually.", "MHI Auto-Setup", "Icon!")
+        }
+        chosenFolder := DirSelect(, 3, "Select your Forza Horizon 6 Installation Folder")
+        if (!chosenFolder) {
+            return false
+        }
+        targetFolder := chosenFolder
+    }
+
+    foundExe := false
+    cleanPath := RTrim(targetFolder, "\")
+    baseSlashes := StrLen(cleanPath) - StrLen(StrReplace(cleanPath, "\"))
+    
+    Loop Files, cleanPath "\" GameExe, "R" {
+        currentSlashes := StrLen(A_LoopFileFullPath) - StrLen(StrReplace(A_LoopFileFullPath, "\"))
+        if (currentSlashes - baseSlashes <= 3) {
+            foundExe := true
+            GameDir := RTrim(A_LoopFileDir, "\")
+            break
+        }
+    }
+
+    if (foundExe) {
+        WriteMacroIni("Settings", "GameDir", GameDir)
+        return true
+    } else {
+        MsgBox("Error: '" GameExe "' could not be found within 3 directory levels of the selected folder.", "MHI Verification Failed", "Iconx")
+        return false
+    }
+}
+
+AutoLocateGameDir() {
+    global GameExe
+    
+    ; ── 1. REAL-TIME RUNNING HOOK (100% Reliable for both Steam & Xbox App) ──
+    if WinExist("ahk_exe " GameExe) {
+        try {
+            fullPath := WinGetProcessPath("ahk_exe " GameExe)
+            SplitPath(fullPath, , &dirPath)
+            if DirExist(dirPath)
+                return RTrim(dirPath, "\")
+        }
+    }
+
+    ; ── 2. WINDOWS REGISTRY CHECK (Standard Steam/Retail App Paths) ──
+    regLocations := [
+        "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\" GameExe,
+        "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\" GameExe
+    ]
+    for regPath in regLocations {
+        try {
+            fullPath := RegRead(regPath)
+            SplitPath(fullPath, , &dirPath)
+            if DirExist(dirPath)
+                return RTrim(dirPath, "\")
+        }
+    }
+
+    ; ── 3. STEAM SYSTEM DIRECTORY REGISTRY LOOKUP ──
+    try {
+        steamPath := RegRead("HKCU\SOFTWARE\Valve\Steam", "SteamPath")
+        if steamPath {
+            steamTarget := steamPath "\steamapps\common\ForzaHorizon6"
+            if DirExist(steamTarget)
+                return steamTarget
+        }
+    }
+
+    ; ── 4. MULTI-DRIVE SCAN MATRIX (Fallback for Custom Libraries) ──
+    drives := ["C", "D", "E", "F", "G", "H", "X"]
+    for drive in drives {
+        commonSteamPath := drive ":\SteamLibrary\steamapps\common\ForzaHorizon6"
+        if DirExist(commonSteamPath)
+            return commonSteamPath
+            
+        commonXboxPath := drive ":\XboxGames\Forza Horizon 6\Content"
+        if DirExist(commonXboxPath)
+            return commonXboxPath
+            
+        commonXboxRoot := drive ":\XboxGames\Forza Horizon 6"
+        if DirExist(commonXboxRoot)
+            return commonXboxRoot
+    }
+
+    return "" 
+}
+
+SpoofWindowFocus() {
+    if WinExist(GameTitle) {
+        ; Only spoof if the game is currently running in the background
+        if !WinActive(GameTitle) {
+            gameHwnd := WinExist(GameTitle)
+            
+            ; 0x0006 = WM_ACTIVATE | wParam = 1 (WA_ACTIVE)
+            PostMessage(0x0006, 1, 0, , "ahk_id " gameHwnd)
+            
+            ; 0x001C = WM_ACTIVATEAPP | wParam = 1 (True)
+            PostMessage(0x001C, 1, 0, , "ahk_id " gameHwnd)
+        }
+    }
+}
+
+WriteMacroIni(Section, Key, Value) {
+    global GameExe, MacroIni
+
+    Base := EnvGet("USERPROFILE") "\Documents\My Mods\SpecialK\Profiles\"
+    
+    targetDir := Base GameExe
+    try {
+        if (!DirExist(targetDir))
+            DirCreate(targetDir)
+        IniWrite(Value, targetDir "\" MacroIni, Section, Key)
+    }
+}
+
+ReadMacroIni(Section, Key, DefaultValue := "") {
+    global GameExe, MacroIni
+    
+    Base := EnvGet("USERPROFILE") "\Documents\My Mods\SpecialK\Profiles\"
+        
+    targetFile := Base GameExe "\" MacroIni
+    if FileExist(targetFile) {
+        try {
+            return IniRead(targetFile, Section, Key)
+        }
+    }
+    
+    return DefaultValue ; Returns this if no file or key was found
 }

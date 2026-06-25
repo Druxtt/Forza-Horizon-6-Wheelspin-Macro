@@ -1,9 +1,16 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro        ║
-; ║        Cyber Noir Edition v1.7.0        ║
+; ║        Cyber Noir Edition v1.8.0        ║
 ; ╚═════════════════════════════════════════╝
 
 #Requires AutoHotkey v2.0
+
+; AUTOMATIC ADMIN ENFORCER
+; If the script isn't Admin, it restarts itself as Admin so it can control the game window.
+; if !A_IsAdmin {
+;     Run('*RunAs "' A_ScriptFullPath '"')
+;     ExitApp()
+; }
 
 #MaxThreadsPerHotkey 2
 #SingleInstance Force
@@ -18,6 +25,7 @@
 #Include modules\Task_Buy.ahk
 #Include modules\Task_Unlock.ahk
 #Include modules\Task_Spin.ahk
+#Include modules\SpecialK.ahk
 
 ;@Ahk2Exe-SetMainIcon assets\icon.ico
 
@@ -31,15 +39,30 @@ if A_IsCompiled {
 ; ══════════════════════════════════════════════
 ;  GAME-FOCUS BOUNDED HOTKEYS
 ; ══════════════════════════════════════════════
+
+; Tell AHK to keep running in the background to listen for hotkeys
+Persistent(true)
+
+SetTimer(SpoofWindowFocus, 250) ; Fires every 250ms
+
 #HotIf WinActive(GameTitle)
 
 \::StartRace()
 [::StartBuy()
 ]::StartUnlock()
 /::ToggleAll()
-=::StartSpin()
-F12::Reload()
 `::TogglePause()
 ^+c::GetCoordsColor()
+F5::ToggleDetectionZone()
+; F10::ToggleWindowLock()
+; F11::SetGameResolution()
+F12::Reload()
+!LButton::MoveWindow()
+
+#HotIf
+
+#HotIf IsSpinGuiOpen()
+
+=::StartSpin() 
 
 #HotIf

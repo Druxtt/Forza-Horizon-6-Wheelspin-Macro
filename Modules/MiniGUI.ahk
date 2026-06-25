@@ -1,6 +1,6 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro        ║
-; ║        Cyber Noir Edition v1.7.0        ║
+; ║        Cyber Noir Edition v1.8.0        ║
 ; ╚═════════════════════════════════════════╝
 
 ; ══════════════════════════════════════════════
@@ -17,7 +17,7 @@ MonitorGet(gameMonitorIndex, &mLeft, &mTop, &mRight, &mBottom)
 Global MonWidth            := mRight - mLeft
 Global MonHeight           := mBottom - mTop
 
-; 2. Define Ratios relative to your 1440p baseline workspace (2560x1440)
+; 2. Define Ratios relative to 1440p baseline workspace (2560x1440)
 Global ScaleX              := MonWidth / 2560
 Global ScaleY              := MonHeight / 1440
 
@@ -41,24 +41,40 @@ Global LeftAccentBar       := MiniGui.Add("Progress", "x0 y0 w" Round(4 * ScaleX
 MiniGui.SetFont("s" (8 * FontScale) " bold c00D2FF", "Segoe UI")
 MiniGui.Add("Text", "x" Round(15*ScaleX) " y" Round(12*ScaleY) " w" Round(110*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "⚙️ FH6 MACRO ")
 
-; Flat Premium Action Buttons (Header Control Bar)
-PauseBtn := MiniGui.Add("Text", "x" Round(145*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E cFFD166", "⏸")
-PauseBtn.SetFont("s" (9 * FontScale) " bold")
-PauseBtn.OnEvent("Click", MiniTogglePause)
+MiniGui.SetFont("s" (10 * FontScale) " bold")
 
-StopBtn := MiniGui.Add("Text", "x" Round(170*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E cFF5A5A", "⏹")
-StopBtn.SetFont("s" (9 * FontScale) " bold")
-StopBtn.OnEvent("Click", MiniStopMacro)
-
-RestoreBtn := MiniGui.Add("Text", "x" Round(195*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E c00D2FF", "⤢")
-RestoreBtn.SetFont("s" (10 * FontScale) " bold")
+RestoreBtn := MiniGui.Add("Text", "x" Round(195*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E c64748B", "⛶")
 RestoreBtn.OnEvent("Click", RestoreMainWindow)
+
+ReloadBtn := MiniGui.Add("Text", "x" Round(173*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E c94A3B8", "⭮")
+ReloadBtn.OnEvent("Click", (*) => Reload())
+
+LockBtn := MiniGui.Add("Text", "x" Round(151*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E c94A3B8", "🔒")
+LockBtn.OnEvent("Click", (ctrl, *) => ToggleWindowLock(ctrl))
+
+global AlwaysOnTopBtn := MiniGui.Add("Text", "x" Round(129*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E c94A3B8", "📌")
+AlwaysOnTopBtn.OnEvent("Click", (ctrl, *) => AlwaysOnTopEnable(ctrl))
+
+ResoSetBtn := MiniGui.Add("Text", "x" Round(107*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E c94A3B8", "🗗")
+ResoSetBtn.OnEvent("Click", (ctrl, *) => SetGameResolution(ctrl))
+
+InitStartBtn := MiniGui.Add("Text", "x" Round(195*ScaleX) " y" Round(70*ScaleY) " w" Round(18*ScaleX) " h" Round(18*ScaleY) " Center Background22252E c94A3B8", "⬤")
+InitStartBtn.OnEvent("Click", (ctrl, *) => MiniInitStartMacro(ctrl))
+
+; Flat Premium Action Buttons (Header Control Bar)
+MiniGui.SetFont("s" (9 * FontScale) " bold")
+
+global PauseBtn := MiniGui.Add("Text", "x" Round(170*ScaleX) " y" StartY " w" Round(18*ScaleX) " h" Round(18*ScaleY) " Center Background22252E cFFD166","❚❚")
+PauseBtn.OnEvent("Click", (ctrl, *) => MiniTogglePause(ctrl))
+
+global StopBtn := MiniGui.Add("Text", "x" Round(195*ScaleX) " y" StartY " w" Round(18*ScaleX) " h" Round(18*ScaleY) " Center Background22252E cFF5A5A", "⏹")
+StopBtn.OnEvent("Click", (ctrl, *) => MiniStopMacro(ctrl))
 
 ; --- SYSTEM STATUS SECTION (Always Visible) ---
 MiniGui.SetFont("s" (9 * FontScale) " norm c8A99AD", "Segoe UI")
-Global MiniTotalRunTime_UI := MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(6*ScaleY) " w" Round(200*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🕓  00:00")
-Global MiniKey_UI          := MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(2*ScaleY) " w" Round(200*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "⌨  [   ]")
-Global MiniProcess_UI      := MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(2*ScaleY) " w" Round(200*ScaleX) " h" Round(30*ScaleY) " BackgroundTrans", "⚙️  Waiting...")
+Global MiniTotalRunTime_UI := MiniGui.Add("Text", "x" Round(15*ScaleX) " y35" " w" Round(180*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🕓  00:00")
+Global MiniKey_UI          := MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(2*ScaleY) " w" Round(180*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "⌨  [   ]")
+Global MiniProcess_UI      := MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(2*ScaleY) " w" Round(180*ScaleX) " h" Round(30*ScaleY) " BackgroundTrans", "⚙️  Waiting...")
 
 ; Premium subtle dark divider line
 MiniGui.Add("Progress", "x" Round(15*ScaleX) " y+" Round(6*ScaleY) " w" Round(190*ScaleX) " h" Round(1*ScaleY) " Background22252E")
@@ -153,12 +169,23 @@ UpdateMiniWidgetMode(activeMode) {
 ; ══════════════════════════════════════════════
 ;  BUTTON ACTION INTERFACES
 ; ══════════════════════════════════════════════
-MiniTogglePause(ctrlObj, info) {
+MiniTogglePause(ctrl) {
+    global MasterMode, ActiveMode
+    
     TogglePause()
+
+    if !PauseMode && ActiveMode {
+        ctrl.Opt("cFFD166")
+        ctrl.Value := "❚❚"
+    }
+    else if PauseMode && ActiveMode {
+        ctrl.Opt("cFFD166")
+        ctrl.Value := "▶"
+    }
 }
 
-MiniStopMacro(ctrlObj, info) {
-    global ActiveMode
+MiniStopMacro(ctrl) {
+    global MasterMode, ActiveMode, PauseBtn
 
     if MasterMode
         ToggleAll()
@@ -168,7 +195,29 @@ MiniStopMacro(ctrlObj, info) {
             case "Buy": StartBuy()
             case "Unlock": StartUnlock()
             default: 
-        } 
+        }
+    
+    if !ActiveMode || (!MasterMode && MasterStart) {
+        ctrl.Opt("c94A3B8")
+        PauseBtn.Opt("c94A3B8")
+        PauseBtn.Value := "❚❚"
+    }
+}
+
+MiniInitStartMacro(ctrl) {
+    global MasterMode, ActiveMode, PauseBtn
+
+    ctrl.Opt("c22C55E")
+    PauseBtn.Opt("cFFD166")
+    PauseBtn.Value := "❚❚"
+    StopBtn.Opt("cFF5A5A")
+
+    ToggleAll()
+
+    ctrl.Opt("c94A3B8")
+    PauseBtn.Opt("c94A3B8")
+    PauseBtn.Value := "❚❚"
+    StopBtn.Opt("c94A3B8")
 }
 
 ; ══════════════════════════════════════════════
@@ -226,7 +275,7 @@ ShowNotif(type, title, message := "") {
         default:
             accentColor := "00D2FF"
             icon        := "ℹ️ "
-            duration    := -5000
+            duration    := -8000
     }
 
     ; ── INTERSECT DETECTION ROUTING ──
@@ -243,25 +292,96 @@ ShowNotif(type, title, message := "") {
     sY     := mHeight / 1440
     fScale := sX / (A_ScreenDPI / 96)
 
-    Notif := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20 -DPIScale")
+    ; Removed +E0x20 to make the notification interactive/clickable
+    Notif := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale")
     Notif.BackColor := "181A1F"
     Notif.Add("Progress", "x0 y0 w" Round(6*sX) " h" Round(70*sY) " Background" accentColor)
     
+    ; Notification Title (Width narrowed to 235*sX to clear room for the X button)
     Notif.SetFont("s" (10 * fScale) " bold c" accentColor, "Segoe UI")
-    Notif.Add("Text", "x" Round(15*sX) " y" Round(10*sY) " w" Round(250*sX) " BackgroundTrans", icon title)
+    Notif.Add("Text", "x" Round(15*sX) " y" Round(10*sY) " w" Round(235*sX) " BackgroundTrans", icon title)
     
+    ; Notification Body Message
     Notif.SetFont("s" (9 * fScale) " norm cEEEEEE", "Segoe UI")
-    Notif.Add("Text", "x" Round(15*sX) " y+" Round(5*sY) " w" Round(250*sX) " h" Round(35*sY) " BackgroundTrans", message)
+    Notif.Add("Text", "x" Round(15*sX) " y+" Round(5*sY) " w" Round(235*sX) " h" Round(35*sY) " BackgroundTrans", message)
+
+    ; ── CLOSE BUTTON ("X") ──
+    Notif.SetFont("s" (11 * fScale) " norm c888888", "Segoe UI")
+    closeBtn := Notif.Add("Text", "x" Round(255*sX) " y" Round(8*sY) " w" Round(15*sX) " h" Round(15*sY) " Center BackgroundTrans", "×")
+    closeBtn.OnEvent("Click", (*) => Notif.Destroy())
 
     tWidth  := Round(280 * sX)
     tHeight := Round(70 * sY)
     Notif.Show("w" tWidth " h" tHeight " Hide")
     
     ; Pins the notification precisely inside the workspace boundaries of that display
-    notifX := mRight - tWidth - Round(15 * sX)
-    notifY := mBottom - tHeight - Round(45 * sY)
+    notifX := mRight - tWidth - Round(10 * sX)
+    notifY := mBottom - tHeight - Round(10 * sY)
 
     WinMove(notifX, notifY,,, Notif.Hwnd)
     Notif.Show("NoActivate")
     SetTimer(() => Notif.Destroy(), duration)
+}
+
+global OverlayGui       := ""
+global OverlayGuiEnabled := false
+
+ToggleDetectionZone() {
+    global OverlayGui, OverlayGuiEnabled, GameTitle
+    
+    if !OverlayGuiEnabled {
+        OverlayGuiEnabled := !OverlayGuiEnabled
+
+        ; 1. Get the game's unique operating system ID (HWND)
+        gameHwnd := WinExist(GameTitle)
+        if !gameHwnd
+            return
+
+        if (OverlayGui) 
+            return
+
+        ; 2. TRICK 1: Add "+Owner" followed immediately by the game's HWND.
+        ; This explicitly chains the overlay's rendering layer to sit in front of the game.
+        OverlayGui := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20 +Owner" gameHwnd)
+        
+        OverlayGui.BackColor := "Red" 
+        WinSetTransparent(5, OverlayGui.Hwnd) 
+
+        ; Start tracking loop
+        SetTimer(UpdateOverlayPosition, 50)
+    } else if OverlayGuiEnabled {
+        OverlayGuiEnabled := !OverlayGuiEnabled
+
+        SetTimer(UpdateOverlayPosition, 0) 
+        if (OverlayGui) {
+            OverlayGui.Destroy()
+            OverlayGui := ""
+        }
+    }
+}
+
+UpdateOverlayPosition() {
+    global OverlayGuiEnabled, GameTitle
+    
+    if !WinExist(GameTitle) {
+        OverlayGuiEnabled := true
+        ToggleDetectionZone()
+        return
+    }
+    
+    WinGetPos(&gameX, &gameY, &gameW, &gameH, GameTitle)
+    
+    leftOffset := Integer(gameW * (1 / 3))
+    targetW    := Integer(gameW * (2 / 3))
+    targetH    := gameH
+    
+    targetX := gameX + leftOffset
+    targetY := gameY
+
+    OverlayGui.Show("X" targetX " Y" targetY " W" targetW " H" targetH " NoActivate")
+    
+    ; 3. TRICK 2: Use a low-level Windows API call to forcefully jump the overlay 
+    ; to the absolute top of the stack, preventing the active game from reclaiming the lead.
+    ; HWND_TOPMOST = -1 | SWP_NOSIZE (0x0001) | SWP_NOMOVE (0x0002) = 0x0003
+    DllCall("SetWindowPos", "Ptr", OverlayGui.Hwnd, "Ptr", -1, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "Int", 0x0003)
 }
