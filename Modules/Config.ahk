@@ -6,7 +6,7 @@
 ; ══════════════════════════════════════════════
 ;  ENVIRONMENT & GAME SETTINGS
 ; ══════════════════════════════════════════════
-global CurrentVersion := "v1.9.0"  
+global CurrentVersion := "v1.9.1"  
 global RepoOwner      := "M-Haziq-Iqbal"
 global RepoName       := "Forza-Horizon-6-Wheelspin-Macro"
 
