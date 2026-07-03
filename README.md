@@ -3,7 +3,7 @@
 Welcome to the ultimate progression companion for Forza Horizon 6! This is a highly modular, high-performance automation tool built on **AutoHotkey v2** designed to eliminate repetitive in-game tasks. Whether you want to skip the grind, farm credits, or stack up Super Wheelspins, this macro fully automates your workflow using optical character recognition (OCR), pixel-aware session tracking, and background play execution.
 
 <p align="center">
-  <img width="272" height="828" alt="Main Dashboard UI" src="https://github.com/user-attachments/assets/43944c7d-e954-4643-8763-3e8fc481dda2" />
+  <img width="272" height="828" alt="Main Dashboard UI" src="https://github.com/user-attachments/assets/497cbe98-6285-4111-86f4-b996f895eadd" />
   <img width="274" height="953" alt="Settings Configuration" src="https://github.com/user-attachments/assets/993f22f2-7095-4538-a710-bdc098750774" />
   <img width="272" height="828" alt="Targets & Telemetry" src="https://github.com/user-attachments/assets/001cc969-0b0f-40ba-a797-22db6bc01621" />
 </p>
