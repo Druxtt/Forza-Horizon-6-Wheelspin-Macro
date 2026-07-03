@@ -1,130 +1,115 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro        ║
-; ║        Cyber Noir Edition v1.8.0        ║
+; ║            Cyber Noir Edition           ║
 ; ╚═════════════════════════════════════════╝
 
 ; ══════════════════════════════════════════════
-;  RESOLUTION-RELATIVE MATRIX CONFIGURATION
+;  GUI CONSTRUCTION BLOCK
 ; ══════════════════════════════════════════════
-Global MiniGui             := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale")
-Global p                   := GetPalette()
-Global RestoreBtn, PauseBtn, StopBtn
-Global RaceControls := [], BuyControls := [], UnlockControls := []
+BuildMiniGui() {
 
-; 1. Fetch target game monitor dimensions in raw physical pixels
-gameMonitorIndex := GetGameMonitor()
-MonitorGet(gameMonitorIndex, &mLeft, &mTop, &mRight, &mBottom)
-Global MonWidth            := mRight - mLeft
-Global MonHeight           := mBottom - mTop
+    Global
+    Global RaceControls := [], BuyControls := [], UnlockControls := []
+    global previewGui := ""
 
-; 2. Define Ratios relative to 1440p baseline workspace (2560x1440)
-Global ScaleX              := MonWidth / 2560
-Global ScaleY              := MonHeight / 1440
+    MiniGui := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale")
+    
+    ; Resolution-Relative UI Bounding Boxes
+    TargetWidgetWidth   := Round(230 * ScaleX)
+    CurrentWidgetHeight := Round(225 * ScaleY) 
+    WidgetPadding       := Round(35 * ScaleX)
+    StartY              := Round(115 * ScaleY)
 
-; 3. Calculate Font Matrix (Neutralizes Windows OS DPI, scales via Display Area)
-DpiScale                   := A_ScreenDPI / 96
-Global FontScale           := ScaleX / DpiScale
+    ; Deep obsidian canvas background
+    MiniGui.BackColor          := "111216"
 
-; 4. Resolution-Relative UI Bounding Boxes
-Global TargetWidgetWidth   := Round(230 * ScaleX)
-Global CurrentWidgetHeight := Round(225 * ScaleY) 
-WidgetPadding              := Round(15 * ScaleX)
-StartY                     := Round(115 * ScaleY)
+    ; Left accent status bar (Electric Neon Cyan)
+    LeftAccentBar := MiniGui.Add("Progress", "x0 y0 w" Round(4 * ScaleX) " h" CurrentWidgetHeight " Background00D2FF")
 
-; Deep obsidian canvas background
-MiniGui.BackColor          := "111216"
+    ; --- HEADER SECTION ---
+    MiniGui.SetFont("s" (8 * FontScale) " bold c00D2FF", "Segoe UI")
+    MiniGui.Add("Text", "x" Round(15*ScaleX) " y" Round(12*ScaleY) " w" Round(110*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "⚙️ FH6 MACRO ")
 
-; Left accent status bar (Electric Neon Cyan)
-Global LeftAccentBar       := MiniGui.Add("Progress", "x0 y0 w" Round(4 * ScaleX) " h" CurrentWidgetHeight " Background00D2FF")
+    MiniGui.SetFont("s" (10 * FontScale) " bold")
+    RestoreBtn := MiniGui.Add("Text", "x" Round(195*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E c64748B", "⛶")
+    RestoreBtn.OnEvent("Click", RestoreMainWindow)
 
-; --- HEADER SECTION ---
-MiniGui.SetFont("s" (8 * FontScale) " bold c00D2FF", "Segoe UI")
-MiniGui.Add("Text", "x" Round(15*ScaleX) " y" Round(12*ScaleY) " w" Round(110*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "⚙️ FH6 MACRO ")
+    ReloadBtn := MiniGui.Add("Text", "x" Round(173*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E c94A3B8", "⭮")
+    ReloadBtn.OnEvent("Click", (*) => Reload())
 
-MiniGui.SetFont("s" (10 * FontScale) " bold")
+    PreviewBtn := MiniGui.Add("Text", "x" Round(151*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E c94A3B8", "🎞️")
+    PreviewBtn.OnEvent("Click", (ctrl, *) => TogglePreview(ctrl))
 
-RestoreBtn := MiniGui.Add("Text", "x" Round(195*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E c64748B", "⛶")
-RestoreBtn.OnEvent("Click", RestoreMainWindow)
+    LockBtn := MiniGui.Add("Text", "x" Round(195*ScaleX) " y" Round(32*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E " (IsGameLocked ? "cF59E0B" : "c94A3B8"), "🔒")
+    LockBtn.OnEvent("Click", (ctrl, *) => ToggleWindowLock(ctrl))
 
-ReloadBtn := MiniGui.Add("Text", "x" Round(173*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E c94A3B8", "⭮")
-ReloadBtn.OnEvent("Click", (*) => Reload())
+    AlwaysOnTopBtn := MiniGui.Add("Text", "x" Round(173*ScaleX) " y" Round(32*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E " (IsGameAlwaysOnTop ? "cF7507F" : "c94A3B8"), "📌")
+    AlwaysOnTopBtn.OnEvent("Click", (ctrl, *) => AlwaysOnTopEnable(ctrl))
 
-LockBtn := MiniGui.Add("Text", "x" Round(151*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E c94A3B8", "🔒")
-LockBtn.OnEvent("Click", (ctrl, *) => ToggleWindowLock(ctrl))
+    ResoSetBtn := MiniGui.Add("Text", "x" Round(151*ScaleX) " y" Round(32*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E " (IsGameWindowed ? "c3B82F6" : "c94A3B8"), "🗗")
+    ResoSetBtn.OnEvent("Click", (ctrl, *) => SetGameResolution(ctrl))
 
-global AlwaysOnTopBtn := MiniGui.Add("Text", "x" Round(129*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E c94A3B8", "📌")
-AlwaysOnTopBtn.OnEvent("Click", (ctrl, *) => AlwaysOnTopEnable(ctrl))
+    InitStartBtn := MiniGui.Add("Text", "x" Round(195*ScaleX) " y" Round(70*ScaleY) " w" Round(18*ScaleX) " h" Round(18*ScaleY) " Center Background22252E c94A3B8", "⬤")
+    InitStartBtn.OnEvent("Click", (ctrl, *) => MiniInitStartMacro(ctrl))
 
-ResoSetBtn := MiniGui.Add("Text", "x" Round(107*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E c94A3B8", "🗗")
-ResoSetBtn.OnEvent("Click", (ctrl, *) => SetGameResolution(ctrl))
+    ; Flat Premium Action Buttons (Header Control Bar)
+    MiniGui.SetFont("s" (9 * FontScale) " bold")
+    PauseBtn := MiniGui.Add("Text", "x" Round(173*ScaleX) " y" StartY " w" Round(18*ScaleX) " h" Round(18*ScaleY) " Center Background22252E cFFD166","❚❚")
+    PauseBtn.OnEvent("Click", (ctrl, *) => MiniTogglePause(ctrl))
 
-InitStartBtn := MiniGui.Add("Text", "x" Round(195*ScaleX) " y" Round(70*ScaleY) " w" Round(18*ScaleX) " h" Round(18*ScaleY) " Center Background22252E c94A3B8", "⬤")
-InitStartBtn.OnEvent("Click", (ctrl, *) => MiniInitStartMacro(ctrl))
+    StopBtn := MiniGui.Add("Text", "x" Round(195*ScaleX) " y" StartY " w" Round(18*ScaleX) " h" Round(18*ScaleY) " Center Background22252E cFF5A5A", "⏹")
+    StopBtn.OnEvent("Click", (ctrl, *) => MiniStopMacro(ctrl))
 
-; Flat Premium Action Buttons (Header Control Bar)
-MiniGui.SetFont("s" (9 * FontScale) " bold")
+    ; --- SYSTEM STATUS SECTION ---
+    MiniGui.SetFont("s" (9 * FontScale) " norm c8A99AD", "Segoe UI")
+    MiniTotalRunTime_UI := MiniGui.Add("Text", "x" Round(15*ScaleX) " y35" " w" Round(180*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🕓  00:00")
+    MiniKey_UI          := MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(2*ScaleY) " w" Round(180*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "⌨  [   ]")
+    MiniProcess_UI      := MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(2*ScaleY) " w" Round(180*ScaleX) " h" Round(30*ScaleY) " BackgroundTrans", "⚙️  Waiting...")
 
-global PauseBtn := MiniGui.Add("Text", "x" Round(170*ScaleX) " y" StartY " w" Round(18*ScaleX) " h" Round(18*ScaleY) " Center Background22252E cFFD166","❚❚")
-PauseBtn.OnEvent("Click", (ctrl, *) => MiniTogglePause(ctrl))
+    MiniGui.Add("Progress", "x" Round(15*ScaleX) " y+" Round(6*ScaleY) " w" Round(190*ScaleX) " h" Round(1*ScaleY) " Background22252E")
 
-global StopBtn := MiniGui.Add("Text", "x" Round(195*ScaleX) " y" StartY " w" Round(18*ScaleX) " h" Round(18*ScaleY) " Center Background22252E cFF5A5A", "⏹")
-StopBtn.OnEvent("Click", (ctrl, *) => MiniStopMacro(ctrl))
+    ; --- ADAPTIVE SECTION 1: RACE TELEMETRY ---
+    MiniGui.SetFont("s" (7 * FontScale) " bold c566273", "Segoe UI")
+    RaceControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y" StartY " w" Round(190*ScaleX) " h" Round(12*ScaleY) " BackgroundTrans c00D2FF", "◼ RACE PROGRESS"))
 
-; --- SYSTEM STATUS SECTION (Always Visible) ---
-MiniGui.SetFont("s" (9 * FontScale) " norm c8A99AD", "Segoe UI")
-Global MiniTotalRunTime_UI := MiniGui.Add("Text", "x" Round(15*ScaleX) " y35" " w" Round(180*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🕓  00:00")
-Global MiniKey_UI          := MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(2*ScaleY) " w" Round(180*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "⌨  [   ]")
-Global MiniProcess_UI      := MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(2*ScaleY) " w" Round(180*ScaleX) " h" Round(30*ScaleY) " BackgroundTrans", "⚙️  Waiting...")
+    MiniGui.SetFont("s" (9 * FontScale) " norm c8A99AD", "Segoe UI")
+    RaceControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(6*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🕓  Race Runtime"))
+    RaceControls.Push(MiniRaceRunTime_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "00:00"))
 
-; Premium subtle dark divider line
-MiniGui.Add("Progress", "x" Round(15*ScaleX) " y+" Round(6*ScaleY) " w" Round(190*ScaleX) " h" Round(1*ScaleY) " Background22252E")
+    RaceControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "💡  Points Gained"))
+    RaceControls.Push(MiniPointsCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0"))
 
-; --- ADAPTIVE SECTION 1: RACE TELEMETRY ---
-MiniGui.SetFont("s" (7 * FontScale) " bold c566273", "Segoe UI")
-RaceControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y" StartY " w" Round(190*ScaleX) " h" Round(12*ScaleY) " BackgroundTrans c00D2FF", "◼ RACE PROGRESS"))
+    RaceControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🏁  Sectors Cleared"))
+    RaceControls.Push(MiniSectorCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0"))
 
-MiniGui.SetFont("s" (9 * FontScale) " norm c8A99AD", "Segoe UI")
-RaceControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(6*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🕓  Race Runtime"))
-RaceControls.Push(MiniRaceRunTime_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "00:00"))
+    ; --- ADAPTIVE SECTION 2: CAR PURCHASE ---
+    MiniGui.SetFont("s" (7 * FontScale) " bold c566273", "Segoe UI")
+    BuyControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y" StartY " w" Round(190*ScaleX) " h" Round(12*ScaleY) " BackgroundTrans c00D2FF", "◼ CAR PURCHASE"))
 
-RaceControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "💡  Points Gained"))
-RaceControls.Push(MiniPointsCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0"))
+    MiniGui.SetFont("s" (9 * FontScale) " norm c8A99AD", "Segoe UI")
+    BuyControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(6*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🕓  Buy Runtime"))
+    BuyControls.Push(MiniBuyRunTime_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "00:00"))
 
-RaceControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🏁  Sectors Cleared"))
-RaceControls.Push(MiniSectorCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0"))
+    BuyControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "📦  Cars Purchased"))
+    BuyControls.Push(MiniCarCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0"))
 
+    ; --- ADAPTIVE SECTION 3: REWARDS UNLOCK ---
+    MiniGui.SetFont("s" (7 * FontScale) " bold c566273", "Segoe UI")
+    UnlockControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y" StartY " w" Round(190*ScaleX) " h" Round(12*ScaleY) " BackgroundTrans c00D2FF", "◼ REWARDS UNLOCK"))
 
-; --- ADAPTIVE SECTION 2: CAR PURCHASE ---
-MiniGui.SetFont("s" (7 * FontScale) " bold c566273", "Segoe UI")
-BuyControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y" StartY " w" Round(190*ScaleX) " h" Round(12*ScaleY) " BackgroundTrans c00D2FF", "◼ CAR PURCHASE"))
+    MiniGui.SetFont("s" (9 * FontScale) " norm c8A99AD", "Segoe UI")
+    UnlockControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(6*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🕓  Unlock Runtime"))
+    UnlockControls.Push(MiniUnlockRunTime_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "00:00"))
 
-MiniGui.SetFont("s" (9 * FontScale) " norm c8A99AD", "Segoe UI")
-BuyControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(6*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🕓  Buy Runtime"))
-BuyControls.Push(MiniBuyRunTime_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "00:00"))
+    UnlockControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🌟  Super Wheelspins"))
+    UnlockControls.Push(MiniSWheelCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0"))
 
-BuyControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "📦  Cars Purchased"))
-BuyControls.Push(MiniCarCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0"))
+    UnlockControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🛞  Regular Wheelspins"))
+    UnlockControls.Push(MiniWheelCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0"))
 
-
-; --- ADAPTIVE SECTION 3: REWARDS UNLOCK ---
-MiniGui.SetFont("s" (7 * FontScale) " bold c566273", "Segoe UI")
-UnlockControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y" StartY " w" Round(190*ScaleX) " h" Round(12*ScaleY) " BackgroundTrans c00D2FF", "◼ REWARDS UNLOCK"))
-
-MiniGui.SetFont("s" (9 * FontScale) " norm c8A99AD", "Segoe UI")
-UnlockControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(6*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🕓  Unlock Runtime"))
-UnlockControls.Push(MiniUnlockRunTime_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "00:00"))
-
-UnlockControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🌟  Super Wheelspins"))
-UnlockControls.Push(MiniSWheelCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0"))
-
-UnlockControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🛞  Regular Wheelspins"))
-UnlockControls.Push(MiniWheelCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0"))
-
-UnlockControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "💲  Credits Earned"))
-UnlockControls.Push(MiniCreditCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(145*ScaleX) " yp w" Round(70*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0 CR"))
-
-;SetInitial UI state safely
-UpdateMiniWidgetMode("")
+    UnlockControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "💲  Credits Earned"))
+    UnlockControls.Push(MiniCreditCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(145*ScaleX) " yp w" Round(70*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0 CR"))
+}
 
 ; ══════════════════════════════════════════════
 ;  ADAPTIVE VISIBILITY & FRAME RESIZE ENGINE
@@ -199,59 +184,35 @@ MiniStopMacro(ctrl) {
     
     if !ActiveMode || (!MasterMode && MasterStart) {
         ctrl.Opt("c94A3B8")
-        PauseBtn.Opt("c94A3B8")
-        PauseBtn.Value := "❚❚"
     }
 }
 
 MiniInitStartMacro(ctrl) {
-    global MasterMode, ActiveMode, PauseBtn
 
     ctrl.Opt("c22C55E")
-    PauseBtn.Opt("cFFD166")
-    PauseBtn.Value := "❚❚"
-    StopBtn.Opt("cFF5A5A")
-
     ToggleAll()
-
     ctrl.Opt("c94A3B8")
-    PauseBtn.Opt("c94A3B8")
-    PauseBtn.Value := "❚❚"
-    StopBtn.Opt("c94A3B8")
 }
 
 ; ══════════════════════════════════════════════
 ;  SIZE CHANGE TRIGGER (Dynamic Top-Right Screen Snap)
 ; ══════════════════════════════════════════════
 MainGUI_SizeChange(thisGui, minMax, *) {
-    global TargetWidgetWidth, CurrentWidgetHeight, WidgetPadding
+    global TargetWidgetWidth, CurrentWidgetHeight, WidgetPadding, MonRight, MonTop
     
     if (minMax == -1) {
         thisGui.Hide()
         
-        gameMonitorIndex := GetGameMonitor()
-        MonitorGet(gameMonitorIndex, &mLeft, &mTop, &mRight, &mBottom)
+        ; Sync display bounds dynamically in case game shifted screens
+        UpdateMonitorMetrics()
         
-        miniX := mRight - TargetWidgetWidth - WidgetPadding
-        miniY := mTop + WidgetPadding
+        ; Align using precise work area boundaries (MonRight & MonTop)
+        miniX := MonRight - TargetWidgetWidth - WidgetPadding
+        miniY := MonTop + WidgetPadding
         
         MiniGui.Show("x" miniX " y" miniY " w" TargetWidgetWidth " h" CurrentWidgetHeight " NoActivate")
         WinSetTransparent(180, MiniGui.Hwnd)
     }
-}
-
-DragMiniGui() {
-    global MiniGui, DragOffsetX, DragOffsetY
-    
-    if !GetKeyState("LButton", "P") {
-        SetTimer(, 0)
-        return
-    }
-    
-    CoordMode("Mouse", "Screen")
-    MouseGetPos(&mouseX, &mouseY)
-    
-    MiniGui.Move(mouseX - DragOffsetX, mouseY - DragOffsetY)
 }
 
 RestoreMainWindow(*) {
@@ -259,10 +220,12 @@ RestoreMainWindow(*) {
     MainGUI.Show()
 }
 
-; ══════════════════════════════════════════════
-;  NOTIFICATION TOAST (Relative Resolution Scale Engine)
-; ══════════════════════════════════════════════
+; ════════════════════
+;  NOTIFICATION TOAST
+; ════════════════════
 ShowNotif(type, title, message := "") {
+    global ScaleX, ScaleY, FontScale, MonRight, MonBottom
+
     switch StrLower(type) {
         case "success":
             accentColor := "33FF66"
@@ -278,110 +241,239 @@ ShowNotif(type, title, message := "") {
             duration    := -8000
     }
 
-    ; ── INTERSECT DETECTION ROUTING ──
-    ; Calls formula to pull the best monitor index
-    targetMon := GetGameMonitor()
+    UpdateMonitorMetrics()
 
-    ; Fetch bounding limits for the specific display containing the game
-    MonitorGet(targetMon, &mLeft, &mTop, &mRight, &mBottom)
-    mWidth  := mRight - mLeft
-    mHeight := mBottom - mTop
-    
-    ; Local scaling factors calculated against the game screen's real footprint
-    sX     := mWidth / 2560
-    sY     := mHeight / 1440
-    fScale := sX / (A_ScreenDPI / 96)
-
-    ; Removed +E0x20 to make the notification interactive/clickable
     Notif := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale")
     Notif.BackColor := "181A1F"
-    Notif.Add("Progress", "x0 y0 w" Round(6*sX) " h" Round(70*sY) " Background" accentColor)
+    Notif.Add("Progress", "x0 y0 w" Round(6*ScaleX) " h" Round(70*ScaleY) " Background" accentColor)
     
-    ; Notification Title (Width narrowed to 235*sX to clear room for the X button)
-    Notif.SetFont("s" (10 * fScale) " bold c" accentColor, "Segoe UI")
-    Notif.Add("Text", "x" Round(15*sX) " y" Round(10*sY) " w" Round(235*sX) " BackgroundTrans", icon title)
+    Notif.SetFont("s" (10 * FontScale) " bold c" accentColor, "Segoe UI")
+    Notif.Add("Text", "x" Round(15*ScaleX) " y" Round(10*ScaleY) " w" Round(235*ScaleX) " BackgroundTrans", icon title)
     
-    ; Notification Body Message
-    Notif.SetFont("s" (9 * fScale) " norm cEEEEEE", "Segoe UI")
-    Notif.Add("Text", "x" Round(15*sX) " y+" Round(5*sY) " w" Round(235*sX) " h" Round(35*sY) " BackgroundTrans", message)
+    Notif.SetFont("s" (9 * FontScale) " norm cEEEEEE", "Segoe UI")
+    Notif.Add("Text", "x" Round(15*ScaleX) " y+" Round(5*ScaleY) " w" Round(235*ScaleX) " h" Round(35*ScaleY) " BackgroundTrans", message)
 
-    ; ── CLOSE BUTTON ("X") ──
-    Notif.SetFont("s" (11 * fScale) " norm c888888", "Segoe UI")
-    closeBtn := Notif.Add("Text", "x" Round(255*sX) " y" Round(8*sY) " w" Round(15*sX) " h" Round(15*sY) " Center BackgroundTrans", "×")
+    Notif.SetFont("s" (11 * FontScale) " norm c888888", "Segoe UI")
+    closeBtn := Notif.Add("Text", "x" Round(255*ScaleX) " y" Round(8*ScaleY) " w" Round(15*ScaleX) " h" Round(15*ScaleY) " Center BackgroundTrans", "×")
     closeBtn.OnEvent("Click", (*) => Notif.Destroy())
 
-    tWidth  := Round(280 * sX)
-    tHeight := Round(70 * sY)
+    tWidth  := Round(280 * ScaleX)
+    tHeight := Round(70 * ScaleY)
     Notif.Show("w" tWidth " h" tHeight " Hide")
     
-    ; Pins the notification precisely inside the workspace boundaries of that display
-    notifX := mRight - tWidth - Round(10 * sX)
-    notifY := mBottom - tHeight - Round(10 * sY)
+    ; Uses MonRight and MonBottom to avoid clipping behind the taskbar layout
+    notifX := MonRight - tWidth - Round(15 * ScaleX)
+    notifY := MonBottom - tHeight - Round(15 * ScaleY)
 
     WinMove(notifX, notifY,,, Notif.Hwnd)
     Notif.Show("NoActivate")
     SetTimer(() => Notif.Destroy(), duration)
 }
 
-global OverlayGui       := ""
-global OverlayGuiEnabled := false
+; ══════════════════════════════════════════════
+;  GAME WINDOW MANIPULATION
+; ══════════════════════════════════════════════
 
-ToggleDetectionZone() {
-    global OverlayGui, OverlayGuiEnabled, GameTitle
-    
-    if !OverlayGuiEnabled {
-        OverlayGuiEnabled := !OverlayGuiEnabled
+SetGameResolution(ctrl) {
+    global IsGameWindowed, GameTitle, SelectedReso
+    global IsGameAlwaysOnTop, AlwaysOnTopBtn
+    global MonWidth, MonHeight, MonLeft, MonTop
 
-        ; 1. Get the game's unique operating system ID (HWND)
-        gameHwnd := WinExist(GameTitle)
-        if !gameHwnd
-            return
+    ; 1. Verify target window exists before executing sizing logic
+    if !WinExist(GameTitle) {
+        ShowNotif("error", "Resolution Resizing Error", "Game window could not be found.")
+        return
+    }
 
-        if (OverlayGui) 
-            return
+    ; 2. Dynamically refresh layout dimensions for the designated target monitor
+    UpdateMonitorMetrics()
 
-        ; 2. TRICK 1: Add "+Owner" followed immediately by the game's HWND.
-        ; This explicitly chains the overlay's rendering layer to sit in front of the game.
-        OverlayGui := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20 +Owner" gameHwnd)
+    ; 3. Parse resolution string securely
+    resParts := StrSplit(SelectedReso, "x", " ")
+
+    TargetWidth  := Integer(resParts[1])
+    TargetHeight := Integer(resParts[2])
+
+    IsGameWindowed := !IsGameWindowed 
+
+    if IsGameWindowed {
+        ; ─── ENTER WINDOWED MODE ───
+
+        ; Strip title bar and window borders so the game canvas aligns perfectly with monitor pixels
+        WinSetStyle("-0x00C00000 -0x00040000", GameTitle) ; -WS_CAPTION -WS_THICKFRAME
+
+        TargetX := (MonLeft + MonWidth) - TargetWidth
+        TargetY := (MonTop + MonHeight) - TargetHeight
         
-        OverlayGui.BackColor := "Red" 
-        WinSetTransparent(5, OverlayGui.Hwnd) 
+        ; Apply positioning metrics
+        WinMove(TargetX, TargetY, TargetWidth, TargetHeight, GameTitle)
 
-        ; Start tracking loop
-        SetTimer(UpdateOverlayPosition, 50)
-    } else if OverlayGuiEnabled {
-        OverlayGuiEnabled := !OverlayGuiEnabled
+        ; Update control color scheme and force immediate UI redraw
+        ctrl.Opt("c3B82F6")
+        ctrl.Redraw()
+        
+        ShowNotif("info", "Windowed Mode", "Press Alt + Left Click to hold and drag the game window.")
+    }
+    else {
+        ; ─── ENTER BORDERLESS FULLSCREEN MODE ───
 
-        SetTimer(UpdateOverlayPosition, 0) 
-        if (OverlayGui) {
-            OverlayGui.Destroy()
-            OverlayGui := ""
+        ; Strip title bar and window borders so the game canvas aligns perfectly with monitor pixels
+        WinSetStyle("-0x00C00000 -0x00040000", GameTitle) ; -WS_CAPTION -WS_THICKFRAME
+
+        ; Stretch the clean borderless canvas to fill the precise coordinates of your SELECTED monitor
+        WinMove(MonLeft, MonTop, MonWidth, MonHeight, GameTitle)
+
+        ; Reset AlwaysOnTop flags to prevent rendering conflicts over the macro overlay
+        WinSetAlwaysOnTop(0, GameTitle)
+        IsGameAlwaysOnTop := false
+        
+        ; Update UI controls and redraw layout elements
+        ctrl.Opt("c94A3B8")
+        ctrl.Redraw()
+        if IsSet(AlwaysOnTopBtn) && AlwaysOnTopBtn {
+            AlwaysOnTopBtn.Opt("c94A3B8")
+            AlwaysOnTopBtn.Redraw()
         }
+
+        ShowNotif("info", "Fullscreen Mode", "Press 🗗 button to enable windowed mode.")
     }
 }
 
-UpdateOverlayPosition() {
-    global OverlayGuiEnabled, GameTitle
+ToggleWindowLock(ctrl) {
+    global IsGameLocked, GameTitle
     
     if !WinExist(GameTitle) {
-        OverlayGuiEnabled := true
-        ToggleDetectionZone()
+        ShowNotif("error","Lock Error", "Game window could not be found.")
         return
     }
     
-    WinGetPos(&gameX, &gameY, &gameW, &gameH, GameTitle)
+    IsGameLocked := !IsGameLocked
     
-    leftOffset := Integer(gameW * (1 / 3))
-    targetW    := Integer(gameW * (2 / 3))
-    targetH    := gameH
-    
-    targetX := gameX + leftOffset
-    targetY := gameY
+    if (IsGameLocked) {
+        ; 1. Tell Windows to disable the window. 
+        ; It remains completely visible, but becomes completely immune to focus vacuuming and clicks.
+        WinSetEnabled(false, GameTitle)
+        
+        ; 2. Instantly pass focus to the desktop wallpaper layer to clear the screen
+        if WinExist("ahk_class WorkerW")
+            WinActivate("ahk_class WorkerW")
+        else if WinExist("ahk_class Progman")
+            WinActivate("ahk_class Progman")
+        
+        ctrl.Opt("cF59E0B")
+        ShowNotif("info", "Background Lock ON", "Game is locked open but completely inactive.")
+    } else {
+        ; 3. Re-enable the window so it can accept normal clicks and focus again
+        WinSetEnabled(true, GameTitle)
+        
+        ; Bring it back to the front
+        WinActivate(GameTitle) 
+        
+        ctrl.Opt("c94A3B8")
+        ShowNotif("info", "Background Lock OFF", "Game control restored to normal.")
+    }
+}
 
-    OverlayGui.Show("X" targetX " Y" targetY " W" targetW " H" targetH " NoActivate")
+AlwaysOnTopEnable(ctrl) {
+    global IsGameAlwaysOnTop, GameTitle, IsGameWindowed
     
-    ; 3. TRICK 2: Use a low-level Windows API call to forcefully jump the overlay 
-    ; to the absolute top of the stack, preventing the active game from reclaiming the lead.
-    ; HWND_TOPMOST = -1 | SWP_NOSIZE (0x0001) | SWP_NOMOVE (0x0002) = 0x0003
-    DllCall("SetWindowPos", "Ptr", OverlayGui.Hwnd, "Ptr", -1, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "Int", 0x0003)
+    if !WinExist(GameTitle) {
+        ShowNotif("error","Always On Top", "Game window could not be found.")
+        return
+    }
+    
+    if !IsGameWindowed {
+        ShowNotif("error","Always On Top", "Always On Top mode is disabled on Fullscreen mode.")
+        return
+    }
+    
+    IsGameAlwaysOnTop := !IsGameAlwaysOnTop
+    
+    if (IsGameAlwaysOnTop) {
+        WinSetAlwaysOnTop(1, GameTitle)
+        ctrl.Opt("cF7507F")
+        ShowNotif("info", "Always On Top ON", "Game is set to be Always On Top other windows.")
+    } else {
+        WinSetAlwaysOnTop(0, GameTitle)
+        ctrl.Opt("c94A3B8")
+        ShowNotif("info", "Always On Top OFF", "Game is set to be normal.")
+    }
+}
+
+TogglePreview(ctrl) {
+    global GameTitle, ScaleX, ScaleY, MonRight, MonLeft, MonTop, MonBottom
+    global previewGui, MiniGui
+    static hThumbnail := 0
+
+    UpdateMonitorMetrics()
+
+    PreviewWidth := Round(230 * ScaleX)
+    PreviewHeight := Round(130 * ScaleY)
+    PreviewX := MonRight - PreviewWidth - Round(35 * ScaleX)
+    PreviewY := MonTop + Round(35 * ScaleY)
+    
+    ; If preview is already active, close and unregister it
+    if previewGui {
+        if hThumbnail {
+            DllCall("dwmapi\DwmUnregisterThumbnail", "Ptr", hThumbnail)
+            hThumbnail := 0
+        }
+        previewGui.Destroy()
+        previewGui := ""
+        ctrl.Opt("c94A3B8")
+        ctrl.Redraw()
+        return
+    }
+    ctrl.Opt("c64d0ea")
+    ctrl.Redraw()
+
+    ; Check if target game/window is running
+    targetHwnd := WinExist(GameTitle)
+    if !targetHwnd {
+        ToolTip("Target window not found!")
+        SetTimer(() => ToolTip(), -2000)
+        return
+    }
+    
+    ; 1. Create the Host GUI Window
+    previewGui := Gui("+AlwaysOnTop +ToolWindow -Caption -DPIScale", "Live Game Preview")
+    previewGui.BackColor := "Black"
+    
+    ; Setup a clean exit if the user manually closes the GUI window
+    previewGui.OnEvent("Close", (ctrl, *) => TogglePreview(ctrl))
+    
+    ; Show the GUI box without stealing focus from your current active window
+    previewGui.Show(Format("w{} h{} x{} y{} NoActivate", PreviewWidth, PreviewHeight, PreviewX, PreviewY))
+    MiniGui.Hide() ; Hide the MiniGUI to prevent it from overlapping the preview window
+    MiniGui.Show("NoActivate") ; Ensure the MiniGUI stays on top of the preview window  
+    
+    ; 2. Register the DWM Thumbnail link between the GUI and the Game
+    if DllCall("dwmapi\DwmRegisterThumbnail", "Ptr", previewGui.Hwnd, "Ptr", targetHwnd, "Ptr*", &hThumbnail := 0) != 0 {
+        MsgBox("Failed to register DWM Thumbnail API relationship.")
+        previewGui.Destroy()
+        previewGui := ""
+        return
+    }
+    
+    ; 3. Build the DWM_THUMBNAIL_PROPERTIES struct (48-byte buffer)
+    ; Layout: dwFlags(0), rcDestination(4), rcSource(20), opacity(36), fVisible(40), fSourceClientAreaOnly(44)
+    structProps := Buffer(48, 0)
+    
+    ; dwFlags: Set flags to update Destination Rect (0x1), Visibility (0x8), and ClientArea Only (0x10)
+    NumPut("UInt", 0x1 | 0x8 | 0x10, structProps, 0) 
+    
+    ; rcDestination: Maps the inside region of your AHK GUI where the game stream draws
+    NumPut("Int", 0,              structProps, 4)   ; Left
+    NumPut("Int", 0,              structProps, 8)   ; Top
+    NumPut("Int", PreviewWidth,   structProps, 12)  ; Right
+    NumPut("Int", PreviewHeight,  structProps, 16)  ; Bottom
+    
+    ; fVisible: Set to True (1)
+    NumPut("Int", 1, structProps, 40)
+    
+    ; fSourceClientAreaOnly: Set to True (1) to crop out the game's titlebar and borders
+    NumPut("Int", 1, structProps, 44)
+    
+    ; 4. Update and display the live stream
+    DllCall("dwmapi\DwmUpdateThumbnailProperties", "Ptr", hThumbnail, "Ptr", structProps)
 }

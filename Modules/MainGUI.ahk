@@ -1,49 +1,16 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro        ║
-; ║        Cyber Noir Edition v1.8.0        ║
+; ║            Cyber Noir Edition           ║
 ; ╚═════════════════════════════════════════╝
 
 ; ══════════════════════════════════════════════
 ;  GLOBAL UI HANDLES
 ; ══════════════════════════════════════════════
-global PointsCount_UI   := ""
-global CarCount_UI      := ""
-global SWheelCount_UI   := ""
-global WheelCount_UI    := ""
-global CreditCount_UI   := ""
-global CodeTune_UI      := ""
-global CodeEventLab_UI  := ""
-global TotalRunTime_UI  := ""
-global RaceRunTime_UI   := ""
-global BuyRunTime_UI    := ""
-global UnlockRunTime_UI := ""
-global CarSelect_UI     := ""
-global CarsLabel_UI     := ""
-global PointsLabel_UI   := ""
-global TimeLabel_UI     := ""
-global SectorLabel_UI   := ""
-global PixelCheck_UI    := ""
-global PremiumCheck_UI  := ""
-global EventLabSelect_UI    := ""
-global SectorCount_UI   := ""
-global SpinRunTime_UI   := ""
-global SpinOpenCount_UI := ""
-global SpinLeftCount_UI := ""
-global MonitorSelect_UI := ""
-global ResoSelect_UI    := ""
-global SKCheck_UI       := ""
-global DarkMode         := true 
+; Declare foundational objects at the root execution scope
+Global MainGUI := 0, SpinGUI := 0, DarkMode := true
 
-; ══════════════════════════════════════════════
-;  RESOLUTION-RELATIVE MATRIX INITIALIZATION
-; ══════════════════════════════════════════════
-MonitorGetWorkArea(, &mLeft, &mTop, &mRight, &mBottom)
-Global MonWidth   := mRight - mLeft
-Global MonHeight  := mBottom - mTop
-
-Global ScaleX     := MonWidth / 2560
-Global ScaleY     := MonHeight / 1440
-Global FontScale  := ScaleX / (A_ScreenDPI / 96)
+; Track structures globally for runtime cross-talk
+Global SliderCfg := {}, SliderKnob := "", SliderTrack := "", SpeedLabel_UI := "", DelaySlider_UI := {}
 
 ; ══════════════════════════════════════════════
 ;  PALETTE COMPOSER
@@ -56,14 +23,22 @@ GetPalette() {
         p["bg"]          := "0B0F14"
         p["panel"]       := "111826"
         p["accent"]      := "00E5FF"
-        p["accent2"]     := "7C4DFF"
         p["text"]        := "E6F1FF"
         p["textDim"]     := "6B7C93"
         p["editBg"]      := "0F1624"
+        
+        ; Sub-process buttons (Muted background, accent text)
         p["btnBg"]       := "111826"
         p["btnText"]     := "00E5FF"
         p["btnBg2"]      := "0C1320"
         p["btnText2"]    := "6B7C93"
+        p["btnBg3"]      := "7C4DFF"
+        p["btnText3"]    := "FFFFFF"
+        
+        ; Main Button (Inverted: Accent background, dark text)
+        p["btnMainBg"]   := "00E5FF"
+        p["btnMainText"] := "0B0F14"
+        
         p["divider"]     := "1F2A3A"
         p["cActive"]     := "00E5FF"
         p["cHighlight"]  := "39FF14"
@@ -78,14 +53,22 @@ GetPalette() {
         p["bg"]          := "F5F7FA"
         p["panel"]       := "E8EEF5"
         p["accent"]      := "0066FF"
-        p["accent2"]     := "7C4DFF"
         p["text"]        := "0B1220"
         p["textDim"]     := "4B5B73"
         p["editBg"]      := "FFFFFF"
+        
+        ; Sub-process buttons (Soft background, deep text)
         p["btnBg"]       := "DCE8FF"
         p["btnText"]     := "003A99"
         p["btnBg2"]      := "CFE0FF"
         p["btnText2"]    := "4B5B73"
+        p["btnBg3"]      := "7C4DFF"
+        p["btnText3"]    := "FFFFFF"
+        
+        ; Main Button (Solid vibrant background, white text)
+        p["btnMainBg"]   := "0066FF"
+        p["btnMainText"] := "FFFFFF"
+        
         p["divider"]     := "C9D6E5"
         p["cActive"]     := "0066FF"
         p["cHighlight"]  := "1DB954"
@@ -103,7 +86,7 @@ GetPalette() {
 ; ══════════════════════════════════════════════
 ;  TOGGLE BUTTON PAIR
 ; ══════════════════════════════════════════════
-TogglePair(chosenValue, &targetVar, activeBtn, inactiveBtn, p) {
+ToggleUserTier(chosenValue, &targetVar, activeBtn, inactiveBtn, p) {
     targetVar := chosenValue
     activeBtn.Opt("Background" p["activeBg"])
     inactiveBtn.Opt("Background" p["inactiveBg"])
@@ -111,6 +94,16 @@ TogglePair(chosenValue, &targetVar, activeBtn, inactiveBtn, p) {
     inactiveBtn.Redraw()
 
     WriteMacroIni("Settings", "UserTier", targetVar)
+}
+
+ToggleSpinMode(chosenValue, &targetVar, activeBtn, inactiveBtn, p) {
+    targetVar := chosenValue
+    activeBtn.Opt("Background" p["activeBg"])
+    inactiveBtn.Opt("Background" p["inactiveBg"])
+    activeBtn.Redraw()
+    inactiveBtn.Redraw()
+
+    WriteMacroIni("Settings", "SpinMode", targetVar)
 }
 
 ; ══════════════════════════════════════════════
@@ -133,7 +126,7 @@ SetFixedFont(guiObj, pointSize, options := "", fontName := "Segoe UI") {
 ; ══════════════════════════════════════════════
 ToggleTheme() {
     global DarkMode, MainGUI, SkillPtsCount_In, SkillPtsWant_In, CarCount_In, ActiveMode, LoopCount_In
-    global SpinGUI ; Declared to inspect and manipulate the spin panel state
+    global SpinGUI 
     
     saved := [SkillPtsCount_In.Value, SkillPtsWant_In.Value, CarCount_In.Value, LoopCount_In.Value]
 
@@ -144,26 +137,24 @@ ToggleTheme() {
         Sleep(1250)
     }
 
-    ; ── Check if Spin Panel is active before wiping the environment ──
     spinWasOpen := false
     try {
         if IsSet(SpinGUI) && SpinGUI && WinExist("ahk_id " SpinGUI.Hwnd) {
             spinWasOpen := true
             SpinGUI.Destroy()
-            SpinGUI := 0 ; Wipe reference to avoid windowless GUI crashes
+            SpinGUI := 0 
         }
     } catch {
-        ; Discard errors if SpinGUI was in a corrupted windowless state
+        ; Discard windowless errors
     }
 
     DarkMode := !DarkMode
     MainGUI.Destroy()
-    BuildGui(saved)
+    BuildMainGui(saved)
     
-    ; ── Re-spawn the Spin Panel using the new theme's palette ──
     if (spinWasOpen) {
         try {
-            OpenSpinPanel() ; Rebuilds and drops it perfectly in the middle of MainGUI
+            OpenSpinPanel() 
         }
     }
 }
@@ -171,21 +162,9 @@ ToggleTheme() {
 ; ══════════════════════════════════════════════
 ;  INTERFACE GENERATION ENGINE
 ; ══════════════════════════════════════════════
-BuildGui(savedVals := "") {
-    global MainGUI, StatusText
-    global PointsCount_UI, CarCount_UI, SWheelCount_UI, WheelCount_UI, CreditCount_UI
-    global TotalRunTime_UI, RaceRunTime_UI, BuyRunTime_UI, UnlockRunTime_UI, SectorCount_UI
-    global PointsLabel_UI, TimeLabel_UI, CarsLabel_UI, SectorLabel_UI
-    global EventLabSelect_UI, DelaySlider_UI, SpeedLabel_UI, MonitorSelect_UI, SKCheck_UI
-    global Key_UI, Process_UI, CodeTune_UI, CodeEventLab_UI, CarSelect_UI, ResoSelect_UI
-    global SkillPtsCount_In, SkillPtsWant_In, CarCount_In, LoopCount_In
-    global AveragePoints, MaxPoints, PointsTotal, PointsGain, TimeTotal
-    global ActiveMode, DarkMode, cActive, cHighlight, cIdle, cTextDim, cPaused, cStat
-    global CodeEventLab, CodeTune, SpinMode, UserTier, CurrentMultiplier
-    global CarList, EventLabList
-    global ScaleX, ScaleY
-    
-    global SliderCfg, SliderKnob, SliderTrack
+BuildMainGui(savedVals := "") {
+    ; Elevates all internal assignments to global scope automatically
+    global 
 
     p          := GetPalette()
     cActive    := p["cActive"]
@@ -200,10 +179,16 @@ BuildGui(savedVals := "") {
     MainGUI := Gui("+AlwaysOnTop -MaximizeBox -DPIScale -Caption +Border", "MHI | FH6 MACRO")
     MainGUI.BackColor := p["bg"]
 
+    ; ── Top-Left Header Window Utility ─────────
+    SetFixedFont(MainGUI, 10, "norm") ; Slightly larger icon fits nicely at the top
+    ThemeBtn := MainGUI.Add("Text", "x" Round(12*ScaleX) " y" Round(12*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center 0x200 Background" p["btnBg2"] " c" p["btnText2"], DarkMode ? "☀" : "🌙")
+    ThemeBtn.OnEvent("Click", (*) => ToggleTheme())
+
     ; ── Custom Window Controls ──
     SetFixedFont(MainGUI, 10, "bold")
     CustomMin := MainGUI.Add("Text", "x" Round(225*ScaleX) " y" Round(12*ScaleY) " w" Round(16*ScaleX) " h" Round(16*ScaleY) " Center BackgroundTrans c" p["textDim"], "─")
-    CustomMin.OnEvent("Click", (*) => MainGUI.Minimize())
+    ; FIXED: Replaced non-existent internal .Minimize() method with safe Win API control
+    CustomMin.OnEvent("Click", (*) => WinMinimize(MainGUI.Hwnd))
 
     CustomX := MainGUI.Add("Text", "x" Round(245*ScaleX) " y" Round(12*ScaleY) " w" Round(16*ScaleX) " h" Round(16*ScaleY) " Center BackgroundTrans c" p["textDim"], "✕")
     CustomX.OnEvent("Click", (*) => ExitApp())
@@ -220,7 +205,7 @@ BuildGui(savedVals := "") {
 
     ; ── Tab Control Engine ──
     tabW := Round(260 * ScaleX)
-    tabH := Round(485 * ScaleY) ; Expanded slightly to accommodate the spin panel button smoothly
+    tabH := Round(485 * ScaleY) 
     TabControl := MainGUI.Add("Tab2", "x" Round(5*ScaleX) " y+" Round(15*ScaleY) " w" tabW " h" tabH " +Buttons +0x400 c" p["accent"], ["Input", "Stats"])
     
     itemW := Floor((tabW - 12) / 2)
@@ -231,7 +216,6 @@ BuildGui(savedVals := "") {
     ;  TAB 1 — INPUT
     ; ══════════════════════════════════════════
     TabControl.UseTab(1)
-
     MainGUI.Add("Text", "x0 y+" Round(5*ScaleY) " w" Round(270*ScaleX) " h" Round(5*ScaleY) " BackgroundTrans c" p["footer"], "")
 
     ; ── Numeric Inputs ──
@@ -247,6 +231,11 @@ BuildGui(savedVals := "") {
 
     LoopCount_In := MainGUI.Add("Edit", "x" Round(179*ScaleX) " y" Round(240*ScaleY) " w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], savedVals ? savedVals[4] : 99)
     MainGUI.Add("Text", "x" Round(30*ScaleX) " yp+" Round(3*ScaleY) " w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Sequence Loop")
+
+    SkillPtsCount_In.OnEvent("Change", (ctrl, *) => UpdateSkillPts(ctrl))
+    SkillPtsCount_In.OnEvent("LoseFocus", (ctrl, *) => ValidateSkillPts(ctrl))
+    SkillPtsWant_In.OnEvent("Change", (ctrl, *) => UpdateSkillPtsWant(ctrl))
+    SkillPtsWant_In.OnEvent("LoseFocus", (ctrl, *) => ValidateSkillPtsWant(ctrl))
 
     ; ── Cyber Dropdown: Car Selector ──────────
     SetFixedFont(MainGUI, 9, "bold")
@@ -275,8 +264,8 @@ BuildGui(savedVals := "") {
     PremiumBtnBG := UserTier = "PREMIUM" ? p["activeBg"] : p["inactiveBg"]
     StandardBtn := MainGUI.Add("Text", "x" Round(14*ScaleX) " y" Round(308*ScaleY) " w" Round(119*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" StandardBtnBG   " c" p["text"], "😎   STANDARD")
     PremiumBtn  := MainGUI.Add("Text", "x" Round(137*ScaleX) " yp w" Round(119*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" PremiumBtnBG " c" p["text"], "🜲   PREMIUM")
-    StandardBtn.OnEvent("Click", (*) => TogglePair("STANDARD", &UserTier, StandardBtn, PremiumBtn, p))
-    PremiumBtn.OnEvent("Click",  (*) => TogglePair("PREMIUM",  &UserTier, PremiumBtn, StandardBtn, p))
+    StandardBtn.OnEvent("Click", (*) => ToggleUserTier("STANDARD", &UserTier, StandardBtn, PremiumBtn, p))
+    PremiumBtn.OnEvent("Click",  (*) => ToggleUserTier("PREMIUM",  &UserTier, PremiumBtn, StandardBtn, p))
 
     ; ── Custom Slider Matrix ──
     SliderCfg := {
@@ -287,15 +276,15 @@ BuildGui(savedVals := "") {
         KnobW:  Round(10 * ScaleX),
         KnobH:  Round(16 * ScaleY),
         MinVal: 1,
-        MaxVal: 12
+        MaxVal: Multipliers.Length
     }
 
     SetFixedFont(MainGUI, 9, "norm")
-    SpeedLabel_UI := MainGUI.Add("Text", "x0 y" Round(355*ScaleY) " w" Round(270*ScaleX) " Center c" p["text"], "Delay Multiplier: " CurrentMultiplier "x")
+    SpeedLabel_UI := MainGUI.Add("Text", "x0 y" Round(355*ScaleY) " w" Round(270*ScaleX) " Center c" p["text"], "Key Delay Multiplier: " KeyMultiplier "x")
     
     DelaySliderIndex := 4
     for index, name in Multipliers {
-        if (name == CurrentMultiplier) {
+        if (name == KeyMultiplier) {
             DelaySliderIndex := index
             break
         }
@@ -317,30 +306,27 @@ BuildGui(savedVals := "") {
     
     SliderTrack := MainGUI.Add("Text", "x" SliderCfg.TrackX " y" SliderCfg.TrackY " w" SliderCfg.TrackW " h" SliderCfg.TrackH " +0x100 Background" p["divider"])
     SliderKnob  := MainGUI.Add("Text", "x" startKnobX " y" knobY " w" SliderCfg.KnobW " h" SliderCfg.KnobH " +0x100 Background" p["accent"])
-    MainGUI.Add("Text", "x" Round(230*ScaleX) " y" (SliderCfg.TrackY - Round(6*ScaleY)) " w" Round(25*ScaleX) " Left c" p["textDim"], "5x")
-
+    MainGUI.Add("Text", "x" Round(230*ScaleX) " y" (SliderCfg.TrackY - Round(6*ScaleY)) " w" Round(25*ScaleX) " Left c" p["textDim"], "4x")
+    
     ; ── Action Buttons ──
     SetFixedFont(MainGUI, 9, "bold", "Semibold")
-    RaceBtn   := MainGUI.Add("Text", "x" Round(14*ScaleX) " y" Round(410*ScaleY) " w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🏁   RACE      \")
+    AllBtn    := MainGUI.Add("Text", "x" Round(14*ScaleX) " y" Round(410*ScaleY) " w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnMainBg"] " c" p["btnMainText"], "⟲   FULL LOOP     /")
+    RaceBtn   := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🏁   RACE      \")
     BuyBtn    := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(119*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🚗   BUY     [")
     UnlockBtn := MainGUI.Add("Text", "x" Round(137*ScaleX) " yp w" Round(119*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🛞   UNLOCK     ]")
-    AllBtn    := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "⟲   INIT SEQUENCE     /")
-    
-    ; NEW: Dedicated Panel Launch Trigger
-    OpenSpinWindowBtn := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["accent2"] " c" p["text"], "🎰   OPEN SPIN INTERFACE")
+    OpenSpinWindowBtn := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg3"] " c" p["btnText3"], "🎰   OPEN SPIN INTERFACE")
 
     RaceBtn.OnEvent("Click",    (*) => StartRace())
     BuyBtn.OnEvent("Click",     (*) => StartBuy())
     UnlockBtn.OnEvent("Click",  (*) => StartUnlock())
     AllBtn.OnEvent("Click",     (*) => ToggleAll())
-    OpenSpinWindowBtn.OnEvent("Click", OpenSpinPanel)
+    OpenSpinWindowBtn.OnEvent("Click", (*) => OpenSpinPanel())
 
     ; ══════════════════════════════════════════
     ;  TAB 2 — STATS
     ; ══════════════════════════════════════════
     TabControl.UseTab(2)
 
-    ; ── Targets ──
     SetFixedFont(MainGUI, 9, "bold")
     MainGUI.Add("Text", "x" Round(14*ScaleX) " y" Round(180*ScaleY) " w" Round(242*ScaleX) " Center BackgroundTrans c" p["header"],  "TARGETS")
     MainGUI.Add("Text", "x" Round(14*ScaleX) " y+0 w" Round(242*ScaleX) " Center BackgroundTrans c" p["divider"], "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -361,11 +347,6 @@ BuildGui(savedVals := "") {
 
     MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "⟡   Recommended Car")
     CarsLabel_UI   := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), Floor(PointsTotal / SelectedCarPoint))
-
-    SkillPtsCount_In.OnEvent("Change",    UpdateSkillPts)
-    SkillPtsCount_In.OnEvent("LoseFocus", ValidateSkillPts)
-    SkillPtsWant_In.OnEvent("Change",     UpdateSkillPtsWant)
-    SkillPtsWant_In.OnEvent("LoseFocus",  ValidateSkillPtsWant)
 
     ; ── Live Progress Telemetry ──
     SetFixedFont(MainGUI, 9, "bold")
@@ -443,7 +424,6 @@ BuildGui(savedVals := "") {
     ; ── Cyber-Noir Styled Toggle Trigger ────────────────
     SetFixedFont(MainGUI, 8, "bold", "Semibold")
     ToggleBtn := MainGUI.Add("Text", "x" Round(65*ScaleX) " y+" Round(15*ScaleY) " w" Round(140*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["btnBg2"] " c" p["btnText"], "⚙️   OPTIONS   ⏷")
-    ; ToggleBtn.Enabled := false
 
     ; ── Collapsible Options Section ─────
     
@@ -454,7 +434,7 @@ BuildGui(savedVals := "") {
     OptionsControls.Push(ResoSelect_UI := MainGUI.Add("Text", "x" Round(75*ScaleX) " y+" Round(12*ScaleY) " w" Round(120*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["editBg"] " c" p["text"]))
     ResoSelect_UI.DefineProp("Value", {
         get: (this) => this.HasOwnProp("ctrlIndex") ? this.ctrlIndex : 1,
-        set: (this, val) => (this.ctrlIndex := val, ControlSetText(ResoList[val] "   ▼", this.Hwnd, this.Gui.Hwnd))
+        set: (this, val) => (this.ctrlIndex := val, ControlSetText("     " ResoList[val] "   ▼", this.Hwnd, this.Gui.Hwnd))
     })
     ResoSelect_UI.DefineProp("Text", {
         get: (this) => ResoList[this.Value],
@@ -481,31 +461,37 @@ BuildGui(savedVals := "") {
     ; Read current status to set the correct initialization style
     isKEnabled := SpecialKCheck() 
     isGameRunning := ProcessExist(GameExe)
-
-    ; Dynamic styling based on status matrix
     initColor := isGameRunning ? p["textDim"] : (isKEnabled ? p["text"] : p["textDim"])
     initText  := isGameRunning ? "🔒 SPECIAL K (GAME RUNNING)" : (isKEnabled ? "▰  SPECIAL K: ACTIVE" : "▱  SPECIAL K: INACTIVE")
 
     SetFixedFont(MainGUI, 9, "norm", "Light")
-    ; Created as a flat text toggle styled identically to your custom layout
     SpecialKCheck_UI := MainGUI.Add("Text", "x" Round(20*ScaleX) " y+" Round(8*ScaleY) " w" Round(230*ScaleX) " h" Round(20*ScaleY) " Center 0x200 c" initColor, initText)
-    
-    ; Store the boolean state directly on the object handle for clean reference tracking
     SpecialKCheck_UI.State := isKEnabled 
-    
     OptionsControls.Push(SpecialKCheck_UI)
     SpecialKCheck_UI.OnEvent("Click", SpecialKToggle)
 
-    ; ── Sticky Bottom Footer Grouping ─────────
+    ; ── Clean Center-Aligned Footer ─────────
     FooterControls := []
-    FooterControls.Push(F_Divider := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(12*ScaleY) " w" Round(242*ScaleX) " h" Round(1*ScaleY) " BackgroundTrans", ""))
     
-    SetFixedFont(MainGUI, 8, "norm")
-    FooterControls.Push(ThemeBtn := MainGUI.Add("Text", "x" Round(14*ScaleX) " yp+" Round(5*ScaleY) " w" Round(30*ScaleX) " h" Round(26*ScaleY) " Center 0x200 Background" p["btnBg2"] " c" p["btnText2"], DarkMode ? "☀" : "🌙"))
-    ThemeBtn.OnEvent("Click", (*) => ToggleTheme())
+    ; Row 1: Divider line
+    FooterControls.Push(F_Divider := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(242*ScaleX) " h" Round(1*ScaleY) " BackgroundTrans", ""))
 
-    FooterControls.Push(VersionLink := MainGUI.Add("Link", "x" Round(224*ScaleX) " yp+" Round(12*ScaleY) " Right", '<a href="https://github.com/M-Haziq-Iqbal/Forza-Horizon-6-Wheelspin-Macro/releases/tag/v1.8.0">v1.8.0</a>'))
-    FooterControls.Push(BottomSpacer := MainGUI.Add("Text", "x0 y+" Round(5*ScaleY) " w" Round(270*ScaleX) " h" Round(1*ScaleY) " BackgroundTrans c" p["footer"], ""))
+    ; Row 2: Centered Ko-fi button
+    FooterControls.Push(Kofi_UI := MainGUI.Add("Picture", "x" Round(72*ScaleX) " yp+" Round(0*ScaleY) " w" Round(125*ScaleX) " h" Round(25*ScaleY), A_ScriptDir "\assets\kofi.png"))
+    Kofi_UI.OnEvent("Click", (*) => Run("https://ko-fi.com/mhaziqiqbal"))
+    
+    ; Row 3: Natively Centered Application Status Bar (Full Width)
+    SetFixedFont(MainGUI, 8, "norm")
+    FooterControls.Push(UpdateLink := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(242*ScaleX) " Center c" p["btnText2"], "Checking status..."))
+    
+    ; Custom property-based click router (No more parameter index crashes!)
+    UpdateLink.OnEvent("Click", (ctrlObj, *) => (ctrlObj.HasProp("DownloadUrl") && ctrlObj.DownloadUrl != "") ? ProcessUpdate(ctrlObj.DownloadUrl, ctrlObj.AssetType) : Run(ctrlObj.HtmlUrl))
+    
+    ; Launch update check
+    CheckForUpdates(UpdateLink)
+    
+    ; Row 4: Bottom boundary spacer
+    FooterControls.Push(BottomSpacer := MainGUI.Add("Text", "x0 yp+" Round(25*ScaleY) " w" Round(270*ScaleX) " h" Round(1*ScaleY) " BackgroundTrans c" p["footer"], ""))
 
     MainGUI.Show("w" Round(270*ScaleX) " Hide")
     
@@ -547,15 +533,8 @@ BuildGui(savedVals := "") {
 
     MainGUI.OnEvent("Close", (*) => ExitApp())
     MainGUI.OnEvent("Size",  MainGUI_SizeChange)
-
-    targetMon := GetGameMonitor()
-
-    MonitorGet(targetMon, &Left, &Top, &Right, &Bottom)
-    monWidth  := Right  - Left
-    monHeight := Bottom - Top
     
-    ; MainGUI.Move(Left + (monWidth // 2) + ((monWidth // 2) - w) // 2, Top + (monHeight - compactH) // 2, w, compactH)
-    MainGUI.Move(Left + monWidth - w - Round(15*ScaleX), Top + Round(15*ScaleX), w, compactH)
+    MainGUI.Move(MonLeft + MonWidth - w - Round(35*ScaleX), MonTop + Round(35*ScaleX), w, compactH)
     MainGUI.Show()
 }
 
@@ -563,27 +542,26 @@ BuildGui(savedVals := "") {
 ;  POPOUT INTERFACE: SPIN MANAGEMENT PANEL
 ; ══════════════════════════════════════════════
 OpenSpinPanel(*) {
-    global SpinGUI, SpinRunTime_UI, SpinOpenCount_UI, SpinLeftCount_UI, SpinMode, MainGUI, ActiveMode
+    global SpinGUI, SpinRunTime_UI, SpinOpenCount_UI, SpinLeftCount_UI, SpinLoop_In, SpinWants_In, MainGUI, ActiveMode, SpinMode
     global ScaleX, ScaleY
     
-    ; Protected duplicate check to prevent "Gui has no window" crashes
     try {
         if IsSet(SpinGUI) && SpinGUI && WinExist("ahk_id " SpinGUI.Hwnd) {
             WinActivate("ahk_id " SpinGUI.Hwnd)
             return
         }
     } catch {
-        ; Catch and handle windowless references if previously closed
+        ; Handle edge-case windowless errors
     }
 
     p := GetPalette()
     SpinGUI := Gui("+AlwaysOnTop -MaximizeBox -DPIScale -Caption +Border", "MHI | SPIN MODULE")
     SpinGUI.BackColor := p["bg"]
 
-    ; ── Custom Window Controls (Matched to Main GUI) ──
     SetFixedFont(SpinGUI, 10, "bold")
     SpinMin := SpinGUI.Add("Text", "x" Round(205*ScaleX) " y" Round(12*ScaleY) " w" Round(16*ScaleX) " h" Round(16*ScaleY) " Center BackgroundTrans c" p["textDim"], "─")
-    SpinMin.OnEvent("Click", (*) => SpinGUI.Minimize())
+    ; FIXED: Replaced non-existent internal method with safe native call
+    SpinMin.OnEvent("Click", (*) => WinMinimize(SpinGUI.Hwnd))
 
     SpinX := SpinGUI.Add("Text", "x" Round(225*ScaleX) " y" Round(12*ScaleY) " w" Round(16*ScaleX) " h" Round(16*ScaleY) " Center BackgroundTrans c" p["textDim"], "✕")
 
@@ -595,15 +573,23 @@ OpenSpinPanel(*) {
         SpinGUI.Destroy()
         SpinGUI := 0
     }
-    
     SpinX.OnEvent("Click", OnSpinClose)
 
     ; ── Interface Content ──
     SetFixedFont(SpinGUI, 12, "bold", "Light")
     SpinGUI.Add("Text", "x0 y" Round(30*ScaleY) " w" Round(250*ScaleX) " Center c" p["accent"], "SPIN CONTROLLER")
+
+    SetFixedFont(SpinGUI, 9, "norm", "Light")
+    SpinLoop_In := SpinGUI.Add("Edit", "x" Round(170*ScaleX) " y+" Round(15*ScaleY) " w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], 99)
+    SpinGUI.Add("Text", "x" Round(20*ScaleX) " yp+" Round(3*ScaleY) " w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Spin Loop")
+        
+    SpinWants_In := SpinGUI.Add("Edit", "x" Round(170*ScaleX) " y+" Round(6*ScaleY) " w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], 99)
+    SpinGUI.Add("Text", "x" Round(20*ScaleX) " yp+" Round(3*ScaleY) " w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Desired Spins")
+
+    SpinGUI.Add("Text", "x" Round(5*ScaleX) " y+5 w" Round(240*ScaleX) " Center BackgroundTrans c" p["divider"], "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     
     SetFixedFont(SpinGUI, 9, "norm", "Light")
-    SpinGUI.Add("Text", "x" Round(20*ScaleX) " y+" Round(15*ScaleY) " w" Round(130*ScaleX) " c" p["textDim"], "¼   Spin Runtime")
+    SpinGUI.Add("Text", "x" Round(20*ScaleX) " y+" Round(5*ScaleY) " w" Round(130*ScaleX) " c" p["textDim"], "🕓   Spin Runtime")
     SpinRunTime_UI := SpinGUI.Add("Text", "x" Round(150*ScaleX) " yp w" Round(80*ScaleX) " Right c" p["text"], "00:00")
 
     SpinGUI.Add("Text", "x" Round(20*ScaleX) " y+6 w" Round(130*ScaleX) " c" p["textDim"], "🎊   Spins Opened")
@@ -613,28 +599,25 @@ OpenSpinPanel(*) {
     SpinLeftCount_UI := SpinGUI.Add("Text", "x" Round(150*ScaleX) " yp w" Round(80*ScaleX) " Right c" p["text"], "0")
 
     SetFixedFont(SpinGUI, 9, "bold", "Semibold")
-    KeepBtn := SpinGUI.Add("Text", "x" Round(15*ScaleX) " y+16 w" Round(105*ScaleX) " h" Round(26*ScaleY) " Center 0x200 Background" p["activeBg"] " c" p["text"], "💾   KEEP")
-    SellBtn := SpinGUI.Add("Text", "x" Round(130*ScaleX) " yp w" Round(105*ScaleX) " h" Round(26*ScaleY) " Center 0x200 Background" p["inactiveBg"] " c" p["text"], "🏷️   SELL")
+    KeepBtnBG := SpinMode = "KEEP" ? p["activeBg"] : p["inactiveBg"]
+    SellBtnBG := SpinMode = "SELL" ? p["activeBg"] : p["inactiveBg"]
+    KeepBtn := SpinGUI.Add("Text", "x" Round(15*ScaleX) " y+16 w" Round(105*ScaleX) " h" Round(26*ScaleY) " Center 0x200 Background" KeepBtnBG " c" p["text"], "💾   KEEP")
+    SellBtn := SpinGUI.Add("Text", "x" Round(130*ScaleX) " yp w" Round(105*ScaleX) " h" Round(26*ScaleY) " Center 0x200 Background" SellBtnBG " c" p["text"], "🏷️   SELL")
 
-    KeepBtn.OnEvent("Click", (*) => TogglePair("KEEP", &SpinMode, KeepBtn, SellBtn, p))
-    SellBtn.OnEvent("Click", (*) => TogglePair("SELL", &SpinMode, SellBtn, KeepBtn, p))
+    KeepBtn.OnEvent("Click", (*) => ToggleSpinMode("KEEP", &SpinMode, KeepBtn, SellBtn, p))
+    SellBtn.OnEvent("Click", (*) => ToggleSpinMode("SELL", &SpinMode, SellBtn, KeepBtn, p))
 
     SetFixedFont(SpinGUI, 10, "bold", "Semibold")
-    SpinBtn := SpinGUI.Add("Text", "x" Round(15*ScaleX) " y+10 w" Round(220*ScaleX) " h" Round(34*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🎲   RUN WHEELSPIN   =")
+    SpinBtn := SpinGUI.Add("Text", "x" Round(15*ScaleX) " y+10 w" Round(220*ScaleX) " h" Round(35*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🎲   RUN WHEELSPIN   =")
     SpinBtn.OnEvent("Click", (*) => StartSpin())
 
-    ; ── Midpoint Placement Matrix ──
     sW := Round(250 * ScaleX)
-    sH := Round(230 * ScaleY)
+    sH := Round(290 * ScaleY)
     
-    ; Query the main window dimensions dynamically
     MainGUI.GetPos(&mX, &mY, &mW, &mH)
-    
-    ; Math: Center of Main GUI minus half the width/height of the Spin GUI
     sX := mX + (mW // 2) - (sW // 2)
     sY := mY + (mH // 2) - (sH // 2)
     
-    ; Spawns precisely centered inside the main GUI's active overlay space
     SpinGUI.Show("x" sX " y" sY " w" sW " h" sH)
 }
 
@@ -664,48 +647,18 @@ DragSliderTimer() {
     }
     
     SliderKnob.Move(newX)
-    
     currentProgress := newX - minX
     maxProgress := maxX - minX
     
     rawVal := SliderCfg.MinVal + ((currentProgress / maxProgress) * (SliderCfg.MaxVal - SliderCfg.MinVal))
     currentValue := Round(rawVal)
-    
     DelaySlider_UI.Value := currentValue
     
+    ; FIXED: Target the text property for reliability on Text layout objects
     if IsSet(SpeedLabel_UI)
-        SpeedLabel_UI.Value := "Delay Multiplier: " currentValue "x"
+        SpeedLabel_UI.Text := "Key Delay Multiplier: " currentValue "x"
     
     try UpdateSpeed(DelaySlider_UI, "")
-}
-
-DragMainGUI() {
-    global MainGUI, MainDragOffsetX, MainDragOffsetY
-    
-    if !GetKeyState("LButton", "P") {
-        SetTimer(, 0)
-        return
-    }
-    
-    CoordMode("Mouse", "Screen")
-    MouseGetPos(&mouseX, &mouseY)
-    MainGUI.Move(mouseX - MainDragOffsetX, mouseY - MainDragOffsetY)
-}
-
-DragSpinGUI() {
-    global SpinGUI, SpinDragOffsetX, SpinDragOffsetY
-    
-    ; Safely terminate thread callback if user releases left click
-    if !GetKeyState("LButton", "P") {
-        SetTimer(, 0)
-        return
-    }
-    
-    CoordMode("Mouse", "Screen")
-    MouseGetPos(&mouseX, &mouseY)
-    
-    ; Dynamic viewport repositioning matrix
-    try SpinGUI.Move(mouseX - SpinDragOffsetX, mouseY - SpinDragOffsetY)
 }
 
 ; ══════════════════════════════════════════════
@@ -756,8 +709,136 @@ MenuSelectReso(index, *) {
     try UpdateReso(ResoSelect_UI, "")
 }
 
-; ══════════════════════════════════════════════
-;  INITIALIZATION
-; ══════════════════════════════════════════════
-OnMessage(0x0201, WM_LBUTTONDOWN)
-BuildGui()
+; ==========================================
+; UPDATE FUNCTIONS
+; ==========================================
+
+CheckForUpdates(linkCtrl) {
+    try {
+        whr := ComObject("WinHttp.WinHttpRequest.5.1")
+        whr.Open("GET", "https://api.github.com/repos/" RepoOwner "/" RepoName "/releases/latest", true)
+        whr.SetRequestHeader("User-Agent", "AHK-v2-Updater")
+        whr.Send()
+        whr.WaitForResponse()
+        
+        if (whr.Status != 200)
+            throw Error()
+            
+        jsonText := whr.ResponseText
+        
+        if !RegExMatch(jsonText, '"tag_name":\s*"([^"]+)"', &matchTag)
+            throw Error()
+        latestVersion := matchTag[1]
+        
+        downloadUrl := ""
+        assetType := ""
+        currentArch := (A_PtrSize == 8) ? "x64" : "x32"
+        
+        if (!A_IsCompiled) {
+            assetType := "ZIP archive"
+            if RegExMatch(jsonText, '"browser_download_url":\s*"([^"]+\.zip)"', &matchUrl)
+                downloadUrl := matchUrl[1]
+        } else {
+            assetType := currentArch " Executable"
+            archPattern := (currentArch == "x64") ? "x64" : "(x32|x86)"
+            if RegExMatch(jsonText, '"browser_download_url":\s*"([^"]+' archPattern '[^"]*\.exe)"', &matchUrl)
+                downloadUrl := matchUrl[1]
+        }
+        
+        RegExMatch(jsonText, '"html_url":\s*"([^"]+)"', &matchHtml)
+        htmlUrl := matchHtml ? matchHtml[1] : "https://github.com/" RepoOwner "/" RepoName "/releases"
+
+        ; Run our smart comparison math
+        compResult := CompareVersions(CurrentVersion, latestVersion)
+
+        if (compResult == 1) {
+            ; 🧪 LOCAL VERSION IS GREATER THAN GITHUB RELEASE
+            linkCtrl.DownloadUrl := ""  ; Empty url forces click to open the github changelog instead
+            linkCtrl.AssetType := ""
+            linkCtrl.HtmlUrl := htmlUrl
+            linkCtrl.Text := CurrentVersion " | Beta Build 🧪"
+        } 
+        else if (compResult == -1) {
+            ; ⚠ LOCAL VERSION IS OLDER (UPDATE AVAILABLE)
+            linkCtrl.DownloadUrl := downloadUrl
+            linkCtrl.AssetType := assetType
+            linkCtrl.HtmlUrl := htmlUrl
+            linkCtrl.Text := CurrentVersion " | Update Available ⚠"
+        } 
+        else {
+            ; ✓ PERFECT MATCH
+            linkCtrl.DownloadUrl := ""
+            linkCtrl.AssetType := ""
+            linkCtrl.HtmlUrl := htmlUrl
+            linkCtrl.Text := CurrentVersion " | Up to Date ✓"
+        }
+        
+    } catch {
+        linkCtrl.DownloadUrl := ""
+        linkCtrl.HtmlUrl := "https://github.com/" RepoOwner "/" RepoName "/releases"
+        linkCtrl.Text := "Check Failed"
+    }
+}
+
+; ── Smart Semantic Version Comparator Helper ──
+CompareVersions(vLocal, vRemote) {
+    ; Strip out letters/prefixes (e.g., "v1.0.1-beta" -> "1.0.1")
+    cleanL := RegExReplace(vLocal, "[^\d.]")
+    cleanR := RegExReplace(vRemote, "[^\d.]")
+    
+    aLocal  := StrSplit(cleanL, ".")
+    aRemote := StrSplit(cleanR, ".")
+    
+    ; Loop through the longest section array length
+    Loop Max(aLocal.Length, aRemote.Length) {
+        nLocal  := (A_Index <= aLocal.Length  && aLocal[A_Index]  != "") ? Integer(aLocal[A_Index])  : 0
+        nRemote := (A_Index <= aRemote.Length && aRemote[A_Index] != "") ? Integer(aRemote[A_Index]) : 0
+        
+        if (nLocal > nRemote)  
+            return 1  ; Local is newer (Beta / Prerelease)
+        if (nLocal < nRemote)  
+            return -1 ; Local is older (Update available)
+    }
+    return 0 ; Versions match exactly
+}
+
+ProcessUpdate(url, assetType) {
+    if (url == "") {
+        MsgBox("Could not find the appropriate " assetType " asset in the latest GitHub release.", "Asset Missing", "Iconx")
+        return
+    }
+    
+    MsgBox("Downloading " assetType "... The application will restart automatically.", "Updating", "Iconi")
+    
+    try {
+        scriptPath := A_ScriptFullPath
+        workingDir := A_ScriptDir
+        
+        if (!A_IsCompiled) {
+            ; --- ZIP UPDATE ROUTINE (.ahk script users) ---
+            zipFile := workingDir "\update.tmp.zip"
+            Download(url, zipFile)
+            
+            psCommand := 'Start-Sleep -s 2; '
+                      . 'Expand-Archive -Path "' zipFile '" -DestinationPath "' workingDir '" -Force; '
+                      . 'Remove-Item -Path "' zipFile '" -Force; '
+                      . 'Start-Process "' workingDir '\' A_ScriptName '"'
+            
+            Run('powershell -NoProfile -WindowStyle Hidden -Command ' . psCommand, , "Hide")
+        } 
+        else {
+            ; --- EXE UPDATE ROUTINE (.exe users) ---
+            tempFile := scriptPath ".tmp"
+            Download(url, tempFile)
+            
+            cmdCommand := A_ComSpec ' /c timeout /t 1 > nul & del "' scriptPath '" & move "' tempFile '" "' scriptPath '" & start "" "' scriptPath '"'
+            
+            Run(cmdCommand, , "Hide")
+        }
+        
+        ExitApp()
+        
+    } catch Error as err {
+        MsgBox("Update failed:`n" err.Message, "Update Error", "Iconx")
+    }
+}

@@ -1,6 +1,6 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro        ║
-; ║        Cyber Noir Edition v1.8.0        ║
+; ║            Cyber Noir Edition           ║
 ; ╚═════════════════════════════════════════╝
 
 #Requires AutoHotkey v2.0
@@ -27,42 +27,32 @@
 #Include modules\Task_Spin.ahk
 #Include modules\SpecialK.ahk
 
+;@Ahk2Exe-SetVersion 1.9.0
+;@Ahk2Exe-SetDescription MHI - FH6 Wheelspin Macro
 ;@Ahk2Exe-SetMainIcon assets\icon.ico
-
 ; Setup tray icon dynamically
-if A_IsCompiled {
-    TraySetIcon(A_ScriptFullPath)  ; Pulls the embedded icon directly from the EXE
-} else {
-    TraySetIcon(A_ScriptDir "\assets\icon.ico") ; Standard path used while testing uncompiled
-}
+TraySetIcon(A_IsCompiled ? A_ScriptFullPath : A_ScriptDir "\assets\icon.ico")
 
-; ══════════════════════════════════════════════
-;  GAME-FOCUS BOUNDED HOTKEYS
-; ══════════════════════════════════════════════
+UpdateMonitorMetrics()
+
+BuildMainGui()
+BuildMiniGui()
+UpdateMiniWidgetMode("")
 
 ; Tell AHK to keep running in the background to listen for hotkeys
 Persistent(true)
 
-SetTimer(SpoofWindowFocus, 250) ; Fires every 250ms
-
 #HotIf WinActive(GameTitle)
-
 \::StartRace()
 [::StartBuy()
 ]::StartUnlock()
 /::ToggleAll()
 `::TogglePause()
-^+c::GetCoordsColor()
-F5::ToggleDetectionZone()
-; F10::ToggleWindowLock()
-; F11::SetGameResolution()
 F12::Reload()
+^+c::GetCoordsColor()
 !LButton::MoveWindow()
-
 #HotIf
 
 #HotIf IsSpinGuiOpen()
-
 =::StartSpin() 
-
 #HotIf

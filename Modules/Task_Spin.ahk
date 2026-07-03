@@ -1,11 +1,11 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro        ║
-; ║        Cyber Noir Edition v1.8.0        ║
+; ║            Cyber Noir Edition           ║
 ; ╚═════════════════════════════════════════╝
 
 StartSpin() {
     global ActiveMode, StatusText, cActive, SpinRunSeconds
-    global SpinOpenCount_UI, SpinLeftCount_UI, SpinRunTime_Ui
+    global SpinOpenCount_UI, SpinLeftCount_UI, SpinRunTime_UI
 
     if FindGame() = 0
         return
@@ -33,22 +33,28 @@ StartSpin() {
 
 SpinLoop() {
 
-    global SpinMode, LoopCount_In
-
-    SpinToOpen      := LoopCount_In.Value
+    global SpinMode, SpinLoop_In, SpinWants_In
+    
+    SpinToOpen      := SpinLoop_In.Value
+    SpinLeftTotal   := SpinWants_In.Value
     SpinLeftCount   := 0
     SpinOpenCount   := 0
-    RewardCount     := 0
     SpinType        := ""
 
     CheckAbort() => (ActiveMode != "Spin")
 
-    if WaitForPixel("Checking Wheelspin type...", 0.121, 0.312, "0xC7FD05", , 1000, 50, true, 25, "Super Wheelspinning...")
+    if WaitForPixel("Checking Wheelspin type...", 0.123, 0.479, "0x000000", , 1000, 50, true, , "0", 25)
         SpinType := "Super Wheelspin"
-    else if WaitForPixel("Checking Wheelspin type...", 0.879, 0.462, "0xC9FE03", , 1000, 50, true, 25, "Wheelspinning...")
+    else if WaitForPixel("Checking Wheelspin type...", 0.876, 0.483, "0x000000", , 1000, 50, true, , "0", 25)
         SpinType := "Wheelspin"
-    else
+
+    If (SpinType = "") {
+        MsgBox("No Wheelspin detected. Please ensure you have a Wheelspin or Super Wheelspin available.")
+        ToggleMode("Spin")
         return
+    }
+
+    ShowNotif("info", SpinType = "Super Wheelspin" ? "Super Wheelspin" : "Wheelspin", "Starting Spin Macro...")
 
     Process("Spinning...")
     PressKey("Enter") ; Enter Wheelspin
@@ -60,23 +66,26 @@ SpinLoop() {
 
     SpinLeftCount := SpinLeftCount = -1 ? SpinToOpen : SpinLeftCount
 
-    While (ActiveMode = "Spin" && SpinLeftCount > 0)  {
-        loop Min(SpinToOpen, SpinLeftCount) {
+    While (ActiveMode = "Spin" && SpinLeftCount > 0 && SpinLeftTotal > 0) {
+        loop Min(SpinToOpen, SpinLeftCount) {            
             Process("Skipping...")
 
-            if ScanOCR(0.072, 0.916, 0.027, 0.034, 2000, "Skip")
+            if InStr(ScanOCR(0.071, 0.915, 0.110-0.070, 0.945-0.915, 2000), "S", 0)
                 PressKey("Enter", 50) ; Skip`
 
             if CheckAbort()
                 break
 
-            ; Rescan Wheelspin amount to avoid desync
             SpinOpenCount++
-            if Mod(SpinOpenCount, 5) = 0 && SpinOpenCount > 0 {
+            SpinLeftCount--
+            SpinLeftTotal--
+            
+            ; Rescan Wheelspin amount to avoid desync
+            if Mod(SpinOpenCount, 5) = 0 {
                 if SpinType = "Super Wheelspin"
-                    spin := ScanOCR(0.107, 0.622, 0.071, 0.052, 5000, , true)
+                    spin := ScanOCR(0.107, 0.622, 0.071, 0.052, 2000, , true)
                 else if SpinType = "Wheelspin"
-                    spin := ScanOCR(0.148, 0.624, 0.075, 0.054, 5000, , true)
+                    spin := ScanOCR(0.148, 0.624, 0.075, 0.054, 2000, , true)
                 SpinLeftCount := spin = -1 ? SpinLeftCount : spin
             }
 
@@ -85,9 +94,10 @@ SpinLoop() {
 
             SpinOpenCount_UI.Value    := SpinOpenCount
             SpinLeftCount_UI.Value    := SpinLeftCount
-            if (WaitForPixel("Collecting...", 0.058, 0.926, "0xFFFFFF", , 4000, 50, true, , 0)) {
-
-                if Mod(SpinOpenCount, SpinToOpen) = 0 && SpinOpenCount > 0 {
+            Process("Collecting...")
+            if InStr(ScanOCR(0.071, 0.915, 0.110-0.070, 0.945-0.915, 4000), "C") {
+            ; if (WaitForPixel("Collecting...", 0.058, 0.926, "0xFFFFFF", , 4000, 50, true, , 0)) {
+                if Mod(SpinOpenCount, SpinToOpen) = 0 || SpinLeftTotal = 0{
                     PressKey("Esc", 50) ; Collect Prize
                 } else {
                     PressKey("Enter", 50) ; Collect Prize and Spin Again
@@ -96,34 +106,35 @@ SpinLoop() {
 
             if CheckAbort()
                 break
-            
-            while (RewardCount < 3) {
-                if WaitForPixel("Selling...", 0.450, 0.695, "0x000000", , 1000, 50, true, , 0) {
-                    if SpinMode = "SELL" {
-                        PressKey("Down", 50)
-                        PressKey("Down", 50)
-                        PressKey("Enter", 50)
-                    } else if SpinMode = "KEEP"{
-                        PressKey("Enter", 50)
-                    }
-                } else {
-                    break
-                }
-                RewardCount++
-            }
-            RewardCount := 0
-            SpinLeftCount--
 
-            if Mod(SpinOpenCount, SpinToOpen) = 0 && SpinOpenCount > 0 {
-                break
+            Loop 3 {
+                if GetPixelColor(0.352, 0.696, 500) = "0x000000" {
+                    if SpinMode = "SELL" {
+                        Process("Selling...")
+                        PressKey("Down", 50)
+                        PressKey("Down", 50)
+                        PressKey("Enter", 50)
+                    } 
+                    else if SpinMode = "KEEP"
+                        PressKey("Enter", 50)
+                } 
+                else
+                    break
             }
+
+            if SpinLeftTotal = 0
+                break
 
             if CheckAbort()
                 break
         }
+        Process("Returning to Free Roam...", 1000)
         PressKey("Esc", 1000) ; Return to Free Roam to avoid Inactivity Status
         
         WaitForPixel("Returning to Free Roam...", 0.137, 0.950, "0xFFFFFF", , 10000)
+
+        if SpinLeftTotal = 0
+            break
 
         if CheckAbort()
             break

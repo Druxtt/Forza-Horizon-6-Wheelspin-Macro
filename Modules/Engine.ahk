@@ -1,6 +1,6 @@
 ; ╔═════════════════════════════════════════╗
 ; ║        MHI - FH6 Wheelspin Macro        ║
-; ║        Cyber Noir Edition v1.8.0        ║
+; ║            Cyber Noir Edition           ║
 ; ╚═════════════════════════════════════════╝
 
 ; ══════════════════════════════════════════════
@@ -126,6 +126,10 @@ StartIndicators() {
     }
     EventLabSelect_UI.Enabled := false
 
+    StopBtn.Opt("cFF5A5A")
+    PauseBtn.Opt("cFFD166")
+    PauseBtn.Value := "❚❚"
+    
     SetTimer(TotalTimerTick, 1000)
 }
 
@@ -174,6 +178,10 @@ ResetIndicators() {
     EventLabSelect_UI.Enabled    := true
     LoopCount_In.Enabled     := true
 
+    StopBtn.Opt("c94A3B8")
+    PauseBtn.Opt("c94A3B8")
+    PauseBtn.Value := "❚❚"
+
     PressKey("W up")
 }
 
@@ -193,7 +201,7 @@ UpdateEventLab(ctrl, *) {
     CodeTune        := data.CodeTune
     CodeEventLab    := data.CodeEvent
     
-    SkillPtsWant_In.Value := UpdateSkillPtsWant({Value: MaxPoints})
+    SkillPtsWant_In.Value := UpdateSkillPtsWant({Value: MaxPoints}, false)
     CarCount_In.Value     := Floor(PointsTotal / SelectedCarPoint)
 
     WriteMacroIni("Settings", "EventLab", EventLab)
@@ -221,16 +229,17 @@ UpdateReso(ctrl, *) {
     WriteMacroIni("Settings", "Resolution", SelectedReso)
 }
 
-UpdateSkillPts(ctrl, *) {
+UpdateSkillPts(ctrl, ManualInput:= true, *) {
     global SelectedCarPoint, TimeTotal, PointsTotal, CarCount_In, SkillPtsWant_In, AveragePoints, PointsGain, MaxPoints
     global PointsLabel_UI, TimeLabel_UI, CarsLabel_UI, SectorLabel_UI, ActiveMode, CustomSkillPts
 
-    if CustomSkillPts = true
+    if ManualInput {
+        CustomSkillPts := false
         ShowNotif("info", "EventLab Race", "Mode: Automatic Desired Skill Point.")
+    }
 
-    CustomSkillPts := false
-    value          := ctrl.value
-    value          := (value = "") ? 0 : Min(999, value)
+    value := ctrl.value
+    value := (value = "") ? 0 : Min(999, value)
     
     SkillPtsWant_In.Value := (999 - value > MaxPoints) ? MaxPoints : 999 - value
 
@@ -246,15 +255,16 @@ UpdateSkillPts(ctrl, *) {
     CarsLabel_UI.Value   := Floor(PointsTotal / SelectedCarPoint)
 }
     
-UpdateSkillPtsWant(ctrl, *) {
+UpdateSkillPtsWant(ctrl, ManualInput:= true, *) {
     global SelectedCarPoint, TimeTotal, PointsTotal, CarCount_In, SkillPtsCount_In, AveragePoints, PointsGain, MaxPoints
     global PointsLabel_UI, TimeLabel_UI, CarsLabel_UI, PointsCount_UI, SectorLabel_UI, CustomSkillPts
 
-    if CustomSkillPts = false
+    if ManualInput {
+        CustomSkillPts := true
         ShowNotif("info", "EventLab Race", "Mode: Custom Desired Skill Point.")
+    }
 
-    CustomSkillPts := true
-    value          := ctrl.value
+    value := ctrl.value
     
     if (value = "") 
         value := 0
@@ -337,7 +347,7 @@ CalcTimeRace(score) {
 }
 
 CalcTimeBuy(car) {
-    totalTime := car * 2.7
+    totalTime := car * 3
     return totalTime / 60
 }
 
@@ -418,41 +428,22 @@ GetCoordsColor() {
 }
 
 ScanOCR(ratioX, ratioY, ratioW, ratioH, waitTime := 0, targetText := "", searchNumber := false) {
-    CoordMode "Pixel", "Client"
     global GameTitle
-    gameTarget := GameTitle
-    
-    ; 1. Failsafe: Exit early if the game isn't running
-    if !WinExist(gameTarget) {
-        ShowNotif("error", "OCR Error", "Game window '" gameTarget "' is not running.")
+
+    ; Failsafe: Exit early if the game isn't running
+    if !WinExist(GameTitle) {
+        ShowNotif("error", "OCR Error", "Game window '" GameTitle "' is not running.")
         return -1
     }
     
-    ; 2. Get the canvas size to calculate percentage scaling
-    WinGetClientPos(, , &gameWidth, &gameHeight, gameTarget)
-    
-    startX := Round(ratioX * gameWidth)
-    startY := Round(ratioY * gameHeight)
-    width  := Round(ratioW * gameWidth)
-    height := Round(ratioH * gameHeight)
-    
     deadline := A_TickCount + waitTime
 
-    ; 3. Use a loop that always runs at least once, even if waitTime is 0
     Loop {
         try {
-            ; Grab the text straight from the background window canvas memory
-            result := OCR.FromWindow(gameTarget, {
-                x: startX, 
-                y: startY, 
-                w: width, 
-                h: height, 
-                scale: 3, 
-                invertcolors: 1
-            })
-            
-            scannedText := Trim(result.Text)
-            
+            ; 👉 CALL THE NEW BACKGROUND ENGINE HERE
+            result := GetBackgroundOCR(ratioX, ratioY, ratioW, ratioH)
+            scannedText := Trim(result)
+
             if (scannedText != "") {
                 ; Condition A: Looking for a specific phrase/word
                 if (targetText != "" && InStr(scannedText, targetText)) {
@@ -462,7 +453,7 @@ ScanOCR(ratioX, ratioY, ratioW, ratioH, waitTime := 0, targetText := "", searchN
                 ; Condition B: Looking for a number/digit data type
                 if (searchNumber) {
                     if InStr(scannedText, "No") {
-                        return 0 ; Your custom "No available skills" fallback
+                        return 0 ; Custom "No available skills" fallback
                     }
                     
                     cleanNumber := RegExReplace(scannedText, "\D") 
@@ -477,18 +468,17 @@ ScanOCR(ratioX, ratioY, ratioW, ratioH, waitTime := 0, targetText := "", searchN
                 }
             }
         } catch {
-            ; Suppressed background window state capture exception (e.g. temporary lag)
+            ; Suppressed background window state capture exception
         }
         
-        ; Break the loop if we've exceeded the deadline
         if (A_TickCount >= deadline) {
             break
         }
         
-        Sleep(50) ; Brief rest before looping to keep CPU usage low
+        Sleep(50) ; Brief rest to keep CPU usage low
     }
     
-    ; Trigger notifications on timeout (Only if waitTime > 0 to prevent one-shot check spam)
+    ; Trigger notifications on timeout
     if (waitTime > 0) {
         if (targetText != "") {
             ShowNotif("warning", "OCR Timeout", "Failed to find text: '" targetText "' within " Round(waitTime/1000, 1) "s")
@@ -497,31 +487,116 @@ ScanOCR(ratioX, ratioY, ratioW, ratioH, waitTime := 0, targetText := "", searchN
         }
     }
     
-    return (searchNumber) ? -1 : false ; Return appropriate fail state depending on type
+    return (searchNumber) ? -1 : false 
+}
+
+GetBackgroundOCR(ratioX, ratioY, ratioW, ratioH) {
+    global GameTitle
+    hWnd := WinExist(GameTitle)
+    if !hWnd
+        return ""
+
+    ; Calculate background frame geometry dimensions
+    rectW := Buffer(16), rectC := Buffer(16), pt := Buffer(8)
+    DllCall("GetWindowRect", "Ptr", hWnd, "Ptr", rectW)
+    DllCall("GetClientRect", "Ptr", hWnd, "Ptr", rectC)
+    
+    wW := NumGet(rectW, 8, "Int") - NumGet(rectW, 0, "Int")
+    hW := NumGet(rectW, 12, "Int") - NumGet(rectW, 4, "Int")
+    wC := NumGet(rectC, 8, "Int")
+    hC := NumGet(rectC, 12, "Int")
+
+    NumPut("Int", 0, pt, 0), NumPut("Int", 0, pt, 4)
+    DllCall("ClientToScreen", "Ptr", hWnd, "Ptr", pt)
+    offsetX := NumGet(pt, 0, "Int") - NumGet(rectW, 0, "Int")
+    offsetY := NumGet(pt, 4, "Int") - NumGet(rectW, 4, "Int")
+
+    startX := offsetX + Integer(ratioX * wC)
+    startY := offsetY + Integer(ratioY * hC)
+    width  := Integer(ratioW * wC)
+    height := Integer(ratioH * hC)
+
+    ; Initialize low-level GDI Canvas structures
+    hdcScreen := DllCall("GetDC", "Ptr", 0, "Ptr")
+    hdcMemSrc  := DllCall("gdi32\CreateCompatibleDC", "Ptr", hdcScreen, "Ptr")
+    hFullBmp   := DllCall("gdi32\CreateCompatibleBitmap", "Ptr", hdcScreen, "Int", wW, "Int", hW, "Ptr")
+    hOldSrc    := DllCall("gdi32\SelectObject", "Ptr", hdcMemSrc, "Ptr", hFullBmp, "Ptr")
+
+    ; Direct composition grab pulls data even if window is covered
+    DllCall("PrintWindow", "Ptr", hWnd, "Ptr", hdcMemSrc, "UInt", 2)
+
+    ; Setup the crop destination slice canvas
+    hdcMemDst  := DllCall("gdi32\CreateCompatibleDC", "Ptr", hdcScreen, "Ptr")
+    hCropBmp   := DllCall("gdi32\CreateCompatibleBitmap", "Ptr", hdcScreen, "Int", width, "Int", height, "Ptr")
+    hOldDst    := DllCall("gdi32\SelectObject", "Ptr", hdcMemDst, "Ptr", hCropBmp, "Ptr")
+
+    ; Execute the fast hardware crop transfer
+    DllCall("gdi32\BitBlt", "Ptr", hdcMemDst, "Int", 0, "Int", 0, "Int", width, "Int", height, "Ptr", hdcMemSrc, "Int", startX, "Int", startY, "UInt", 0x00CC0020)
+
+    ; 🌟 UNLOCK THE BITMAP: Restore original states so Windows UWP OCR can read it
+    DllCall("gdi32\SelectObject", "Ptr", hdcMemDst, "Ptr", hOldDst)
+    DllCall("gdi32\SelectObject", "Ptr", hdcMemSrc, "Ptr", hOldSrc)
+
+    ; Perform the OCR pass over the unlocked memory block
+    textResult := ""
+    try {
+        ocrObj := OCR.FromBitmap(hCropBmp, { scale: 3, invertcolors: 1 })
+        textResult := Trim(ocrObj.Text)
+    }
+
+    ; Dispose of raw memory handlers safely to completely avoid memory leaks
+    DllCall("gdi32\DeleteObject", "Ptr", hCropBmp)
+    DllCall("gdi32\DeleteDC", "Ptr", hdcMemDst)
+    DllCall("gdi32\DeleteObject", "Ptr", hFullBmp)
+    DllCall("gdi32\DeleteDC", "Ptr", hdcMemSrc)
+    DllCall("ReleaseDC", "Ptr", 0, "Ptr", hdcScreen)
+
+    return textResult
 }
 
 WaitForPixel(text, ratioX, ratioY, targetColor, targetColorHDR := "", timeoutMs := 8000, postDelayMs := 1000, isFatal := false, variation := 0, note := "", radius := 0) {
-    global ActiveMode, MasterMode, MasterStart, CurrentMultiplier, GameTitle
-    CoordMode("Pixel", "Screen") 
+    global ActiveMode, MasterMode, MasterStart, PixelMultiplier, GameTitle
     
     StartTime := A_TickCount
     LastSec   := -1
     
-    timeoutMs   *= CurrentMultiplier
-    postDelayMs *= CurrentMultiplier
+    timeoutMs   *= PixelMultiplier
+    postDelayMs *= PixelMultiplier
+
+    ; Parse colors safely to numeric values for bit-shifting operations
+    nTarget := Integer(targetColor)
+    nTargetHDR := targetColorHDR != "" ? Integer(targetColorHDR) : ""
 
     Loop {
         if ((ActiveMode != "Race" && ActiveMode != "Buy" && ActiveMode != "Unlock" && ActiveMode != "Spin") || (!MasterMode && MasterStart))
             return false
             
-        if !WinExist(GameTitle)
+        hWnd := WinExist(GameTitle)
+        if !hWnd
             return false
 
-        WinGetClientPos(&mLeft, &mTop, &mWidth, &mHeight, GameTitle)
-        centerX := mLeft + (ratioX * mWidth)
-        centerY := mTop  + (ratioY * mHeight)
+        ; Fetch structural dimensions of the target window
+        rectW := Buffer(16)
+        DllCall("GetWindowRect", "Ptr", hWnd, "Ptr", rectW)
+        wW := NumGet(rectW, 8, "Int") - NumGet(rectW, 0, "Int")
+        hW := NumGet(rectW, 12, "Int") - NumGet(rectW, 4, "Int")
+
+        rectC := Buffer(16)
+        DllCall("GetClientRect", "Ptr", hWnd, "Ptr", rectC)
+        wC := NumGet(rectC, 8, "Int")
+        hC := NumGet(rectC, 12, "Int")
+
+        ; Calculate the exact structural offset of the client canvas relative to the window frame
+        pt := Buffer(8)
+        NumPut("Int", 0, pt, 0), NumPut("Int", 0, pt, 4)
+        DllCall("ClientToScreen", "Ptr", hWnd, "Ptr", pt)
+        offsetX := NumGet(pt, 0, "Int") - NumGet(rectW, 0, "Int")
+        offsetY := NumGet(pt, 4, "Int") - NumGet(rectW, 4, "Int")
+
+        ; Map scaling ratios directly to the background client zone coordinates
+        centerX := offsetX + Integer(ratioX * wC)
+        centerY := offsetY + Integer(ratioY * hC)
             
-        ; Define a tiny bounding box based on your radius
         x1 := centerX - radius
         y1 := centerY - radius
         x2 := centerX + radius
@@ -536,25 +611,54 @@ WaitForPixel(text, ratioX, ratioY, targetColor, targetColorHDR := "", timeoutMs 
             LastSec := RemainingSec
         }
 
-        ; 1. Check Standard Color inside the small radius box
-        if PixelSearch(&foundX, &foundY, x1, y1, x2, y2, targetColor, variation) {
-            if (postDelayMs > 0)
-                Sleep(postDelayMs)
-            return true 
+        ; BACKGROUND DEVICE CONTEXT RENDERING ENGINE
+        hdcScreen := DllCall("GetDC", "Ptr", 0, "Ptr")
+        hdcMem := DllCall("gdi32\CreateCompatibleDC", "Ptr", hdcScreen, "Ptr")
+        hBitmap := DllCall("gdi32\CreateCompatibleBitmap", "Ptr", hdcScreen, "Int", wW, "Int", hW, "Ptr")
+        hOld := DllCall("gdi32\SelectObject", "Ptr", hdcMem, "Ptr", hBitmap, "Ptr")
+        
+        ; Flag 2 (PW_RENDERFULLCONTENT) forces direct hardware composition capture 
+        DllCall("PrintWindow", "Ptr", hWnd, "Ptr", hdcMem, "UInt", 2)
+
+        pixelMatchFound := false
+        
+        ; Scan the internal graphic buffer within the designated radius
+        loopY := y1
+        while (loopY <= y2 && !pixelMatchFound) {
+            loopX := x1
+            while (loopX <= x2 && !pixelMatchFound) {
+                bgrColor := DllCall("gdi32\GetPixel", "Ptr", hdcMem, "Int", loopX, "Int", loopY, "UInt")
+                
+                if (bgrColor != 0xFFFFFFFF) { ; Ensure valid data window reads
+                    ; Convert background GDI Windows structure (BGR) back to standard AHK color formatting (RGB)
+                    rgbColor := ((bgrColor & 0xFF) << 16) | (bgrColor & 0xFF00) | ((bgrColor >> 16) & 0xFF)
+                    
+                    if BGColorCompare(rgbColor, nTarget, variation) || (nTargetHDR !== "" && BGColorCompare(rgbColor, nTargetHDR, variation)) {
+                        pixelMatchFound := true
+                    }
+                }
+                loopX++
+            }
+            loopY++
         }
 
-        ; 2. Check HDR Color Alternative inside the small radius box
-        if (targetColorHDR != "" && PixelSearch(&foundX, &foundY, x1, y1, x2, y2, targetColorHDR, variation)) {
+        ; Explicitly clean up all tracking handles to eliminate memory leaks
+        DllCall("gdi32\SelectObject", "Ptr", hdcMem, "Ptr", hOld)
+        DllCall("gdi32\DeleteObject", "Ptr", hBitmap)
+        DllCall("gdi32\DeleteDC", "Ptr", hdcMem)
+        DllCall("ReleaseDC", "Ptr", 0, "Ptr", hdcScreen)
+
+        if (pixelMatchFound) {
             if (postDelayMs > 0)
                 Sleep(postDelayMs)
-            return true 
+            return true
         }
 
         if (A_TickCount - StartTime > timeoutMs) {
             if isFatal {
-                failMsg := note!="" ? note : "Menu interaction timed out!"
+                failMsg := note != "" ? note : "Menu interaction timed out!"
                 Process("Sync Error: " failMsg)
-                if note!=0
+                if note != "0"
                     ShowNotif("error", "Sync Failure", failMsg)
                 return false
             } else {
@@ -567,41 +671,90 @@ WaitForPixel(text, ratioX, ratioY, targetColor, targetColorHDR := "", timeoutMs 
     }
 }
 
-LocatePixelInArea(ratioX, ratioY, ratioW, ratioH, targetColor, variation := 5) {
-    CoordMode "Pixel", "Screen"
-    global GameTitle
+GetPixelColor(ratioX, ratioY, delayMs := 0) {
+    global ActiveMode, MasterMode, MasterStart, PixelMultiplier, GameTitle
     
-    if !WinExist(GameTitle)
-        return false
-        
-    WinGetClientPos(&winX, &winY, &winW, &winH, GameTitle)
-    
-    ; Define scanning bounding boundaries using your relative percentages
-    x1 := winX + Round(ratioX * winW)
-    y1 := winY + Round(ratioY * winH)
-    x2 := winX + Round(ratioW * winW) 
-    y2 := winY + Round(ratioH * winH)
-    
-    ; Runs an immediate 1-shot search across the target zone
-    if PixelSearch(&foundX, &foundY, x1, y1, x2, y2, targetColor, variation) {
-        ; Returns the clean Y coordinate relative ONLY to the window's edge
-        return foundY - winY 
+    ; Apply multiplier and execute delay ONLY if delayMs is greater than 0
+    if (delayMs > 0) {
+        delayMs *= PixelMultiplier
+        StartTime := A_TickCount
+        Loop {
+            if !WinExist(GameTitle)
+                return ""
+            if (A_TickCount - StartTime >= delayMs)
+                break
+            Sleep(50) 
+        }
     }
+
+    hWnd := WinExist(GameTitle)
+    if !hWnd
+        return ""
+
+    ; Calculate background frame metrics
+    rectW := Buffer(16), rectC := Buffer(16), pt := Buffer(8)
+    DllCall("GetWindowRect", "Ptr", hWnd, "Ptr", rectW)
+    DllCall("GetClientRect", "Ptr", hWnd, "Ptr", rectC)
     
-    return false ; Return clean false if color isn't anywhere in that box area
+    wW := NumGet(rectW, 8, "Int") - NumGet(rectW, 0, "Int")
+    hW := NumGet(rectW, 12, "Int") - NumGet(rectW, 4, "Int")
+    wC := NumGet(rectC, 8, "Int")
+    hC := NumGet(rectC, 12, "Int")
+
+    NumPut("Int", 0, pt, 0), NumPut("Int", 0, pt, 4)
+    DllCall("ClientToScreen", "Ptr", hWnd, "Ptr", pt)
+    offsetX := NumGet(pt, 0, "Int") - NumGet(rectW, 0, "Int")
+    offsetY := NumGet(pt, 4, "Int") - NumGet(rectW, 4, "Int")
+
+    centerX := offsetX + Integer(ratioX * wC)
+    centerY := offsetY + Integer(ratioY * hC)
+
+    ; Initialize memory graphics handles
+    hdcScreen := DllCall("GetDC", "Ptr", 0, "Ptr")
+    hdcMem    := DllCall("gdi32\CreateCompatibleDC", "Ptr", hdcScreen, "Ptr")
+    hBitmap   := DllCall("gdi32\CreateCompatibleBitmap", "Ptr", hdcScreen, "Int", wW, "Int", hW, "Ptr")
+    hOld      := DllCall("gdi32\SelectObject", "Ptr", hdcMem, "Ptr", hBitmap, "Ptr")
+    
+    bgrColor := 0xFFFFFFFF ; Default to invalid flag
+    
+    try {
+        ; Capture background window state layer
+        DllCall("PrintWindow", "Ptr", hWnd, "Ptr", hdcMem, "UInt", 2)
+        bgrColor := DllCall("gdi32\GetPixel", "Ptr", hdcMem, "Int", centerX, "Int", centerY, "UInt")
+    } finally {
+        ; 🌟 GUARANTEED CLEANUP: This block executes no matter what happens above
+        DllCall("gdi32\SelectObject", "Ptr", hdcMem, "Ptr", hOld)
+        DllCall("gdi32\DeleteObject", "Ptr", hBitmap)
+        DllCall("gdi32\DeleteDC", "Ptr", hdcMem)
+        DllCall("ReleaseDC", "Ptr", 0, "Ptr", hdcScreen)
+    }
+
+    ; CLR_INVALID or window acquisition failure fallback
+    if (bgrColor = 0xFFFFFFFF)
+        return ""
+
+    ; Convert GDI's native 0xBBGGRR format cleanly into standard 0xRRGGBB
+    rgbColor := ((bgrColor & 0xFF) << 16) | (bgrColor & 0xFF00) | ((bgrColor >> 16) & 0xFF)
+    return Format("0x{:06X}", rgbColor)
+}
+
+; Internal processing math module to match variations across shading maps
+BGColorCompare(color1, color2, variation) {
+    if (variation == 0)
+        return color1 == color2
+        
+    r1 := (color1 >> 16) & 0xFF, g1 := (color1 >> 8) & 0xFF, b1 := color1 & 0xFF
+    r2 := (color2 >> 16) & 0xFF, g2 := (color2 >> 8) & 0xFF, b2 := color2 & 0xFF
+    
+    return (Abs(r1 - r2) <= variation) && (Abs(g1 - g2) <= variation) && (Abs(b1 - b2) <= variation)
 }
 
 ; ══════════════════════════════════════════════
 ;  CONTROL OUTPUTS & HARDWARE ACTIONS
 ; ══════════════════════════════════════════════
 
-; --- Put this at the very top of your main script file ---
-global GameHwnd := 0  ; Initializes the permanent window pointer handle
-
-; --- Your Updated PressKey Function ---
 PressKey(key, delay := 500) {
-    ; OPTIMIZATION: Added GameHwnd and MiniKey_UI to your global list
-    global Key_UI, MiniKey_UI, cHighlight, cIdle, CurrentMultiplier, GameTitle, GameHwnd
+    global Key_UI, MiniKey_UI, cHighlight, cIdle, KeyMultiplier, GameTitle, GameHwnd, GameExe
 
     switch key {
         case "Down":      displayname := "↓"
@@ -612,49 +765,107 @@ PressKey(key, delay := 500) {
         case "Backspace": displayname := "⬅ Backspace"
         case "w down", "w up": displayname := "W"
         case "s down", "s up": displayname := "S"
-        Default:          displayname := key
+        default:          displayname := key
     }
 
-    Key_UI.Value     := "⌨  [ " displayName " ]"
-    MiniKey_UI.Value := "⌨  [ " displayName " ]"
+    if IsSet(Key_UI) && Key_UI
+        Key_UI.Value     := "⌨  [ " displayname " ]"
+    if IsSet(MiniKey_UI) && MiniKey_UI
+        MiniKey_UI.Value := "⌨  [ " displayname " ]"
 
     cleanKey := key
     suffix   := ""
     if InStr(key, " ") {
         parts    := StrSplit(key, " ")
         cleanKey := parts[1]   
-        suffix   := " " parts[2] 
-    }
-
-    if (scCode := GetKeySC(cleanKey)) {
-        hexSC   := Format("{:03X}", scCode)
-        sendKey := "sc" hexSC suffix
-    } else {
-        sendKey := key
-    }
-
-    ; SMART HWND CACHING:
-    ; If we don't have the handle yet, or the old handle died (game restarted), find it once.
-    if (!GameHwnd || !WinExist(GameHwnd)) {
-        GameHwnd := WinExist(GameTitle)
-    }
-
-    ; If the game isn't running at all, throw the warning safely
-    if (!GameHwnd) {
-        ShowNotif("error", "Target Error", "Keystroke missed because game window was not found.")
-        return
+        suffix   := parts[2] 
     }
 
     try {
-        ; CRUCIAL CHANGE: We target GameHwnd directly instead of the GameTitle string text.
-        ; This makes background input delivery 100% immune to focus changes.
-        ControlSend("{" sendKey "}", , GameHwnd)
+        vkCode := GetKeyVK(cleanKey)
+        scCode := GetKeySC(cleanKey)
+        
+        isExtended := (cleanKey = "Up" || cleanKey = "Down" || cleanKey = "Left" || cleanKey = "Right" || cleanKey = "Enter")
+        extBit     := isExtended ? 0x01000000 : 0
+        
+        lParamDown := 0x00000001 | (scCode << 16) | extBit
+        lParamUp   := 0xC0000001 | (scCode << 16) | extBit
     } catch {
-        ShowNotif("error", "Target Error", "Keystroke missed because game canvas was lost.")
+        return 
+    }
+
+    ; =========================================================================
+    ; BRANCH 1: CHROME PWA / BROWSER GFN (Background via Chromium Canvas)
+    ; =========================================================================
+    if (GameExe = "msedge.exe") {
+        if (!GameHwnd || !WinExist(GameHwnd)) {
+            topHwnd := WinExist(GameTitle)
+            if (topHwnd) {
+                try {
+                    GameHwnd := ControlGetHwnd("Chrome_RenderWidgetHostHWND1", "ahk_id " topHwnd)
+                } catch {
+                    GameHwnd := topHwnd
+                }
+            }
+        }
+
+        if (!GameHwnd) {
+            ShowNotif("error", "Target Error", "GFN PWA window was not found.")
+            return
+        }
+
+        try {
+            SendMessage(0x0007, 0, 0, , "ahk_id " GameHwnd) ; Keep canvas awake
+
+            if (suffix = "down") {
+                PostMessage(0x0100, vkCode, lParamDown, , "ahk_id " GameHwnd)
+            }
+            else if (suffix = "up") {
+                PostMessage(0x0101, vkCode, lParamUp, , "ahk_id " GameHwnd)
+            } 
+            else {
+                PostMessage(0x0100, vkCode, lParamDown, , "ahk_id " GameHwnd)
+                Sleep(45) 
+                PostMessage(0x0101, vkCode, lParamUp, , "ahk_id " GameHwnd)
+            }
+        } catch {
+            ShowNotif("error", "Target Error", "Keystroke missed because GFN PWA canvas was lost.")
+        }
+    }
+
+    ; =========================================================================
+    ; BRANCH 2: NATIVE LOCAL APP (Background via Direct Top-Level Window)
+    ; =========================================================================
+    else {
+        if (!GameHwnd || !WinExist(GameHwnd)) {
+            GameHwnd := WinExist("ahk_exe " GameExe)
+        }
+
+        if (!GameHwnd) {
+            ShowNotif("error", "Target Error", "Native game window (" GameExe ") was not found.")
+            return
+        }
+
+        try {
+            if (suffix = "down") {
+                PostMessage(0x0100, vkCode, lParamDown, , "ahk_id " GameHwnd)
+            }
+            else if (suffix = "up") {
+                PostMessage(0x0101, vkCode, lParamUp, , "ahk_id " GameHwnd)
+            } 
+            else {
+                PostMessage(0x0100, vkCode, lParamDown, , "ahk_id " GameHwnd)
+                Sleep(45) 
+                PostMessage(0x0101, vkCode, lParamUp, , "ahk_id " GameHwnd)
+            }
+        } catch {
+            ShowNotif("error", "Target Error", "Keystroke failed to post to native local game.")
+        }
     }
     
-    delay := Random(delay, delay + 50)
-    Sleep(CurrentMultiplier * delay)
+    currentMultiplier := IsSet(KeyMultiplier) ? KeyMultiplier : 1
+    actualDelay := Random(delay, delay + 50)
+    Sleep(currentMultiplier * actualDelay)
 }
 
 Process(text, delay := 0) {
@@ -665,25 +876,20 @@ Process(text, delay := 0) {
     Sleep(delay)
 }
 
-WriteNumber(num) {
-    global GameTitle
-
-    for digit in StrSplit(String(num)) {
-        ControlSend("{" digit "}", , GameTitle)
-        Sleep(50) 
-    }
-}
-
 UpdateSpeed(*) {
     global SpeedLabel_UI, DelaySlider_UI
 
     sliderPosition := DelaySlider_UI.Value
     
-    Global CurrentMultiplier := Multipliers[sliderPosition]
-    SpeedLabel_UI.Text       := "Delay Multiplier: " CurrentMultiplier "x"
+    Global KeyMultiplier := Multipliers[sliderPosition]
+    SpeedLabel_UI.Text       := "Key Delay Multiplier: " KeyMultiplier "x"
 
-    WriteMacroIni("Settings", "CurrentMultiplier", CurrentMultiplier)
+    WriteMacroIni("Settings", "KeyMultiplier", KeyMultiplier)
 }
+
+; ══════════════════════════════════════════════
+;  RESOLUTION-RELATIVE MATRIX INITIALIZATION
+; ══════════════════════════════════════════════
 
 GetGameMonitor() {
     global GameTitle
@@ -717,6 +923,43 @@ GetGameMonitor() {
     return bestMonitor
 }
 
+UpdateMonitorMetrics() {
+    global MonLeft, MonTop, MonRight, MonBottom, MonWidth, MonHeight, ScaleX, ScaleY, FontScale
+    global GameHwnd, GameTitle
+
+    ; Smart Handle Syncing
+    if (!GameHwnd || !WinExist(GameHwnd)) {
+        if IsSet(GameTitle)
+            GameHwnd := WinExist(GameTitle)
+    }
+
+    gameMonitor := GetGameMonitor()
+    
+    ; 1. POSITIONING BOUNDS: Read usable Desktop workspace context (Excludes taskbars)
+    MonitorGetWorkArea(gameMonitor, &wLeft, &wTop, &wRight, &wBottom)
+    MonLeft    := wLeft
+    MonTop     := wTop
+    MonRight   := wRight
+    MonBottom  := wBottom
+    MonWidth   := wRight - wLeft
+    MonHeight  := wBottom - wTop
+
+    ; 2. DISPLAY SCALING PROPORTIONS: Read true raw hardware panel parameters
+    MonitorGet(gameMonitor, &mLeft, &mTop, &mRight, &mBottom)
+    fullWidth  := mRight - mLeft
+    fullHeight := mBottom - mTop
+    
+    ScaleX     := fullWidth / 2560
+    ScaleY     := fullHeight / 1440
+
+    ; 3. PER-WINDOW CONTEXTUAL DPI TRANSFORMATION
+    targetDpi := (GameHwnd && WinExist(GameHwnd)) 
+                 ? DllCall("User32\GetDpiForWindow", "Ptr", GameHwnd, "UInt") 
+                 : DllCall("User32\GetDpiForSystem", "UInt")
+
+    FontScale  := ScaleX / (targetDpi / 96)
+}
+
 FormatCommas(val) {
     return RegExReplace(val, "\G\d+?(?=(\d{3})+(?:\D|$))", "$0,")
 }
@@ -728,211 +971,169 @@ FormatCommas(val) {
 OnMessage(0x0201, WM_LBUTTONDOWN)
 
 WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
-    global MainGUI, MiniGui, SpinGUI, RestoreBtn, PauseBtn, StopBtn, DragOffsetX, DragOffsetY
-    global SliderCfg, SliderKnob, SliderTrack, MainDragOffsetX, MainDragOffsetY
-    global SpinDragOffsetX, SpinDragOffsetY ; Scoped asynchronous position matrix
+    global RestoreBtn, PauseBtn, StopBtn
+    global SliderKnob, SliderTrack
+    global MainGUI, MainDragOffsetX, MainDragOffsetY
+    global SpinGUI,SpinDragOffsetX, SpinDragOffsetY
+    global MiniGui, MiniDragOffsetX, MiniDragOffsetY
+    global PreviewGui, PreviewDragOffsetX, PreviewDragOffsetY
 
-    ; ── 1. MINI GUI ROUTING ──
-    if (IsSet(MiniGui) && WinExist("ahk_id " MiniGui.Hwnd)) {
-        if (hwnd == MiniGui.Hwnd || DllCall("GetParent", "Ptr", hwnd) == MiniGui.Hwnd) {
-            if ((IsSet(RestoreBtn) && hwnd == RestoreBtn.Hwnd) || 
-                (IsSet(PauseBtn)   && hwnd == PauseBtn.Hwnd)   || 
-                (IsSet(StopBtn)    && hwnd == StopBtn.Hwnd)) {
-                return
-            }
-            CoordMode("Mouse", "Screen")
-            MouseGetPos(&mouseX, &mouseY)
-            WinGetPos(&guiX, &guiY, , , MiniGui.Hwnd)
-            DragOffsetX := mouseX - guiX
-            DragOffsetY := mouseY - guiY
-            SetTimer(DragMiniGui, 10)
-            return
-        }
-    }
+    ; 1. Identify the top-level parent window safely
+    rootHwnd := DllCall("User32\GetAncestor", "Ptr", hwnd, "UInt", 2, "Ptr")
 
-    ; ── 2. SPIN GUI ROUTING (Asynchronous Hand-off) ──
-    try {
-        if (IsSet(SpinGUI) && SpinGUI && hwnd == SpinGUI.Hwnd) {
-            CoordMode("Mouse", "Screen")
-            MouseGetPos(&mouseX, &mouseY)
-            WinGetPos(&guiX, &guiY, , , SpinGUI.Hwnd)
-            SpinDragOffsetX := mouseX - guiX
-            SpinDragOffsetY := mouseY - guiY
-            SetTimer(DragSpinGUI, 10)
-            return
-        }
-    } catch {
-        ; Quietly catch and discard "Windowless GUI" exceptions if the panel was destroyed
-    }
-
-    ; ── 3. MAIN GUI ROUTING ──
-    if (!IsSet(MainGUI) || !WinExist("ahk_id " MainGUI.Hwnd))
-        return
-
-    ; Check control identity relative to the layout window
-    oldMouseMode := CoordMode("Mouse", "Window")
-    MouseGetPos(,, &win, &ctrlHwnd, 2)
-    CoordMode("Mouse", oldMouseMode)
-    
-    ; Custom Slider Engine Check -> Hands off to non-blocking background timer
-    if (IsSet(SliderKnob) && IsSet(SliderTrack) && (ctrlHwnd == SliderKnob.Hwnd || ctrlHwnd == SliderTrack.Hwnd)) {
-        DragSliderTimer() ; Fire once instantly to catch the initial click coordinate
+    ; 2. CUSTOM SLIDER ENGINE ROUTING (Evaluated first)
+    if (IsSet(SliderKnob) && IsSet(SliderTrack) && (hwnd == SliderKnob.Hwnd || hwnd == SliderTrack.Hwnd)) {
+        DragSliderTimer()
         SetTimer(DragSliderTimer, 10)
         return
     }
-    
-    ; Main Background Dragging -> Replaced PostMessage with non-blocking screen mapping
-    if (hwnd == MainGUI.Hwnd) {
-        CoordMode("Mouse", "Screen")
-        MouseGetPos(&mouseX, &mouseY)
-        WinGetPos(&guiX, &guiY, , , MainGUI.Hwnd)
-        MainDragOffsetX := mouseX - guiX
-        MainDragOffsetY := mouseY - guiY
-        SetTimer(DragMainGUI, 10)
+
+    ; 3. MINI GUI ROUTING
+    if (IsSet(MiniGui) && MiniGui && rootHwnd == MiniGui.Hwnd) {
+        if ((IsSet(RestoreBtn) && hwnd == RestoreBtn.Hwnd) || 
+            (IsSet(PauseBtn)   && hwnd == PauseBtn.Hwnd)   || 
+            (IsSet(StopBtn)    && hwnd == StopBtn.Hwnd)) {
+            return
+        }
+        
+        ctrlClass := WinGetClass(hwnd)
+        if (ctrlClass == "AutoHotkeyGUI" || ctrlClass == "Static") {
+            CoordMode("Mouse", "Screen")
+            MouseGetPos(&mouseX, &mouseY)
+            WinGetPos(&guiX, &guiY, , , MiniGui.Hwnd)
+            MiniDragOffsetX := mouseX - guiX
+            MiniDragOffsetY := mouseY - guiY
+            SetTimer(DragMiniGui, 10)
+        }
+        return
+    }
+
+    ; 4. SPIN GUI ROUTING
+    if (IsSet(SpinGUI) && SpinGUI && rootHwnd == SpinGUI.Hwnd) {
+        if (hwnd == SpinGUI.Hwnd || DllCall("User32\GetParent", "Ptr", hwnd) == SpinGUI.Hwnd) {
+            ctrlClass := WinGetClass(hwnd)
+            if (ctrlClass == "AutoHotkeyGUI" || ctrlClass == "Static") {
+                ; Bypass if clicking close or text elements with click handlers
+                if (ctrlClass == "Static" && (WinGetStyle(hwnd) & 0x100))
+                    return 
+                
+                CoordMode("Mouse", "Screen")
+                MouseGetPos(&mouseX, &mouseY)
+                WinGetPos(&guiX, &guiY, , , SpinGUI.Hwnd)
+                SpinDragOffsetX := mouseX - guiX
+                SpinDragOffsetY := mouseY - guiY
+                SetTimer(DragSpinGUI, 10)
+            }
+        }
+        return
+    }
+
+    ; 5. MAIN GUI ROUTING
+    if (IsSet(MainGUI) && MainGUI && rootHwnd == MainGUI.Hwnd) {
+        if (hwnd == MainGUI.Hwnd || DllCall("User32\GetParent", "Ptr", hwnd) == MainGUI.Hwnd) {
+            ctrlClass := WinGetClass(hwnd)
+            if (ctrlClass == "AutoHotkeyGUI" || ctrlClass == "Static") {
+                ; Bypass if clicking close (✕) or minimize (─) buttons [cite: 101]
+                if (ctrlClass == "Static" && (WinGetStyle(hwnd) & 0x100))
+                    return 
+                
+                CoordMode("Mouse", "Screen")
+                MouseGetPos(&mouseX, &mouseY)
+                WinGetPos(&guiX, &guiY, , , MainGUI.Hwnd)
+                MainDragOffsetX := mouseX - guiX
+                MainDragOffsetY := mouseY - guiY
+                SetTimer(DragMainGUI, 10)
+            }
+        }
+        return
+    }
+
+    ; 6. PREVIEW GUI ROUTING
+    if (IsSet(PreviewGui) && PreviewGui && rootHwnd == PreviewGui.Hwnd) {
+        if (hwnd == PreviewGui.Hwnd || DllCall("User32\GetParent", "Ptr", hwnd) == PreviewGui.Hwnd) {
+            ctrlClass := WinGetClass(hwnd)
+            if (ctrlClass == "AutoHotkeyGUI" || ctrlClass == "Static") {
+                ; Bypass if clicking close (✕) or minimize (─) buttons [cite: 101]
+                if (ctrlClass == "Static" && (WinGetStyle(hwnd) & 0x100))
+                    return 
+                
+                CoordMode("Mouse", "Screen")
+                MouseGetPos(&mouseX, &mouseY)
+                WinGetPos(&guiX, &guiY, , , PreviewGui.Hwnd)
+                PreviewDragOffsetX := mouseX - guiX
+                PreviewDragOffsetY := mouseY - guiY
+                SetTimer(DragPreviewGui, 10)
+            }
+        }
         return
     }
 }
 
 ; ══════════════════════════════════════════════
-;  GAME WINDOW MANIPULATION
+;  BACKGROUND ASYNC WORKER LOOPS (NON-BLOCKING)
 ; ══════════════════════════════════════════════
 
-SetGameResolution(ctrl) {
-    global WindowedMode, GameTitle, SelectedReso
-    global IsGameAlwaysOnTop, AlwaysOnTopBtn
-
-    if !WinExist(GameTitle) {
-        ShowNotif("error", "Resolution Resizing Error", "Game window could not be found.")
+DragMainGUI() {
+    global MainGUI, MainDragOffsetX, MainDragOffsetY
+    
+    ; Stop tracking immediately if the user releases the left click
+    if !GetKeyState("LButton", "P") {
+        SetTimer(, 0)
         return
     }
-
-    ; if SpecialKCheck() = false {
-    ;     ShowNotif("error", "Resolution Resizing Error", "Special K is not enabled.")
-    ;     return
-    ; }
-
-    resParts := StrSplit(SelectedReso, "x", " ")
-
-    TargetWidth := Integer(resParts[1])
-    TargetHeight := Integer(resParts[2])
-
-    if !WindowedMode {
-
-        WindowedMode := !WindowedMode ; Toggle the true/false state
-        
-        ; Calculate coordinates to center the window on the primary monitor
-        ; TargetX := (A_ScreenWidth - TargetWidth) // 2
-        TargetX := (A_ScreenWidth) - (TargetWidth // 3)
-        ;TargetY := (A_ScreenHeight - TargetHeight) // 2
-        TargetY := (A_ScreenHeight - TargetHeight)
-        
-        ; Reposition and apply resolution boundaries
-        WinMove(TargetX, TargetY, TargetWidth, TargetHeight, GameTitle)
-
-        ctrl.Opt("c3B82F6")
-        ShowNotif("info", "Windowed Mode", "Press Alt + Left Click to hold and drag the game window.")
-    }
-    else {
-        WindowedMode := !WindowedMode ; Toggle the true/false state
-
-        ; --- STEP 3: Stretch the window to fill your entire monitor space ---
-        WinMove(0, 0, A_ScreenWidth, A_ScreenHeight, GameTitle)
-
-        ctrl.Opt("c94A3B8")
-        ShowNotif("info", "Fullscreen Mode", "Press 🗗 button to enable windowed mode.")
-
-        WinSetAlwaysOnTop(0, GameTitle)
-        IsGameAlwaysOnTop := false
-        AlwaysOnTopBtn.Opt("c94A3B8")
-    }
+    
+    CoordMode("Mouse", "Screen")
+    MouseGetPos(&mouseX, &mouseY)
+   
+    try MainGUI.Move(mouseX - MainDragOffsetX, mouseY - MainDragOffsetY)
 }
 
-; ToggleBackgroundLock() {
-;     global ForceBackgroundMode
-;     ForceBackgroundMode := !ForceBackgroundMode
+DragSpinGUI() {
+    global SpinGUI, SpinDragOffsetX, SpinDragOffsetY
     
-;     if (ForceBackgroundMode) {
-;         TrayTip("Background Lock ON", "The game is now locked out of focus.")
-;         SetTimer(AnchorFocusToDesktop, 50) ; Check focus every 50 milliseconds
-;     } else {
-;         TrayTip("Background Lock OFF", "Game focus behavior returned to normal.")
-;         SetTimer(AnchorFocusToDesktop, 0) ; Turn off the loop
-;     }
-; }
-
-; AnchorFocusToDesktop() {
-;     global GameTitle
-    
-;     ; If Windows tries to force the game to become active...
-;     if WinActive(GameTitle) {
-;         ; Immediately pass focus to the Windows Desktop shell layers instead!
-;         ; This satisfies Windows' focus rule without activating the game.
-;         if WinExist("ahk_class WorkerW")
-;             WinActivate("ahk_class WorkerW")
-;         else if WinExist("ahk_class Progman")
-;             WinActivate("ahk_class Progman")
-;     }
-; }
-
-ToggleWindowLock(ctrl) {
-    global IsGameLocked, GameTitle
-    
-    if !WinExist(GameTitle) {
-        ShowNotif("error","Lock Error", "Game window could not be found.")
+    ; Safely terminate thread callback if user releases left click
+    if !GetKeyState("LButton", "P") {
+        SetTimer(, 0)
         return
     }
     
-    IsGameLocked := !IsGameLocked
+    CoordMode("Mouse", "Screen")
+    MouseGetPos(&mouseX, &mouseY)
     
-    if (IsGameLocked) {
-        ; 1. Tell Windows to disable the window. 
-        ; It remains completely visible, but becomes completely immune to focus vacuuming and clicks.
-        WinSetEnabled(false, GameTitle)
-        
-        ; 2. Instantly pass focus to the desktop wallpaper layer to clear the screen
-        if WinExist("ahk_class WorkerW")
-            WinActivate("ahk_class WorkerW")
-        else if WinExist("ahk_class Progman")
-            WinActivate("ahk_class Progman")
-        
-        ctrl.Opt("cF59E0B")
-        ShowNotif("info", "Background Lock ON", "Game is locked open but completely inactive.")
-    } else {
-        ; 3. Re-enable the window so it can accept normal clicks and focus again
-        WinSetEnabled(true, GameTitle)
-        
-        ; Bring it back to the front
-        WinActivate(GameTitle) 
-        
-        ctrl.Opt("c94A3B8")
-        ShowNotif("info", "Background Lock OFF", "Game control restored to normal.")
-    }
+    ; Dynamic viewport repositioning matrix
+    try SpinGUI.Move(mouseX - SpinDragOffsetX, mouseY - SpinDragOffsetY)
 }
 
-AlwaysOnTopEnable(ctrl) {
-    global IsGameAlwaysOnTop, GameTitle, WindowedMode
+DragMiniGui() {
+    global MiniGui, MiniDragOffsetX, MiniDragOffsetY
     
-    if !WinExist(GameTitle) {
-        ShowNotif("error","Always On Top", "Game window could not be found.")
+    ; Safely terminate thread callback if user releases left click
+    if !GetKeyState("LButton", "P") {
+        SetTimer(, 0)
         return
     }
     
-    if !WindowedMode {
-        ShowNotif("error","Always On Top", "Always On Top mode is disabled on Fullscreen mode.")
+    CoordMode("Mouse", "Screen")
+    MouseGetPos(&mouseX, &mouseY)
+    
+    ; Dynamic viewport repositioning matrix for the mini compact interface
+    try MiniGui.Move(mouseX - MiniDragOffsetX, mouseY - MiniDragOffsetY)
+}
+
+DragPreviewGui() {
+    global PreviewGui, PreviewDragOffsetX, PreviewDragOffsetY
+    
+    ; Safely terminate thread callback if user releases left click
+    if !GetKeyState("LButton", "P") {
+        SetTimer(, 0)
         return
     }
     
-    IsGameAlwaysOnTop := !IsGameAlwaysOnTop
+    CoordMode("Mouse", "Screen")
+    MouseGetPos(&mouseX, &mouseY)
     
-    if (IsGameAlwaysOnTop) {
-        WinSetAlwaysOnTop(1, GameTitle)
-        ctrl.Opt("cF7507F")
-        ShowNotif("info", "Always On Top ON", "Game is set to be Always On Top other windows.")
-    } else {
-        WinSetAlwaysOnTop(0, GameTitle)
-        ctrl.Opt("c94A3B8")
-        ShowNotif("info", "Always On Top OFF", "Game is set to be normal.")
-    }
+    ; Dynamic viewport repositioning matrix for the mini compact interface
+    try PreviewGui.Move(mouseX - PreviewDragOffsetX, mouseY - PreviewDragOffsetY)
 }
 
 MoveWindow() {
@@ -947,6 +1148,49 @@ MoveWindow() {
     }
 }
 
+CheckWindowed() {
+    global GameTitle, MonWidth, MonHeight
+    
+    if !WinExist(GameTitle)
+        return false
+
+    ; 1. Refresh your monitor metrics to get the target screen's width/height
+    UpdateMonitorMetrics() 
+    
+    ; 2. Fetch the actual current width and height of the game window
+    WinGetClientPos(, , &gameWidth, &gameHeight, GameTitle)
+    
+    ; 3. If it's smaller than the monitor's full canvas, it is in Windowed Mode
+    if (gameWidth < MonWidth || gameHeight < MonHeight) {
+        return true  ; Yes, it is Windowed
+    }
+    
+    return false ; No, it matches screen size (Borderless Fullscreen)
+}
+
+CheckLocked() {
+    global GameTitle
+
+    if !WinExist(GameTitle)
+        return false
+
+    if WinGetStyle(GameTitle) & 0x08000000
+        return true
+    else
+        return false
+}
+
+CheckAlwaysOnTop() {
+    global GameTitle
+    
+    if !WinExist(GameTitle)
+        return false
+
+    if WinGetExStyle(GameTitle) & 0x8
+        return true
+    else
+        return false
+}
 
 ; ══════════════════════════════════════════════
 ;  MISC SETTINGS
@@ -1135,17 +1379,37 @@ AutoLocateGameDir() {
     return "" 
 }
 
-SpoofWindowFocus() {
-    if WinExist(GameTitle) {
-        ; Only spoof if the game is currently running in the background
-        if !WinActive(GameTitle) {
+; SpoofWindowFocus() {
+;     if WinExist(GameTitle) {
+;         ; Only spoof if the game is currently running in the background
+;         if !WinActive(GameTitle) {
+;             gameHwnd := WinExist(GameTitle)
+            
+;             ; 0x0006 = WM_ACTIVATE | wParam = 1 (WA_ACTIVE)
+;             PostMessage(0x0006, 1, 0, , "ahk_id " gameHwnd)
+            
+;             ; 0x001C = WM_ACTIVATEAPP | wParam = 1 (True)
+;             PostMessage(0x001C, 1, 0, , "ahk_id " gameHwnd)
+;         }
+;     }
+; }
+
+; Register a Shell Hook to monitor window changes instantly
+DllCall("RegisterShellHookWindow", "Ptr", A_ScriptHwnd)
+MsgNum := DllCall("RegisterWindowMessage", "Str", "SHELLHOOK")
+OnMessage(MsgNum, WindowChangedEvent)
+
+WindowChangedEvent(wParam, lParam, *) {
+    ; 4 = HSHELL_WINDOWACTIVATED | 32772 = HSHELL_RUDEGRIDACTIVATED
+    ; These fire the exact millisecond any window gains focus
+    if (wParam == 4 || wParam == 32772) {
+        if WinExist(GameTitle) && !WinActive(GameTitle) {
             gameHwnd := WinExist(GameTitle)
             
-            ; 0x0006 = WM_ACTIVATE | wParam = 1 (WA_ACTIVE)
-            PostMessage(0x0006, 1, 0, , "ahk_id " gameHwnd)
-            
-            ; 0x001C = WM_ACTIVATEAPP | wParam = 1 (True)
-            PostMessage(0x001C, 1, 0, , "ahk_id " gameHwnd)
+            ; Spam all focus messages instantly before the game can process the pause
+            PostMessage(0x0006, 1, 0, , "ahk_id " gameHwnd)      ; WM_ACTIVATE
+            PostMessage(0x001C, 1, 0, , "ahk_id " gameHwnd)      ; WM_ACTIVATEAPP
+            PostMessage(0x0086, 1, 0, , "ahk_id " gameHwnd)      ; WM_NCACTIVATE
         }
     }
 }
