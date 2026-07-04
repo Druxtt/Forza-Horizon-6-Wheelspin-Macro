@@ -50,7 +50,7 @@ F12::Reload()
 [::StartBuy()
 ]::StartUnlock()
 /::ToggleAll()
-`::TogglePause()
+*::TogglePause()
 #HotIf
 
 #HotIf WinActive(GameTitle) && IsSpinGuiOpen()
