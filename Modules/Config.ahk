@@ -215,3 +215,10 @@ global SK_GlobalOSDMap  := Map(
     "SpecialK.VersionBanner", Map("Duration", "0.0"),
     "SpecialK.OSD", Map("Show", "false")
 )
+
+; ══════════════════════════════════════════════
+;  DISCORD WEBHOOK SETTINGS
+; ══════════════════════════════════════════════
+_iniDiscordEnabled          := ReadMacroIni("Settings", "DiscordEnabled", "")
+global DiscordEnabled       := _iniDiscordEnabled ? _iniDiscordEnabled : "0"
+global DiscordWebhookUrl    := ReadMacroIni("Settings", "DiscordWebhookUrl", "")

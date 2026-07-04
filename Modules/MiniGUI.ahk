@@ -223,8 +223,17 @@ RestoreMainWindow(*) {
 ; ════════════════════
 ;  NOTIFICATION TOAST
 ; ════════════════════
-ShowNotif(type, title, message := "") {
+ShowNotif(type, title, message := "", mirrorToDiscord := true) {
     global ScaleX, ScaleY, FontScale, MonRight, MonBottom
+
+    ; Mirrors this toast to Discord if the webhook is configured and enabled.
+    ; This single call covers every existing notification site in the
+    ; codebase (mode toggles, master loop events, errors, reward summaries)
+    ; with no changes needed anywhere else. mirrorToDiscord=false is used
+    ; by Discord.ahk's own error reporting, so a broken webhook can't try
+    ; to recursively notify itself about being broken.
+    if (mirrorToDiscord)
+        DiscordNotify(type, title, message)
 
     switch StrLower(type) {
         case "success":
