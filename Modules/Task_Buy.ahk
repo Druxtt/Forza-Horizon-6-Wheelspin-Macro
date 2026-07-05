@@ -5,7 +5,8 @@
 
 StartBuy() {
     global ActiveMode, MasterMode, StatusText, cActive, BuyRunSeconds
-    global BuyRunTime_UI, CarCount_UI, CarsLabel_UI, SkillPtsWant_In, CarCount_In, SkillPtsCount_In, SelectedCarPoint
+    global BuyRunTime_UI, CarCount_UI, CarsLabel_UI, SkillPtsWant_In, CarCount_In, SkillPtsCount_In
+    global CarData, SelectedCar
 
     if FindGame() = 0
         return
@@ -19,9 +20,9 @@ StartBuy() {
     UpdateMiniWidgetMode(activeMode)
     if (ActiveMode = "Buy") {
         
-        BuyCount            := 0
+        BuyRunSeconds       := 0
         SkillPtsScanSuccess := false
-        CarCount_In.Value   := Floor(SkillPtsCount_In.Value / SelectedCarPoint)
+        CarCount_In.Value   := Floor(SkillPtsCount_In.Value / CarData[SelectedCar].SkillPtsCost)
         CarsLabel_UI.Value  := CarCount_In.Value
 
         CarCount_UI.Value   := "0"
@@ -39,11 +40,12 @@ StartBuy() {
 }
 
 BuyLoop() {
-    global ActiveMode, MasterMode, MasterStart, UserTier, SkillPtsScanSuccess
+    global ActiveMode, MasterMode, MasterStart, SkillPtsScanSuccess
     global cActive, cHighlight, cIdle
-    global CarCount_In, SelectedCar, CarCount_UI, BuyRunTime_UI, SkillPtsCount_In
+    global CarCount_In, CarCount_UI, BuyRunTime_UI, SkillPtsCount_In
+    global CarData, SelectedCar
 
-    BuyCount := 0
+    BuyCount            := 0
 
     ; Local helper to cleanly check if the macro should stop
     CheckAbort() => (ActiveMode != "Buy" || (!MasterMode && MasterStart))
@@ -81,7 +83,7 @@ BuyLoop() {
             PressKey("PgUp") ; Navigate to Campaign Menu
         }
 
-        CarCount_In.Value := Floor(SkillPtsCount_In.Value / SelectedCarPoint)
+        CarCount_In.Value := Floor(SkillPtsCount_In.Value / CarData[SelectedCar].SkillPtsCost)
         if CarCount_In.Value > 0
             ShowNotif("info", "Car Purchase", CarCount_In.Value " " SelectedCar " will be purchased.`nAn extra car will be purchased for safety measure.")
         else {
@@ -102,50 +104,7 @@ BuyLoop() {
         if CheckAbort()
             break
 
-        ; Upgraded to a clean Switch block for car selection menu logic
-        Switch SelectedCar {
-            Case "Subaru Impreza 22B-STi":
-                Loop 3
-                    PressKey("Up", 50)
-                Loop 3
-                    PressKey("Right", 50)
-                PressKey("Enter") ; Select Subaru
-                PressKey("Down")
-
-            Case "Lamborghini Revuelto":
-                Loop 10
-                    PressKey("Down", 50)
-                PressKey("Right") ; Navigate to Lancia
-                PressKey("Enter") ; Select Lancia
-                PressKey("Left") ; Navigate to Revuelto
-
-            Case "Dodge Viper GTS ACR":
-                Loop 5
-                    PressKey("Down", 50)
-                Loop 2
-                    PressKey("Right", 50) ; Navigate to Dodge
-                PressKey("Enter") ;Select Dodge
-                if UserTier = "STANDARD"
-                    PressKey("Down")
-                else if UserTier = "PREMIUM" {
-                    PressKey("Down")
-                    PressKey("Right")
-                }
-                
-            Case "Mazda #123 Mad Mike 808":
-                Loop 10
-                    PressKey("Up", 50) ; Navigate to Mazda
-                PressKey("Enter") ;Select Mazda
-                if UserTier = "STANDARD" {
-                    PressKey("Down")
-                    PressKey("Left")
-                    PressKey("Left")
-                } else if UserTier = "PREMIUM" {
-                    PressKey("Down")
-                    PressKey("Left")
-                    PressKey("Left")
-                }
-        }
+        NavigateToCar(SelectedCar)
 
         if CheckAbort()
             break
@@ -153,13 +112,13 @@ BuyLoop() {
         ; ── Buying Car ───────────────
         Process("Buying " SelectedCar "...")
         PressKey("Enter") ; Select Car
-        ScannedCar := ScanOCR(0.254, 0.607, 0.446-0.254, 0.672-0.607) ; Verify car name is correct
+        ScannedCar := ScanOCR(0.254, 0.607, 0.446-0.254, 0.672-0.607) 
 
-        if !InStr(ScannedCar, CarData[SelectedCar].AltName) {
+        if InStr(ScannedCar, CarData[SelectedCar].AltName) || InStr(ScannedCar, SelectedCar) {
+            ShowNotif("info", "Car Purchase", "Purchasing " CarCount_In.Value+1 " " SelectedCar ".")
+        } else {
             ShowNotif("error", "Car Purchase", "Selected Car does not match scanned car name.`nPlease check the selected car and try again.")
             break
-        } else {
-            ShowNotif("info", "Car Purchase", "Purchasing " CarCount_In.Value+1 " " SelectedCar ".")
         }
 
         While (BuyCount < CarCount_In.Value+1) {
@@ -190,10 +149,45 @@ BuyLoop() {
     }
 }
 
+NavigateToCar(SelectedCar) {
+    ; Safety check
+    if !CarData.Has(SelectedCar) {
+        MsgBox("Error: Selected car '" SelectedCar "' not found in database.", "Error", 16)
+        return
+    }
+    
+    car := CarData[SelectedCar]
+
+    ; 1. Navigate to the Manufacturer
+    ExecutePath(car.BuyMfrPath)
+
+    ; 2. Enter the Manufacturer's menu
+    PressKey("Enter") 
+
+    ; 4. Navigate to the specific car
+    ExecutePath(car.BuyCarPath)
+}
+
+; Helper function to process any data path array (e.g., [["Up", 3], ["Right", 1]])
+ExecutePath(pathArray) {
+    if (!IsObject(pathArray) || pathArray == "")
+        return
+
+    for , step in pathArray {
+        keyName    := step[1] ; e.g., "Up"
+        pressCount := step[2] ; e.g., 3
+        
+        Loop pressCount {
+            PressKey(keyName, 50)
+        }
+    }
+}
+
 SkillPtsScan(ratioX, ratioY, ratioW, ratioH, waitTime:= 1000, delay:=1000) {
     global SkillPtsCount_In, SkillPtsWant_In, CarCount_In
     global PointsLabel_UI, SectorLabel_UI, TimeLabel_UI, CarsLabel_UI
-    global ActiveMode, MaxPoints, PointsGain, PointsTotal, TimeTotal, SelectedCarPoint
+    global ActiveMode, MaxPoints, PointsGain, PointsTotal, TimeTotal
+    global CarData, SelectedCar
 
     points := ScanOCR(ratioX, ratioY, ratioW, ratioH, waitTime, , true)
 
@@ -208,14 +202,14 @@ SkillPtsScan(ratioX, ratioY, ratioW, ratioH, waitTime:= 1000, delay:=1000) {
     PointsGain := GetMinScore(SkillPtsWant_In.Value)
     PointsTotal := Min(PointsGain + SkillPtsCount_In.Value, 999)
 
-    CarCount_In.Value := Floor(PointsTotal / SelectedCarPoint)
+    CarCount_In.Value := Floor(PointsTotal / CarData[SelectedCar].SkillPtsCost)
 
     TimeTotal := CalcTimeRace(SkillPtsWant_In.Value)  + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
 
     PointsLabel_UI.Value := PointsGain
     SectorLabel_UI.Value := Ceil(PointsGain/AveragePoints)
     TimeLabel_UI.Value :=  Format("{:02}:{:02}", Floor(TimeTotal) , Round((TimeTotal - Floor(TimeTotal)) * 60))
-    CarsLabel_UI.Value := Floor(PointsTotal / SelectedCarPoint)
+    CarsLabel_UI.Value := Floor(PointsTotal / CarData[SelectedCar].SkillPtsCost)
 
     Sleep(delay)
 
