@@ -477,3 +477,51 @@ TogglePreview(ctrl) {
     ; 4. Update and display the live stream
     DllCall("dwmapi\DwmUpdateThumbnailProperties", "Ptr", hThumbnail, "Ptr", structProps)
 }
+
+; ══════════════════════════════════════════════
+;  VARIABLE INIT FUNCTIONS
+; ══════════════════════════════════════════════
+
+CheckWindowed() {
+    global GameTitle, MonWidth, MonHeight
+    
+    if !WinExist(GameTitle)
+        return false
+
+    ; 1. Refresh your monitor metrics to get the target screen's width/height
+    UpdateMonitorMetrics() 
+    
+    ; 2. Fetch the actual current width and height of the game window
+    WinGetClientPos(, , &gameWidth, &gameHeight, GameTitle)
+    
+    ; 3. If it's smaller than the monitor's full canvas, it is in Windowed Mode
+    if (gameWidth < MonWidth || gameHeight < MonHeight) {
+        return true  ; Yes, it is Windowed
+    }
+    
+    return false ; No, it matches screen size (Borderless Fullscreen)
+}
+
+CheckLocked() {
+    global GameTitle
+
+    if !WinExist(GameTitle)
+        return false
+
+    if WinGetStyle(GameTitle) & 0x08000000
+        return true
+    else
+        return false
+}
+
+CheckAlwaysOnTop() {
+    global GameTitle
+    
+    if !WinExist(GameTitle)
+        return false
+
+    if WinGetExStyle(GameTitle) & 0x8
+        return true
+    else
+        return false
+}

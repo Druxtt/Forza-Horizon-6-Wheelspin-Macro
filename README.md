@@ -62,14 +62,16 @@ To guarantee that the macro's pixel detection and text-matching systems synchron
 
 ## 📊 The Reward Vehicle Matrix
 
-Select your preferred target car on the dashboard dropdown menu depending on your progression strategy and budget:
+Select your preferred target car on the dashboard dropdown menu depending on your progression strategy and budget. 
+
+> 🔄 **Dynamic Database Update (v1.9.2):** The vehicle profiling engine has transitioned from rigid, hardcoded configurations to a fully dynamic database-driven model. While the standard presets below remain core targets, you can now add, modify, or delete vehicle mappings seamlessly directly inside the interface using the built-in Vehicle Database Editor.
 
 | Vehicle Choice | Base Cost | Cost with 5% Discount | Mastery Perk Rewards | Skill Points Needed | Strategy Profile |
 | --- | --- | --- | --- | --- | --- |
 | **1998 Subaru Impreza 22B-STi Version** | 86,000 CR | 81,700 CR | 1x Super Wheelspin | 30 Points | **Budget Wheelspins:** Great low-cost choice for farming steady Super Wheelspins. |
 | **2024 Lamborghini Revuelto** | 365,000 CR | 346,750 CR | 1x Super Wheelspin + 3x Regular Wheelspins | 39 Points | **Max Yield Fast:** Dumps heavy credits to maximize total wheelspin volume as fast as possible. |
 | **1999 Dodge Viper GTS ACR** | 68,000 CR | 64,600 CR | 150,000 Cash Credits | 30 Points | **Credit Flipping:** Quickly converts your skill points back into raw cash credits. |
-| **1974 Mazda #123 Mad Mike 808 Wagon 'FURSTY'** | 100,000 CR | 95,000 CR | 1x Super Wheelspin | 21 Points |Point-Efficient Wheelspins: Requires the fewest skill points to unlock a Super Wheelspin, making it the fastest way to burn through a point bank.
+| **1974 Mazda #123 Mad Mike 808 Wagon 'FURSTY'** | 100,000 CR | 95,000 CR | 1x Super Wheelspin | 21 Points | **Point-Efficient Wheelspins:** Requires the fewest skill points to unlock a Super Wheelspin, making it the fastest way to burn through a point bank. |
 
 > \* **Note on 1974 Mazda #123 Mad Mike 808 Wagon 'FURSTY':** This is a Car Pass only car! Make sure to select it only if you owned it via Premium Edition, Car Pass pack or single add-on purchase.  
 > \* **Note on Premium Edition:** If you are running a premium edition account that alters this vehicle's placement layout inside the Journal, make sure to click the **PREMIUM** button layout on the UI dashboard to safely adjust menu tracking layers.  
@@ -84,31 +86,34 @@ This automation utility balances low-level Windows API hooks with a highly refin
 ### 🎮 Advanced Hardware-Accelerated Background Processing
 * **Direct Background Composition OCR:** Fully replaced legacy foreground-dependent hooks (`OCR.FromWindow`) with an integrated low-level GDI Canvas rendering engine (`GetBackgroundOCR`). It captures background window frames via `PrintWindow` utilizing composition flag `2`, executing fast hardware crop transfers via `BitBlt` even when the game window is entirely covered or out of focus.
 * **Direct Memory Pixel Color Engine:** Refactored `WaitForPixel` and `GetPixelColor` subsystems to intercept graphics buffers directly from memory device contexts using `gdi32\GetPixel`. It translates native GDI BGR structures into an RGB conversion array utilizing native BGR-to-RGB color matrix transformation blocks.
-* **Precise Client Coordinate Calibration:** Refactored the `CheckWindowed()` calibration system to query canvas boundaries via `WinGetClientPos` instead of relying on standard application window properties (`WinGetPos`). This strips out inconsistent OS-level window borders and title bars, stabilizing background canvas evaluation tracking.
+* **Precise Client Coordinate Calibration:** Refactored the calibration system to query canvas boundaries via `WinGetClientPos` instead of relying on standard application window properties (`WinGetPos`). This strips out inconsistent OS-level window borders and title bars, stabilizing background canvas evaluation tracking.
 * **Guaranteed Memory & Handle Protection:** Enforces clean memory states using structural `try...finally` resource disposition routines tracking all dynamic GDI canvas resource handlers to completely eliminate handle tracking or thread leaks across all GDI Bitmaps and Device Contexts (`DeleteObject`, `DeleteDC`, `ReleaseDC`).
 * **Proactive Anti-Pause Window Spammer:** Intercepts specific focus activation signals—specifically checking for certain Windows Shell Hook event messages. If the game client loses focus, the macro instantly bypasses the game engine's default window-focus suspension loop by flooding the application thread with explicit activation directives before the game can register the defocus state and pause itself.
 * **Strict Handle Pointer Targeting:** Abandons fragile text title tracking in favor of binding directly to a unique window descriptor identification token (`HWND`). This ensures background micro-automation sequences remain fully isolated from desktop focus changes, overlapping apps, or title string renames.
 
 ### 🎨 CyberNoir UI & Feature-Rich Dashboard Suite
+* **Dynamic Vehicle Database Editor:** Integrated an on-screen profile manager (`EditorGUI.ahk`) directly into the main interface layout. Users can now natively register, update, or clear out personalized car profiles on-the-fly, mapping out distinct layout execution scripts, financial overhead bounds, and unlock matrices.
+* **Input Integrity Guardrails:** Embedded rigorous data verification layers into the profile creator. The script enforces absolute rules—ensuring vehicle stats digits match a strict 12-character footprint, point distribution thresholds evaluate above 1, target coordinate vectors follow structured regex boundaries, and protected primary system configurations stay safe from accidental removal.
 * **Dynamic Theme Engine:** Switch seamlessly between a customized, cyber-styled **Dark Mode** and **Light Mode** workspace layout on-the-fly. The manual theme selector toggle is cleanly located within the top-left window header utility space.
 * **Execution Speed Control (Analog Delay Multiplier):** Features a highly adjustable analog slider supporting expanded **0.25x to 4.0x** scaling based natively on multiplier array bounds. This allows users to dynamically expand or contract script menu delay buffers and pixel detection timeouts to match their storage drive speed (SSD vs. HDD) and system throughput performance.
-* **DPI-Safe Interface:** Replaced native OS slider and configuration components with an entirely custom system, fully protecting the application window from layout clipping bugs or offset rendering caused by Windows display scaling settings.
-* **Sleek Control Switches:** Replaced clunky selection checkboxes with dedicated layout control switches, providing refined **STANDARD / PREMIUM** game tier adjustments and explicit **KEEP / SELL** spin rules.
+* **DPI-Safe Interface & Drag Logic:** Replaced native OS configuration layouts with a streamlined asynchronous thread drag loop (`DragActiveGui`) to eliminate clipping, rendering offsets, or interface stuttering caused by high Windows display scaling.
 * **Responsive MiniGUI Overlay:** Minimizing the primary dashboard shrinks the environment into a highly responsive, floating overlay widget tracking runtime, key states, credits, and wheelspins. It features an optimized **2x2 alignment grid tree** to clean up overlapping elements alongside quick-access action toggles to trigger diagnostics, game locks, or environment resets.
 * **Interactive Share Code Footer:** Includes a click-to-copy integration built right into the GUI footer. Selecting your active track profile from the dropdown menu dynamically updates the footer text with the correct blueprint and tuning codes, copying them instantly to your clipboard for effortless in-game pasting.
 
 ### 📊 Telemetry, Safety, & Async Update Lifecycles
+* **Abstracted Menu-Driving Matrix:** Completely eliminated rigid, hardcoded conditional menu pathways across the automation pipeline. Tasks like volume acquisitions and node activations now leverage modular loop sequence runners (`NavigateToCar` and `ExecutePath`) that dynamically decode path structures directly out of whatever database schema is active.
+* **Fuzzy Optical Character Recognition (OCR):** Integrates `OCR.ahk` alongside a specialized **Levenshtein Distance Fuzzy String Recognition Pipeline** (`GetTextSimilarity()`). This replaces rigid exact-string matches with a case-insensitive mathematical similarity scoring system, letting the macro safely absorb subtle OCR misreads without halting operations. If text correspondence drops below an 80% threshold during sensitive operations, a hard safety cutoff triggers instantly.
 * **Asynchronous GitHub Updater Engine:** Implements an integrated software update checker pipeline mapping into the GitHub Releases API. It evaluates live semantic version arrays, detects system architectures (x32/x64), streams data packages in the background, and dynamically invokes local PowerShell scripts to extract assets, cleanly overwrite running binaries, and reboot.
 * **Pre-Purchase OCR Verification Tripwire:** Integrates a real-time optical verification sweep (`ScanOCR`) directly before finalizing any transaction loop inside `Task_Buy.ahk`. This acts as a protective shield to guarantee the script never accidentally buys an unmapped vehicle profile or gets stuck on misaligned index entries.
 * **Accidental Deletion & Auction Interceptor:** Triggers a hard modal intercept, plays an audible system alarm, and kills the runtime loop instantly if a `"Remove Car From Garage"` text or a dangerous `"Create Auction"` prompt is caught by the background scanning thread.
 * **Deterministic Math Models & Data Mapping:** Maps track metadata and vehicle configurations into explicit dictionary structures, allowing the pipeline to easily scale and adapt to custom records. Rather than relying on volatile runtime estimates, the program utilizes internal mathematical formulas based on empirical loading baselines to accurately project session completion times.
 * **Dual-Phase Validation Scans:** Captures an OCR area snapshot right **before a race initializes** to log your starting balance, and runs a mirror calculation check **immediately after the match finishes**. This calculates exact performance updates per sequence interval and verifies that network disconnects didn't drop your match rewards.
+* **Adaptive Progress Tracking:** Standardized the unlock readout display system to dynamically style status logs and text metrics based on the specific reward structures allocated to your active vehicle schema.
 * **Smart Overestimation Cap:** While the true in-game skill point balance caps out at 999, the macro limits its internal single-loop target ceiling to a conservative max score of **980**. This buffer prevents mathematical overestimations from forcing the loop routine to purchase redundant, surplus vehicles.
-* **Fuzzy Optical Character Recognition (OCR):** Integrates `OCR.ahk` alongside a specialized **Fuzzy Edit-Distance String Recognition Pipeline**. This replaces rigid exact-string matches with a case-insensitive mathematical similarity scoring system, letting the macro safely absorb subtle OCR misreads without halting operations.
 * **Application Health Guardrails:** Pre-execution verification checks run prior to firing macros; if the game client crashes or closes unexpectedly, the macro steps out of execution states instead of firing keys randomly into empty desktop space.
 
 ### 🛠️ Developer & Configuration Tools
-* **Centralized File Configuration Sync:** Standardizes a local persistent `.ini` file configuration framework to cache structural variable settings (custom tracks, car indices, loop multipliers, viewport configurations, licensing tiers) across reboots.
+* **Centralized File Configuration Sync:** Standardizes a local persistent `.ini` file configuration framework to cache structural variable settings (custom tracks, car indices, loop multipliers, viewport configurations, licensing tiers) across reboots. Old deprecated runtime values (`UserTier`) have been dropped entirely.
 * **Heuristic Application Path Discovery Matrix:** An autonomous background engine scanner that queries local Windows Registry keys, traces registered App Paths, and checks default system directories across multiple storage drives to locate the game executable without requiring manual path specification.
 
 ---
@@ -127,7 +132,7 @@ The core macro pipeline is divided into independent operational modules that can
 
 ### 🛞 Unlock Mode (Hotkey: `]`)
 * **Purpose:** Unlocks targeted car mastery rewards and cleans out your garage.
-* **Logic:** Runs pre-flight resource validation and invokes the **Two-Phase Emergency Safety Framework**. Guided by the active `CarSorted` tracker, it scans layout parameters using `GetTextSimilarity`. If text correspondence falls below an **80% match**, or if a dangerous prompt is caught, the script triggers an emergency hard shutdown to safeguard your account.
+* **Logic:** Runs pre-flight resource validation and invokes the **Two-Phase Emergency Safety Framework**. Guided by the active dynamic database entry, it scans layout parameters using `GetTextSimilarity`. If text correspondence falls below an **80% match**, or if a dangerous prompt is caught, the script triggers an emergency hard shutdown to safeguard your account.
 
 ### ♾️ Full Loop Automation (Hotkey: `/`)
 * **Purpose:** Fully unattended, continuous farming.
@@ -317,7 +322,7 @@ The upper portion of the **Input** tab allows you to define processing boundarie
 * **Car Purchase:** Specifies the exact volumetric block size of inventory assets to purchase in bulk during a single standalone "Buy" routine loop.
 * **Sequence Loop:** Sets the total absolute iteration count for continuous automated cycles when running multi-stage loops.
 
-#### 2. Vehicle Selection, Edition Tier, & Delay Engine Calibration
+#### 2. Vehicle Selection & Dynamic Vehicle Database Editor Guide
 
 <p align="center">
   <img width="270" height="132" alt="optimization switches" src="https://github.com/user-attachments/assets/d26e6009-6e3e-4cb0-ac42-6e69f1c4ce30" />
@@ -325,9 +330,38 @@ The upper portion of the **Input** tab allows you to define processing boundarie
 
 Directly underneath the parameter matrix are the optimization switches used to align the macro's navigation paths with your specific game profile:
 
-* **Vehicle Dropdown Menu:** Selects the precise target vehicle schema (e.g., `Subaru Impreza 22B-STi` or `Mazda #123 Mad Mike 808`) to ensure the underlying OCR and mastery node layouts align correctly.
-* **STANDARD / PREMIUM Toggles:** Switches between different in-game car list menu alignments. If your game edition includes DLC car layout additions that shift grid coordinates, selecting **PREMIUM** recalibrates the menu tracking layer.
-* **Delay Multiplier Slider:** Provides an analog scaling slider ranging from **0.25x to 4.0x** mapped directly to the active multiplier list bounds. If your system experiences sudden background frame drops, disk read latency, or server connection lag, slide this modifier upward to scale all internal sleep buffers of key inputs safely.
+* **Vehicle Dropdown Menu & Quick Editor:** Selects the precise target vehicle schema (e.g., `Impreza 22B-STi` or `#123 Mad Mike 808`). **New in v1.9.2:** Clicking the adjacent contextual control buttons (`＋` and `✎`) launches the live, built-in **Vehicle Database Editor UI** to instantly create, adjust, or clean out profiles right from the panel.
+
+With the release of **v1.9.2**, the macro framework has transitioned away from rigid, hardcoded car configurations to a fully dynamic database-driven model. You can now add your own custom farming vehicles, update navigation sequences, or delete profiles seamlessly directly from the new graphical interface manager.
+
+1. How to Access the Editor
+Open the primary control dashboard (**Main GUI**). In the vehicle selection section, you will see two new contextual utility buttons next to the vehicle dropdown selection menu:
+    * **`＋` (Add New Profile):** Opens a blank editor canvas to register a brand-new vehicle profile into the system database.
+    * **`✎` (Edit Selected Profile):** Opens the configuration manager pre-populated with the data of the vehicle currently selected in your dropdown menu, allowing you to modify its parameters or delete it permanently.
+
+2. Configuration Fields Explained
+
+    When creating or modifying a profile, you will need to fill out or verify the following telemetry and routing properties:
+
+    #### Profile Metadata & Rewards
+    * **Profile ID / Vehicle Name:** The exact matching string identifier displayed in the main menu selection dropdown.
+    * **Alternative OCR Name (AltName):** A case-insensitive fuzzy matching text fallback string used by the text-similarity engine (`GetTextSimilarity`) during real-time vehicle validation screens.
+    * **Skill Points Cost:** The absolute volume of skill points required to complete a single mastery loop block for this vehicle.
+    * **Super Wheelspins / Regular Wheelspins / Credit Yields:** The specific payout matrix assigned to the vehicle's mastery tree. This dynamically recalculates and styles your session progress outputs.
+
+    #### Macro Navigation Matrices
+    * **Buy Manufacturer Path (`BuyMfrPath`):** The directional key input array sequence required to navigate from the baseline Autoshow entry point directly to the car's manufacturer.
+    * **Buy Car Path (`BuyCarPath`):** The sequence of inputs required to maneuver the cursor from the manufacturer directly to the targeted car's purchase tile.
+    * **Unlock Path (`UnlockPath`):** The exact multi-directional layout array sequence that guides the virtual hardware cursor across the vehicle's Mastery Tree nodes to unlock the target perks.
+
+3. Database Integrity & Validation Guardrails
+
+    To prevent data corruption, menu desynchronization, or accidental loss of in-game resources, the built-in validator enforces absolute input rules before saving updates:
+
+      * **Strict 12-Digit Footprint:** Any identification or vehicle statistics input boxes must match an exact 12-digit numeric footprint to satisfy the telemetry verification matrix.
+      * **Minimum Point Thresholds:** Mastery point allocations and purchase valuations must mathematically evaluate to a digit greater than `0`.
+      * **Path Regex Filtering:** Input path fields strictly accept standardized macro movement tokens (e.g., directional characters and sleep parameters). Formatting errors will trigger an immediate input rejection window.
+      * **System Preset Protection:** Core baseline presets (such as the default *Impreza 22B-STi* configuration) are locked at the engine level to safe-keep critical recovery configurations from accidental modification or erasure.
 
 #### 3. Core Automation Execution Triggers
 
@@ -357,7 +391,11 @@ Clicking the purple interface trigger transforms the center of the dashboard int
 * **KEEP / SELL Optimization Buttons:** Sets the structural rule engine for duplicate prize car drops. Choosing **SELL** auto-converts duplicates back to liquid in-game credits instantly, while **KEEP** passes them into your garage structure.
 * **RUN WHEELSPIN (`=`):** Fires the automated hardware routine to continuously clear out your accumulated wheelspin cache.
 
-#### 5. Profile Selection, Quick-Copy Share Codes and Auto Updater
+#### 5. Delay Engine Calibration
+
+* **Delay Multiplier Slider:** Provides an analog scaling slider ranging from **0.25x to 4.0x** mapped directly to the active multiplier list bounds. If your system experiences sudden background frame drops, disk read latency, or server connection lag, slide this modifier upward to scale all internal sleep buffers of key inputs safely.
+
+#### 6. Profile Selection, Quick-Copy Share Codes and Auto Updater
 
 Located right below the running telemetry state readouts is the integrated track configuration and code utility footer:
 
@@ -369,7 +407,7 @@ Located right below the running telemetry state readouts is the integrated track
 * **Dynamic Click-to-Copy Share Codes:** Features interactive, clickable text links for both the vehicle mechanics configuration (`Subaru 22B Tune Code`) and the blueprint layout (`EventLab Race Code`).
 * **Instant Clipboard Integration:** Clicking on either text link instantly copies the respective multi-digit in-game share code straight to your Windows clipboard. This completely removes the need to manually write down or type long numeric strings when searching for assets inside the game client.
 * **Automated Footer Synchronization:** The structural share codes switch and update automatically in real time based on your active selection in the track profile dropdown menu, ensuring you always copy the correct matching tune and map combinations.
-* **Smart Auto-Updater** Featuring a seamless, built-in background update engine that communicates directly with the GitHub Releases API to ensure you are always running the optimal build.
+* **Smart Auto-Updater:** Featuring a seamless, built-in background update engine that communicates directly with the GitHub Releases API to ensure you are always running the optimal build.
   * **Semantic Version Parsing:** Intelligently compares your local version against the latest GitHub release to determine your exact state: `Up to Date ✓`, `Update Available ⚠`, or `Beta Build 🧪` (for local development).
   * **Architecture-Aware Downloads:** Automatically detects your system environment and fetches the correct asset—whether it's a raw script `.zip` package or a compiled `x64`/`x32` executable.
   * **Streamlined UI Integration:** Integrated directly into the borderless footer status bar. Clicking the notification dynamically routes you to the automated in-app installer or opens the latest changelog in your default browser.

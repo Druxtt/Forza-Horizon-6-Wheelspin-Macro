@@ -21,6 +21,7 @@ StartRace() {
     
     if (ActiveMode = "Race" && SkillPtsWant_In.Value > 0 && SkillPtsCount_In.Value < 999) {
         SectorCount          := 0
+        
         TotalRunSeconds      := 0
         RaceRunSeconds       := 0
 
@@ -315,7 +316,8 @@ RaceLoop() {
 SkillPtsRaceScan(ratioX, ratioY, ratioW, ratioH, waitTime:= 1000) {
     global SkillPtsCount_In, SkillPtsWant_In, CarCount_In
     global PointsLabel_UI, SectorLabel_UI, TimeLabel_UI, CarsLabel_UI
-    global ActiveMode, MaxPoints, CustomSkillPts, PointsGain, PointsTotal, TimeTotal, SelectedCarPoint, RaceStart
+    global ActiveMode, MaxPoints, CustomSkillPts, PointsGain, PointsTotal, TimeTotal, RaceStart
+    global CarData, SelectedCar
     
     Sleep(1000)
     points := ScanOCR(ratioX, ratioY, ratioW, ratioH, 1000, , true)
@@ -335,14 +337,14 @@ SkillPtsRaceScan(ratioX, ratioY, ratioW, ratioH, waitTime:= 1000) {
 
         PointsGain := GetMinScore(SkillPtsWant_In.Value)
         PointsTotal := Min(PointsGain + SkillPtsCount_In.Value, 999)
-        CarCount_In.Value := Floor(PointsTotal / SelectedCarPoint)
+        CarCount_In.Value := Floor(PointsTotal / CarData[SelectedCar].SkillPtsCost)
 
         TimeTotal := CalcTimeRace(SkillPtsWant_In.Value)  + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
 
         PointsLabel_UI.Value := PointsGain
         SectorLabel_UI.Value := Ceil(PointsGain/AveragePoints)
         TimeLabel_UI.Value := Format("{:02}:{:02}", Floor(TimeTotal) , Round((TimeTotal - Floor(TimeTotal)) * 60))
-        CarsLabel_UI.Value := Floor(PointsTotal / SelectedCarPoint)
+        CarsLabel_UI.Value := Floor(PointsTotal / CarData[SelectedCar].SkillPtsCost)
     }
 
     if !RaceStart {

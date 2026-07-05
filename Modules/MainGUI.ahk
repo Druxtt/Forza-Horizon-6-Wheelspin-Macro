@@ -85,16 +85,7 @@ GetPalette() {
 
 ; ══════════════════════════════════════════════
 ;  TOGGLE BUTTON PAIR
-; ══════════════════════════════════════════════
-ToggleUserTier(chosenValue, &targetVar, activeBtn, inactiveBtn, p) {
-    targetVar := chosenValue
-    activeBtn.Opt("Background" p["activeBg"])
-    inactiveBtn.Opt("Background" p["inactiveBg"])
-    activeBtn.Redraw()
-    inactiveBtn.Redraw()
-
-    WriteMacroIni("Settings", "UserTier", targetVar)
-}
+; ═════════════════════════════════════════════
 
 ToggleSpinMode(chosenValue, &targetVar, activeBtn, inactiveBtn, p) {
     targetVar := chosenValue
@@ -165,6 +156,7 @@ ToggleTheme() {
 BuildMainGui(savedVals := "") {
     ; Elevates all internal assignments to global scope automatically
     global 
+    global CarData, SelectedCar
 
     p          := GetPalette()
     cActive    := p["cActive"]
@@ -226,7 +218,7 @@ BuildMainGui(savedVals := "") {
     SkillPtsWant_In := MainGUI.Add("Edit", "x" Round(179*ScaleX) " y" Round(188*ScaleY) " w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], savedVals ? savedVals[2] : MaxPoints)
     MainGUI.Add("Text", "x" Round(30*ScaleX) " yp+" Round(3*ScaleY) " w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Desired Skill Points")
 
-    CarCount_In := MainGUI.Add("Edit", "x" Round(179*ScaleX) " y" Round(214*ScaleY) " w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], savedVals ? savedVals[3] : Floor(MaxPoints / SelectedCarPoint))
+    CarCount_In := MainGUI.Add("Edit", "x" Round(179*ScaleX) " y" Round(214*ScaleY) " w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], savedVals ? savedVals[3] : Floor(MaxPoints / CarData[SelectedCar].SkillPtsCost))
     MainGUI.Add("Text", "x" Round(30*ScaleX) " yp+" Round(3*ScaleY) " w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Car Purchase")
 
     LoopCount_In := MainGUI.Add("Edit", "x" Round(179*ScaleX) " y" Round(240*ScaleY) " w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], savedVals ? savedVals[4] : 99)
@@ -237,9 +229,15 @@ BuildMainGui(savedVals := "") {
     SkillPtsWant_In.OnEvent("Change", (ctrl, *) => UpdateSkillPtsWant(ctrl))
     SkillPtsWant_In.OnEvent("LoseFocus", (ctrl, *) => ValidateSkillPtsWant(ctrl))
 
-    ; ── Cyber Dropdown: Car Selector ──────────
+    ; ── Cyber Car Dropdown & Database Controls ────
     SetFixedFont(MainGUI, 9, "bold")
-    CarSelect_UI := MainGUI.Add("Text", "x" Round(45*ScaleX) " y" Round(278*ScaleY) " w" Round(180*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["editBg"] " c" p["text"])
+    
+    ; Left Edge Action: Add Profile
+    AddCarBtn := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(20) " w" Round(25*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["btnBg2"] " c" p["btnText2"], "＋")
+    AddCarBtn.OnEvent("Click", (*) => ShowCarEditorGUI("New"))
+
+    ; Car Selector Dropdown
+    CarSelect_UI := MainGUI.Add("Text", "x" Round(45*ScaleX) " yp w" Round(180*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["editBg"] " c" p["text"])
     CarSelect_UI.DefineProp("Value", {
         get: (this) => this.HasOwnProp("ctrlIndex") ? this.ctrlIndex : 1,
         set: (this, val) => (this.ctrlIndex := val, ControlSetText(CarList[val] "   ▼", this.Hwnd, this.Gui.Hwnd))
@@ -255,22 +253,32 @@ BuildMainGui(savedVals := "") {
             break
         }
     }
+
     CarSelect_UI.Value := startupIndex
     CarSelect_UI.OnEvent("Click", ShowCarMenu)
 
-    ; ── Tier Toggle ───────────────────────────
+    ; Right Edge Action: Edit Profile
+    EditCarBtn := MainGUI.Add("Text", "x" Round(231*ScaleX) " yp w" Round(25*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["btnBg2"] " c" p["btnText2"], "✎")
+    EditCarBtn.OnEvent("Click", (*) => ShowCarEditorGUI("Edit"))
+
+    ; ── Action Buttons ──
     SetFixedFont(MainGUI, 9, "bold", "Semibold")
-    StandardBtnBG := UserTier = "STANDARD" ? p["activeBg"] : p["inactiveBg"]
-    PremiumBtnBG := UserTier = "PREMIUM" ? p["activeBg"] : p["inactiveBg"]
-    StandardBtn := MainGUI.Add("Text", "x" Round(14*ScaleX) " y" Round(308*ScaleY) " w" Round(119*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" StandardBtnBG   " c" p["text"], "😎   STANDARD")
-    PremiumBtn  := MainGUI.Add("Text", "x" Round(137*ScaleX) " yp w" Round(119*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" PremiumBtnBG " c" p["text"], "🜲   PREMIUM")
-    StandardBtn.OnEvent("Click", (*) => ToggleUserTier("STANDARD", &UserTier, StandardBtn, PremiumBtn, p))
-    PremiumBtn.OnEvent("Click",  (*) => ToggleUserTier("PREMIUM",  &UserTier, PremiumBtn, StandardBtn, p))
+    AllBtn    := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(20*ScaleY) " w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnMainBg"] " c" p["btnMainText"], "⟲   FULL LOOP     /")
+    RaceBtn   := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🏁   RACE      \")
+    BuyBtn    := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(119*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🚗   BUY     [")
+    UnlockBtn := MainGUI.Add("Text", "x" Round(137*ScaleX) " yp w" Round(119*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🛞   UNLOCK     ]")
+    OpenSpinWindowBtn := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg3"] " c" p["btnText3"], "🎰   OPEN SPIN INTERFACE")
+
+    RaceBtn.OnEvent("Click",    (*) => StartRace())
+    BuyBtn.OnEvent("Click",     (*) => StartBuy())
+    UnlockBtn.OnEvent("Click",  (*) => StartUnlock())
+    AllBtn.OnEvent("Click",     (*) => ToggleAll())
+    OpenSpinWindowBtn.OnEvent("Click", (*) => OpenSpinPanel())
 
     ; ── Custom Slider Matrix ──
     SliderCfg := {
         TrackX: Round(45 * ScaleX),
-        TrackY: Round(380 * ScaleY),
+        TrackY: Round(520 * ScaleY),
         TrackW: Round(180 * ScaleX),
         TrackH: Round(4 * ScaleY),
         KnobW:  Round(10 * ScaleX),
@@ -280,7 +288,7 @@ BuildMainGui(savedVals := "") {
     }
 
     SetFixedFont(MainGUI, 9, "norm")
-    SpeedLabel_UI := MainGUI.Add("Text", "x0 y" Round(355*ScaleY) " w" Round(270*ScaleX) " Center c" p["text"], "Key Delay Multiplier: " KeyMultiplier "x")
+    SpeedLabel_UI := MainGUI.Add("Text", "x0 y+" Round(20*ScaleY) " w" Round(270*ScaleX) " Center c" p["text"], "Key Delay Multiplier: " KeyMultiplier "x")
     
     DelaySliderIndex := 4
     for index, name in Multipliers {
@@ -307,20 +315,6 @@ BuildMainGui(savedVals := "") {
     SliderTrack := MainGUI.Add("Text", "x" SliderCfg.TrackX " y" SliderCfg.TrackY " w" SliderCfg.TrackW " h" SliderCfg.TrackH " +0x100 Background" p["divider"])
     SliderKnob  := MainGUI.Add("Text", "x" startKnobX " y" knobY " w" SliderCfg.KnobW " h" SliderCfg.KnobH " +0x100 Background" p["accent"])
     MainGUI.Add("Text", "x" Round(230*ScaleX) " y" (SliderCfg.TrackY - Round(6*ScaleY)) " w" Round(25*ScaleX) " Left c" p["textDim"], "4x")
-    
-    ; ── Action Buttons ──
-    SetFixedFont(MainGUI, 9, "bold", "Semibold")
-    AllBtn    := MainGUI.Add("Text", "x" Round(14*ScaleX) " y" Round(410*ScaleY) " w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnMainBg"] " c" p["btnMainText"], "⟲   FULL LOOP     /")
-    RaceBtn   := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🏁   RACE      \")
-    BuyBtn    := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(119*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🚗   BUY     [")
-    UnlockBtn := MainGUI.Add("Text", "x" Round(137*ScaleX) " yp w" Round(119*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🛞   UNLOCK     ]")
-    OpenSpinWindowBtn := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg3"] " c" p["btnText3"], "🎰   OPEN SPIN INTERFACE")
-
-    RaceBtn.OnEvent("Click",    (*) => StartRace())
-    BuyBtn.OnEvent("Click",     (*) => StartBuy())
-    UnlockBtn.OnEvent("Click",  (*) => StartUnlock())
-    AllBtn.OnEvent("Click",     (*) => ToggleAll())
-    OpenSpinWindowBtn.OnEvent("Click", (*) => OpenSpinPanel())
 
     ; ══════════════════════════════════════════
     ;  TAB 2 — STATS
@@ -328,7 +322,7 @@ BuildMainGui(savedVals := "") {
     TabControl.UseTab(2)
 
     SetFixedFont(MainGUI, 9, "bold")
-    MainGUI.Add("Text", "x" Round(14*ScaleX) " y" Round(180*ScaleY) " w" Round(242*ScaleX) " Center BackgroundTrans c" p["header"],  "TARGETS")
+    MainGUI.Add("Text", "x" Round(14*ScaleX) " y" Round(175*ScaleY) " w" Round(242*ScaleX) " Center BackgroundTrans c" p["header"],  "TARGETS")
     MainGUI.Add("Text", "x" Round(14*ScaleX) " y+0 w" Round(242*ScaleX) " Center BackgroundTrans c" p["divider"], "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
     PointsGain  := GetMinScore(SkillPtsWant_In.Value)
@@ -346,7 +340,7 @@ BuildMainGui(savedVals := "") {
     TimeLabel_UI   := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), Format("{:02}:{:02}", Floor(TimeTotal), Round((TimeTotal - Floor(TimeTotal)) * 60)))
 
     MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "⟡   Recommended Car")
-    CarsLabel_UI   := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), Floor(PointsTotal / SelectedCarPoint))
+    CarsLabel_UI   := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), Floor(PointsTotal / CarData[SelectedCar].SkillPtsCost))
 
     ; ── Live Progress Telemetry ──
     SetFixedFont(MainGUI, 9, "bold")
@@ -363,7 +357,7 @@ BuildMainGui(savedVals := "") {
     MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🏁   Sectors Cleared")
     SectorCount_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), "0")
 
-    MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(12*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🚗   Buy Runtime")
+    MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(12*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🕓   Buy Runtime")
     BuyRunTime_UI  := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), "00:00")
 
     MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "📦   Cars Purchased")
@@ -384,11 +378,11 @@ BuildMainGui(savedVals := "") {
     ; ── Shared Content (outside tabs) ──────────
     TabControl.UseTab()
 
-    MainGUI.Add("Text", "x" Round(14*ScaleX) " y" Round(560*ScaleY) " w" Round(242*ScaleX) " Center BackgroundTrans c" p["divider"], "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    MainGUI.Add("Text", "x" Round(14*ScaleX) " y" Round(540*ScaleY) " w" Round(242*ScaleX) " Center BackgroundTrans c" p["divider"], "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
     ; ── Persistent Dashboard Session Info ──
     SetFixedFont(MainGUI, 9, "norm", "Light")
-    Key_UI          := MainGUI.Add("Text", "x0 y" Round(580*ScaleY) " w" Round(270*ScaleX) " Center BackgroundTrans c" p["cIdle"], "⌨   [   ]")
+    Key_UI          := MainGUI.Add("Text", "x0 y+" Round(15*ScaleY) " w" Round(270*ScaleX) " Center BackgroundTrans c" p["cIdle"], "⌨   [   ]")
     Process_UI      := MainGUI.Add("Text", "x0 y+" Round(4*ScaleY) " w" Round(270*ScaleX) " Center BackgroundTrans c" p["cIdle"], "⚙️   Waiting...")
     TotalRunTime_UI := MainGUI.Add("Text", "x0 y+" Round(4*ScaleY) " w" Round(270*ScaleX) " Center BackgroundTrans c" p["cIdle"], "🕓   00:00")
 
@@ -600,7 +594,7 @@ OpenSpinPanel(*) {
     SpinWants_In := SpinGUI.Add("Edit", "x" Round(170*ScaleX) " y+" Round(6*ScaleY) " w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], 99)
     SpinGUI.Add("Text", "x" Round(20*ScaleX) " yp+" Round(3*ScaleY) " w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Desired Spins")
 
-    SpinGUI.Add("Text", "x" Round(5*ScaleX) " y+5 w" Round(240*ScaleX) " Center BackgroundTrans c" p["divider"], "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    SpinGUI.Add("Text", "x" Round(5*ScaleX) " y+" Round(5*ScaleY) " w" Round(240*ScaleX) " Center BackgroundTrans c" p["divider"], "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     
     SetFixedFont(SpinGUI, 9, "norm", "Light")
     SpinGUI.Add("Text", "x" Round(20*ScaleX) " y+" Round(5*ScaleY) " w" Round(130*ScaleX) " c" p["textDim"], "🕓   Spin Runtime")
@@ -687,12 +681,6 @@ ShowCarMenu(ctrl, *) {
     carMenu.Show()
 }
 
-MenuSelectCar(index, *) {
-    global CarSelect_UI
-    CarSelect_UI.Value := index 
-    try UpdateCar(CarSelect_UI, "")
-}
-
 ShowEventLabMenu(ctrl, *) {
     global EventLabList
     EventLabMenu := Menu()
@@ -700,12 +688,6 @@ ShowEventLabMenu(ctrl, *) {
         EventLabMenu.Add(EventLabName, MenuSelectEventLab.Bind(index))
     }
     EventLabMenu.Show()
-}
-
-MenuSelectEventLab(index, *) {
-    global EventLabSelect_UI
-    EventLabSelect_UI.Value := index 
-    try UpdateEventLab(EventLabSelect_UI, "")
 }
 
 ShowResoMenu(ctrl, *) {
@@ -717,14 +699,164 @@ ShowResoMenu(ctrl, *) {
     resoMenu.Show()
 }
 
+MenuSelectCar(index, *) {
+    global CarSelect_UI
+    CarSelect_UI.Value := index 
+    try UpdateCar(CarSelect_UI, "")
+}
+
+MenuSelectEventLab(index, *) {
+    global EventLabSelect_UI
+    EventLabSelect_UI.Value := index 
+    try UpdateEventLab(EventLabSelect_UI, "")
+}
+
 MenuSelectReso(index, *) {
     global ResoSelect_UI
     ResoSelect_UI.Value := index 
     try UpdateReso(ResoSelect_UI, "")
 }
 
+UpdateCar(ctrl, *) {
+    global PointsTotal, CarSelect_UI, CarsLabel_UI, CarCount_In
+    global CarData, SelectedCar
+    
+    SelectedCar      := ctrl.Text
+
+    CarPurchaseCount := Floor(PointsTotal / CarData[SelectedCar].SkillPtsCost)
+        
+    CarCount_In.Value  := CarPurchaseCount
+    CarsLabel_UI.Value := CarPurchaseCount
+    
+    TimeTotal            := CalcTimeRace(SkillPtsWant_In.Value) + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
+    TimeLabel_UI.Value   := Format("{:02}:{:02}", Floor(TimeTotal), Round((TimeTotal - Floor(TimeTotal)) * 60))
+
+    WriteMacroIni("Settings", "Car", SelectedCar)
+}
+
+UpdateEventLab(ctrl, *) {
+    global EventLab, EventLabData, MaxPoints, MaxSections, AveragePoints, SkillPtsWant_In, CarCount_In, PointsTotal, CodeTune, CodeEventLab
+    global CarData, SelectedCar
+
+    EventLab        := ctrl.Text
+
+    data := EventLabData[EventLab]
+    MaxSections     := data.MaxSections
+    MaxPoints       := data.MaxPoints
+    AveragePoints   := data.AveragePoints
+    CodeTune        := data.CodeTune
+    CodeEventLab    := data.CodeEvent
+    
+    SkillPtsWant_In.Value := UpdateSkillPtsWant({Value: MaxPoints}, false)
+    CarCount_In.Value     := Floor(PointsTotal / CarData[SelectedCar].SkillPtsCost)
+
+    WriteMacroIni("Settings", "EventLab", EventLab)
+}
+
+UpdateReso(ctrl, *) {
+    global SelectedReso
+
+    SelectedReso := ctrl.Text
+
+    WriteMacroIni("Settings", "Resolution", SelectedReso)
+}
+
+; ══════════════════════════════════════════════
+;  UPDATE VALUE INPUT
+; ══════════════════════════════════════════════
+
+UpdateSkillPts(ctrl, ManualInput:= true, *) {
+    global TimeTotal, PointsTotal, CarCount_In, SkillPtsWant_In, AveragePoints, PointsGain, MaxPoints
+    global PointsLabel_UI, TimeLabel_UI, CarsLabel_UI, SectorLabel_UI, ActiveMode, CustomSkillPts
+    global CarData, SelectedCar
+
+    if ManualInput {
+        CustomSkillPts := false
+        ShowNotif("info", "EventLab Race", "Mode: Automatic Desired Skill Point.")
+    }
+
+    value := ctrl.value
+    value := (value = "") ? 0 : Min(999, value)
+    
+    SkillPtsWant_In.Value := (999 - value > MaxPoints) ? MaxPoints : 999 - value
+
+    PointsGain  := GetMinScore(SkillPtsWant_In.Value)    
+    PointsTotal := Min(PointsGain + value, 999)
+
+    PointsLabel_UI.Value := PointsGain
+    SectorLabel_UI.Value := Ceil(PointsGain / AveragePoints)
+        
+    CarCount_In.Value    := Floor(PointsTotal / CarData[SelectedCar].SkillPtsCost)
+    CarsLabel_UI.Value   := CarCount_In.Value
+
+    TimeTotal            := CalcTimeRace(SkillPtsWant_In.Value) + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
+    TimeLabel_UI.Value   := Format("{:02}:{:02}", Floor(TimeTotal), Round((TimeTotal - Floor(TimeTotal)) * 60))
+
+    return value
+}
+    
+UpdateSkillPtsWant(ctrl, ManualInput:= true, *) {
+    global TimeTotal, PointsTotal, CarCount_In, SkillPtsCount_In, AveragePoints, PointsGain, MaxPoints
+    global PointsLabel_UI, TimeLabel_UI, CarsLabel_UI, PointsCount_UI, SectorLabel_UI, CustomSkillPts
+    global CarData, SelectedCar
+
+    if ManualInput {
+        CustomSkillPts := true
+        ShowNotif("info", "EventLab Race", "Mode: Custom Desired Skill Point.")
+    }
+
+    value := ctrl.value
+    
+    if (value = "") 
+        value := 0
+    else if (value + SkillPtsCount_In.Value > 999)
+        value := 999 - SkillPtsCount_In.Value
+    else if (value > MaxPoints)
+        value := MaxPoints
+
+    PointsGain  := GetMinScore(value)
+    PointsTotal := Min(PointsGain + SkillPtsCount_In.Value, 999)
+
+    PointsLabel_UI.Value := PointsGain
+    SectorLabel_UI.Value := Ceil(PointsGain / AveragePoints)
+    
+    CarCount_In.Value    := Floor(PointsTotal / CarData[SelectedCar].SkillPtsCost)
+    CarsLabel_UI.Value   := CarCount_In.Value
+
+    TimeTotal            := CalcTimeRace(value) + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
+    TimeLabel_UI.Value   := Format("{:02}:{:02}", Floor(TimeTotal), Round((TimeTotal - Floor(TimeTotal)) * 60))
+
+    return value
+}
+
+ValidateSkillPts(ctrl, *) {
+    global SkillPtsCount_In
+    value := ctrl.value
+    
+    if (value = "") 
+        value := 0
+    else if (value > 999)
+        value := 999
+    
+    ctrl.value := value
+}
+
+ValidateSkillPtsWant(ctrl, *) {
+    global SkillPtsCount_In, MaxPoints
+    value := ctrl.value
+    
+    if (value = "") 
+        value := 0
+    else if (value + SkillPtsCount_In.Value > 999)
+        value := 999 - SkillPtsCount_In.Value
+    else if (value > MaxPoints)
+        value := MaxPoints
+    
+    ctrl.value := value
+}
+
 ; ==========================================
-; UPDATE FUNCTIONS
+; VERSION UPDATE
 ; ==========================================
 
 CheckForUpdates(linkCtrl) {

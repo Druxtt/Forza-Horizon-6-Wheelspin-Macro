@@ -3,16 +3,22 @@
 ; ║            Cyber Noir Edition           ║
 ; ╚═════════════════════════════════════════╝
 
+;@Ahk2Exe-SetVersion 1.9.2
+;@Ahk2Exe-SetDescription MHI - FH6 Wheelspin Macro
+;@Ahk2Exe-SetMainIcon assets\icon.ico
+
 ; ══════════════════════════════════════════════
 ;  ENVIRONMENT & GAME SETTINGS
 ; ══════════════════════════════════════════════
-global CurrentVersion := "v1.9.1.1"  
+
+global CurrentVersion := "v1.9.2"
 global RepoOwner      := "M-Haziq-Iqbal"
 global RepoName       := "Forza-Horizon-6-Wheelspin-Macro"
 
 global GameExe          := "forzahorizon6.exe"
 global GameTitle        := "ahk_exe" GameExe
 global MacroIni         := "mhiacro.ini"
+global MacroCarIni      := "mhicar.ini"
 global GameDir          := FindGameDirFromProfiles()
 global GameMonitor      := 1
 global GameHwnd         := 0
@@ -65,35 +71,64 @@ global ResoList         := ["854 x 480", "960 x 540", "1024 x 576", "1280 x 720"
 _iniReso                := ReadMacroIni("Settings", "Resolution", "")
 global SelectedReso     := _iniReso ? _iniReso : ResoList[4]
 
-global CarList          := ["Subaru Impreza 22B-STi", "Lamborghini Revuelto", "Dodge Viper GTS ACR", "Mazda #123 Mad Mike 808"]
-global CarData          := Map(
-    "Subaru Impreza 22B-STi", {
-        SkillPtsCost: 30,
-        AltName: "1998 Subaru",
-        StatsNum: 594970474057
-    },
-    "Lamborghini Revuelto", {
-        SkillPtsCost: 39,
-        AltName: "2024 Lamborghini",
-        StatsNum: 867299107749
-    },
-    "Dodge Viper GTS ACR", {
-        SkillPtsCost: 30,
-        AltName: "1999 Dodge",
-        StatsNum: 694952414050
-    },
-    "Mazda #123 Mad Mike 808", {
-        SkillPtsCost: 21,
-        AltName: "1974 Mazda",
-        StatsNum: 725047495145
-    }
-)
+global CarList := []
+global CarData := Map()
+
+global DefaultProfiles := []   ; Holds the automatically collected default names
+global IsScriptStarting := true ; Track if the script is running its initial startup setup
+
+RegisterCar("Impreza 22B-STi", {
+    SkillPtsCost: 30,
+    AltName: "1998 Subaru",
+    StatsNum: 594970474057,
+    BuyMfrPath: [["Up", 3], ["Right", 3]],
+    BuyCarPath: [["Down", 1]],
+    UnlockPath: [["Right", 1], ["Up", 3], ["Left", 1]],
+    UnlockSWheel: 1,
+    UnlockWheel: 0,
+    UnlockCredit: 0
+})
+
+RegisterCar("Revuelto", {
+    SkillPtsCost: 39,
+    AltName: "2024 Lamborghini",
+    StatsNum: 867299107749,
+    BuyMfrPath: [["Down", 10], ["Right", 1]],
+    BuyCarPath: [["Left", 1]],
+    UnlockPath: [["Up", 3], ["Right", 2]],
+    UnlockSWheel: 1,
+    UnlockWheel: 3,
+    UnlockCredit: 0
+})
+
+RegisterCar("Viper GTS ACR", {
+    SkillPtsCost: 30,
+    AltName: "1999 Dodge",
+    StatsNum: 694952414050,
+    BuyMfrPath: [["Down", 5], ["Right", 2]],
+    BuyCarPath: [["Down", 1]],
+    UnlockPath: [["Right", 1], ["Up", 3], ["Right", 1]],
+    UnlockSWheel: 0,
+    UnlockWheel: 0,
+    UnlockCredit: 85400
+})
+
+RegisterCar("#123 Mad Mike 808", {
+    SkillPtsCost: 21,
+    AltName: "1974 Mazda",
+    StatsNum: 725047495145,
+    BuyMfrPath: [["Up", 10]],
+    BuyCarPath: [["Down", 1], ["Left", 2]],  
+    UnlockPath: [["Right", 2], ["Up", 3]],
+    UnlockSWheel: 1,
+    UnlockWheel: 0,
+    UnlockCredit: 0
+})
+
+IsScriptStarting := false
+
 _iniCar                 := ReadMacroIni("Settings", "Car", "")
 global SelectedCar      := _iniCar ? _iniCar : CarList[1]
-global SelectedCarPoint := CarData[SelectedCar].SkillPtsCost
-
-_iniTier                := ReadMacroIni("Settings", "UserTier", "")
-global UserTier         := _iniTier ? _iniTier : "STANDARD"
 
 _iniSpinMode            := ReadMacroIni("Settings", "SpinMode", "")
 global SpinMode         := _iniSpinMode ? _iniSpinMode : "KEEP"

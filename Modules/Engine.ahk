@@ -43,7 +43,7 @@ ToggleMode(mode) {
 ToggleAll() {
     global ActiveMode, MasterMode, MasterStart
     global SkillPtsCount_In, SkillPtsWant_In, CarCount_In, LoopCount_In
-    global MaxPoints, PointsGain, SelectedCarPoint, cHighlight, cIdle, InitStartBtn
+    global MaxPoints, PointsGain, cHighlight, cIdle, InitStartBtn
 
     if FindGame() = 0
         return
@@ -186,134 +186,6 @@ ResetIndicators() {
 }
 
 ; ══════════════════════════════════════════════
-;  UPDATE VALUE INPUT
-; ══════════════════════════════════════════════
-
-UpdateEventLab(ctrl, *) {
-    global EventLab, EventLabData, MaxPoints, MaxSections, AveragePoints, SkillPtsWant_In, CarCount_In, PointsTotal, CodeTune, CodeEventLab, SelectedCarPoint
-
-    EventLab        := ctrl.Text
-
-    data := EventLabData[EventLab]
-    MaxSections     := data.MaxSections
-    MaxPoints       := data.MaxPoints
-    AveragePoints   := data.AveragePoints
-    CodeTune        := data.CodeTune
-    CodeEventLab    := data.CodeEvent
-    
-    SkillPtsWant_In.Value := UpdateSkillPtsWant({Value: MaxPoints}, false)
-    CarCount_In.Value     := Floor(PointsTotal / SelectedCarPoint)
-
-    WriteMacroIni("Settings", "EventLab", EventLab)
-}
-
-UpdateCar(ctrl, *) {
-    global SelectedCar, SelectedCarPoint, PointsTotal, CarSelect_UI, CarsLabel_UI, CarCount_In, CarData
-    
-    SelectedCar      := ctrl.Text
-    
-    SelectedCarPoint := CarData[SelectedCar].SkillPtsCost
-    CarPurchaseCount := Floor(PointsTotal / SelectedCarPoint)
-        
-    CarCount_In.Value  := CarPurchaseCount
-    CarsLabel_UI.Value := CarPurchaseCount
-
-    WriteMacroIni("Settings", "Car", SelectedCar)
-}
-
-UpdateReso(ctrl, *) {
-    global SelectedReso
-
-    SelectedReso := ctrl.Text
-
-    WriteMacroIni("Settings", "Resolution", SelectedReso)
-}
-
-UpdateSkillPts(ctrl, ManualInput:= true, *) {
-    global SelectedCarPoint, TimeTotal, PointsTotal, CarCount_In, SkillPtsWant_In, AveragePoints, PointsGain, MaxPoints
-    global PointsLabel_UI, TimeLabel_UI, CarsLabel_UI, SectorLabel_UI, ActiveMode, CustomSkillPts
-
-    if ManualInput {
-        CustomSkillPts := false
-        ShowNotif("info", "EventLab Race", "Mode: Automatic Desired Skill Point.")
-    }
-
-    value := ctrl.value
-    value := (value = "") ? 0 : Min(999, value)
-    
-    SkillPtsWant_In.Value := (999 - value > MaxPoints) ? MaxPoints : 999 - value
-
-    PointsGain  := GetMinScore(SkillPtsWant_In.Value)    
-    PointsTotal := Min(PointsGain + value, 999)
-        
-    CarCount_In.Value  := Floor(PointsTotal / SelectedCarPoint)
-    TimeTotal          := CalcTimeRace(SkillPtsWant_In.Value) + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
-
-    PointsLabel_UI.Value := PointsGain
-    SectorLabel_UI.Value := Ceil(PointsGain / AveragePoints)
-    TimeLabel_UI.Value   := Format("{:02}:{:02}", Floor(TimeTotal), Round((TimeTotal - Floor(TimeTotal)) * 60))
-    CarsLabel_UI.Value   := Floor(PointsTotal / SelectedCarPoint)
-}
-    
-UpdateSkillPtsWant(ctrl, ManualInput:= true, *) {
-    global SelectedCarPoint, TimeTotal, PointsTotal, CarCount_In, SkillPtsCount_In, AveragePoints, PointsGain, MaxPoints
-    global PointsLabel_UI, TimeLabel_UI, CarsLabel_UI, PointsCount_UI, SectorLabel_UI, CustomSkillPts
-
-    if ManualInput {
-        CustomSkillPts := true
-        ShowNotif("info", "EventLab Race", "Mode: Custom Desired Skill Point.")
-    }
-
-    value := ctrl.value
-    
-    if (value = "") 
-        value := 0
-    else if (value + SkillPtsCount_In.Value > 999)
-        value := 999 - SkillPtsCount_In.Value
-    else if (value > MaxPoints)
-        value := MaxPoints
-
-    PointsGain  := GetMinScore(value)
-    PointsTotal := Min(PointsGain + SkillPtsCount_In.Value, 999)
-    
-    CarCount_In.Value := Floor(PointsTotal / SelectedCarPoint)
-    TimeTotal         := CalcTimeRace(value) + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
-    
-    PointsLabel_UI.Value := PointsGain
-    SectorLabel_UI.Value := Ceil(PointsGain / AveragePoints)
-    TimeLabel_UI.Value   := Format("{:02}:{:02}", Floor(TimeTotal), Round((TimeTotal - Floor(TimeTotal)) * 60))
-    CarsLabel_UI.Value   := Floor(PointsTotal / SelectedCarPoint)
-
-    return value
-}
-
-ValidateSkillPts(ctrl, *) {
-    global SkillPtsCount_In
-    value := ctrl.value
-    
-    if (value = "") 
-        value := 0
-    else if (value > 999)
-        value := 999
-    
-    ctrl.value := value
-}
-
-ValidateSkillPtsWant(ctrl, *) {
-    global SkillPtsCount_In, MaxPoints
-    value := ctrl.value
-    
-    if (value = "") 
-        value := 0
-    else if (value + SkillPtsCount_In.Value > 999)
-        value := 999 - SkillPtsCount_In.Value
-    else if (value > MaxPoints)
-        value := MaxPoints
-    
-    ctrl.value := value
-}
-
-; ══════════════════════════════════════════════
 ;  SCORE AND TIME CALCULATION
 ; ══════════════════════════════════════════════
 
@@ -352,7 +224,7 @@ CalcTimeBuy(car) {
 }
 
 CalcTimeUnlock(car) {
-    totalTime := car * 31
+    totalTime := car * 34
     return totalTime / 60
 }
 
@@ -794,73 +666,29 @@ PressKey(key, delay := 500) {
         return 
     }
 
-    ; =========================================================================
-    ; BRANCH 1: CHROME PWA / BROWSER GFN (Background via Chromium Canvas)
-    ; =========================================================================
-    if (GameExe = "msedge.exe") {
-        if (!GameHwnd || !WinExist(GameHwnd)) {
-            topHwnd := WinExist(GameTitle)
-            if (topHwnd) {
-                try {
-                    GameHwnd := ControlGetHwnd("Chrome_RenderWidgetHostHWND1", "ahk_id " topHwnd)
-                } catch {
-                    GameHwnd := topHwnd
-                }
-            }
-        }
-
-        if (!GameHwnd) {
-            ShowNotif("error", "Target Error", "GFN PWA window was not found.")
-            return
-        }
-
-        try {
-            SendMessage(0x0007, 0, 0, , "ahk_id " GameHwnd) ; Keep canvas awake
-
-            if (suffix = "down") {
-                PostMessage(0x0100, vkCode, lParamDown, , "ahk_id " GameHwnd)
-            }
-            else if (suffix = "up") {
-                PostMessage(0x0101, vkCode, lParamUp, , "ahk_id " GameHwnd)
-            } 
-            else {
-                PostMessage(0x0100, vkCode, lParamDown, , "ahk_id " GameHwnd)
-                Sleep(45) 
-                PostMessage(0x0101, vkCode, lParamUp, , "ahk_id " GameHwnd)
-            }
-        } catch {
-            ShowNotif("error", "Target Error", "Keystroke missed because GFN PWA canvas was lost.")
-        }
+    if (!GameHwnd || !WinExist(GameHwnd)) {
+        GameHwnd := WinExist("ahk_exe " GameExe)
     }
 
-    ; =========================================================================
-    ; BRANCH 2: NATIVE LOCAL APP (Background via Direct Top-Level Window)
-    ; =========================================================================
-    else {
-        if (!GameHwnd || !WinExist(GameHwnd)) {
-            GameHwnd := WinExist("ahk_exe " GameExe)
-        }
+    if (!GameHwnd) {
+        ShowNotif("error", "Target Error", "Native game window (" GameExe ") was not found.")
+        return
+    }
 
-        if (!GameHwnd) {
-            ShowNotif("error", "Target Error", "Native game window (" GameExe ") was not found.")
-            return
+    try {
+        if (suffix = "down") {
+            PostMessage(0x0100, vkCode, lParamDown, , "ahk_id " GameHwnd)
         }
-
-        try {
-            if (suffix = "down") {
-                PostMessage(0x0100, vkCode, lParamDown, , "ahk_id " GameHwnd)
-            }
-            else if (suffix = "up") {
-                PostMessage(0x0101, vkCode, lParamUp, , "ahk_id " GameHwnd)
-            } 
-            else {
-                PostMessage(0x0100, vkCode, lParamDown, , "ahk_id " GameHwnd)
-                Sleep(45) 
-                PostMessage(0x0101, vkCode, lParamUp, , "ahk_id " GameHwnd)
-            }
-        } catch {
-            ShowNotif("error", "Target Error", "Keystroke failed to post to native local game.")
+        else if (suffix = "up") {
+            PostMessage(0x0101, vkCode, lParamUp, , "ahk_id " GameHwnd)
+        } 
+        else {
+            PostMessage(0x0100, vkCode, lParamDown, , "ahk_id " GameHwnd)
+            Sleep(45) 
+            PostMessage(0x0101, vkCode, lParamUp, , "ahk_id " GameHwnd)
         }
+    } catch {
+        ShowNotif("error", "Target Error", "Keystroke failed to post to native local game.")
     }
     
     currentMultiplier := IsSet(KeyMultiplier) ? KeyMultiplier : 1
@@ -882,7 +710,7 @@ UpdateSpeed(*) {
     sliderPosition := DelaySlider_UI.Value
     
     Global KeyMultiplier := Multipliers[sliderPosition]
-    SpeedLabel_UI.Text       := "Key Delay Multiplier: " KeyMultiplier "x"
+    SpeedLabel_UI.Text   := "Key Delay Multiplier: " KeyMultiplier "x"
 
     WriteMacroIni("Settings", "KeyMultiplier", KeyMultiplier)
 }
@@ -971,289 +799,92 @@ FormatCommas(val) {
 OnMessage(0x0201, WM_LBUTTONDOWN)
 
 WM_LBUTTONDOWN(wParam, lParam, msg, hwnd) {
-    global RestoreBtn, PauseBtn, StopBtn
     global SliderKnob, SliderTrack
-    global MainGUI, MainDragOffsetX, MainDragOffsetY
-    global SpinGUI,SpinDragOffsetX, SpinDragOffsetY
-    global MiniGui, MiniDragOffsetX, MiniDragOffsetY
-    global PreviewGui, PreviewDragOffsetX, PreviewDragOffsetY
+    global ActiveDragGui, DragOffsetX, DragOffsetY
 
-    ; 1. Identify the top-level parent window safely
-    rootHwnd := DllCall("User32\GetAncestor", "Ptr", hwnd, "UInt", 2, "Ptr")
-
-    ; 2. CUSTOM SLIDER ENGINE ROUTING (Evaluated first)
+    ; 1. CUSTOM SLIDER ENGINE ROUTING
     if (IsSet(SliderKnob) && IsSet(SliderTrack) && (hwnd == SliderKnob.Hwnd || hwnd == SliderTrack.Hwnd)) {
         DragSliderTimer()
         SetTimer(DragSliderTimer, 10)
         return
     }
 
-    ; 3. MINI GUI ROUTING
-    if (IsSet(MiniGui) && MiniGui && rootHwnd == MiniGui.Hwnd) {
-        if ((IsSet(RestoreBtn) && hwnd == RestoreBtn.Hwnd) || 
-            (IsSet(PauseBtn)   && hwnd == PauseBtn.Hwnd)   || 
-            (IsSet(StopBtn)    && hwnd == StopBtn.Hwnd)) {
-            return
-        }
+    ; 2. NATIVE WORKSPACE IDENTIFICATION
+    rootHwnd := DllCall("User32\GetAncestor", "Ptr", hwnd, "UInt", 2, "Ptr")
+    if !(guiObj := GuiFromHwnd(rootHwnd))
+        return
+
+    ctrlClass := WinGetClass(hwnd)
+    if (ctrlClass != "AutoHotkeyGUI" && ctrlClass != "Static")
+        return
         
-        ctrlClass := WinGetClass(hwnd)
-        if (ctrlClass == "AutoHotkeyGUI" || ctrlClass == "Static") {
-            CoordMode("Mouse", "Screen")
-            MouseGetPos(&mouseX, &mouseY)
-            WinGetPos(&guiX, &guiY, , , MiniGui.Hwnd)
-            MiniDragOffsetX := mouseX - guiX
-            MiniDragOffsetY := mouseY - guiY
-            SetTimer(DragMiniGui, 10)
-        }
-        return
-    }
+    if (ctrlClass == "Static" && (WinGetStyle(hwnd) & 0x100))
+        return 
 
-    ; 4. SPIN GUI ROUTING
-    if (IsSet(SpinGUI) && SpinGUI && rootHwnd == SpinGUI.Hwnd) {
-        if (hwnd == SpinGUI.Hwnd || DllCall("User32\GetParent", "Ptr", hwnd) == SpinGUI.Hwnd) {
-            ctrlClass := WinGetClass(hwnd)
-            if (ctrlClass == "AutoHotkeyGUI" || ctrlClass == "Static") {
-                ; Bypass if clicking close or text elements with click handlers
-                if (ctrlClass == "Static" && (WinGetStyle(hwnd) & 0x100))
-                    return 
-                
-                CoordMode("Mouse", "Screen")
-                MouseGetPos(&mouseX, &mouseY)
-                WinGetPos(&guiX, &guiY, , , SpinGUI.Hwnd)
-                SpinDragOffsetX := mouseX - guiX
-                SpinDragOffsetY := mouseY - guiY
-                SetTimer(DragSpinGUI, 10)
-            }
-        }
-        return
-    }
-
-    ; 5. MAIN GUI ROUTING
-    if (IsSet(MainGUI) && MainGUI && rootHwnd == MainGUI.Hwnd) {
-        if (hwnd == MainGUI.Hwnd || DllCall("User32\GetParent", "Ptr", hwnd) == MainGUI.Hwnd) {
-            ctrlClass := WinGetClass(hwnd)
-            if (ctrlClass == "AutoHotkeyGUI" || ctrlClass == "Static") {
-                ; Bypass if clicking close (✕) or minimize (─) buttons [cite: 101]
-                if (ctrlClass == "Static" && (WinGetStyle(hwnd) & 0x100))
-                    return 
-                
-                CoordMode("Mouse", "Screen")
-                MouseGetPos(&mouseX, &mouseY)
-                WinGetPos(&guiX, &guiY, , , MainGUI.Hwnd)
-                MainDragOffsetX := mouseX - guiX
-                MainDragOffsetY := mouseY - guiY
-                SetTimer(DragMainGUI, 10)
-            }
-        }
-        return
-    }
-
-    ; 6. PREVIEW GUI ROUTING
-    if (IsSet(PreviewGui) && PreviewGui && rootHwnd == PreviewGui.Hwnd) {
-        if (hwnd == PreviewGui.Hwnd || DllCall("User32\GetParent", "Ptr", hwnd) == PreviewGui.Hwnd) {
-            ctrlClass := WinGetClass(hwnd)
-            if (ctrlClass == "AutoHotkeyGUI" || ctrlClass == "Static") {
-                ; Bypass if clicking close (✕) or minimize (─) buttons [cite: 101]
-                if (ctrlClass == "Static" && (WinGetStyle(hwnd) & 0x100))
-                    return 
-                
-                CoordMode("Mouse", "Screen")
-                MouseGetPos(&mouseX, &mouseY)
-                WinGetPos(&guiX, &guiY, , , PreviewGui.Hwnd)
-                PreviewDragOffsetX := mouseX - guiX
-                PreviewDragOffsetY := mouseY - guiY
-                SetTimer(DragPreviewGui, 10)
-            }
-        }
-        return
-    }
+    ; 4. INITIALIZE UNIFIED INTERFACE DRAG STATE
+    CoordMode("Mouse", "Screen")
+    MouseGetPos(&mouseX, &mouseY)
+    WinGetPos(&guiX, &guiY, , , rootHwnd)
+    
+    ActiveDragGui := guiObj  ; <-- Store the complete GUI instance reference rather than the HWND
+    DragOffsetX   := mouseX - guiX
+    DragOffsetY   := mouseY - guiY
+    
+    SetTimer(DragActiveGui, 10)
 }
 
 ; ══════════════════════════════════════════════
 ;  BACKGROUND ASYNC WORKER LOOPS (NON-BLOCKING)
 ; ══════════════════════════════════════════════
 
-DragMainGUI() {
-    global MainGUI, MainDragOffsetX, MainDragOffsetY
+DragActiveGui() {
+    global ActiveDragGui, DragOffsetX, DragOffsetY
     
-    ; Stop tracking immediately if the user releases the left click
-    if !GetKeyState("LButton", "P") {
+    if !IsSet(ActiveDragGui) || !ActiveDragGui || !GetKeyState("LButton", "P") {
         SetTimer(, 0)
+        ActiveDragGui := 0
         return
     }
     
     CoordMode("Mouse", "Screen")
     MouseGetPos(&mouseX, &mouseY)
-   
-    try MainGUI.Move(mouseX - MainDragOffsetX, mouseY - MainDragOffsetY)
+    
+    ; Bypasses global window lookup engines for instantaneous updates
+    try ActiveDragGui.Move(mouseX - DragOffsetX, mouseY - DragOffsetY)
 }
 
-DragSpinGUI() {
-    global SpinGUI, SpinDragOffsetX, SpinDragOffsetY
-    
-    ; Safely terminate thread callback if user releases left click
-    if !GetKeyState("LButton", "P") {
-        SetTimer(, 0)
-        return
-    }
-    
-    CoordMode("Mouse", "Screen")
-    MouseGetPos(&mouseX, &mouseY)
-    
-    ; Dynamic viewport repositioning matrix
-    try SpinGUI.Move(mouseX - SpinDragOffsetX, mouseY - SpinDragOffsetY)
-}
-
-DragMiniGui() {
-    global MiniGui, MiniDragOffsetX, MiniDragOffsetY
-    
-    ; Safely terminate thread callback if user releases left click
-    if !GetKeyState("LButton", "P") {
-        SetTimer(, 0)
-        return
-    }
-    
-    CoordMode("Mouse", "Screen")
-    MouseGetPos(&mouseX, &mouseY)
-    
-    ; Dynamic viewport repositioning matrix for the mini compact interface
-    try MiniGui.Move(mouseX - MiniDragOffsetX, mouseY - MiniDragOffsetY)
-}
-
-DragPreviewGui() {
-    global PreviewGui, PreviewDragOffsetX, PreviewDragOffsetY
-    
-    ; Safely terminate thread callback if user releases left click
-    if !GetKeyState("LButton", "P") {
-        SetTimer(, 0)
-        return
-    }
-    
-    CoordMode("Mouse", "Screen")
-    MouseGetPos(&mouseX, &mouseY)
-    
-    ; Dynamic viewport repositioning matrix for the mini compact interface
-    try PreviewGui.Move(mouseX - PreviewDragOffsetX, mouseY - PreviewDragOffsetY)
-}
+; ══════════════════════════════════════════════
+;  REPOSITION GAME CLIENT WINDOW
+; ══════════════════════════════════════════════
 
 MoveWindow() {
-    CoordMode "Mouse", "Screen"
-    MouseGetPos &startX, &startY, &targetWin
-    WinGetPos &winX, &winY, , , targetWin
+    CoordMode("Mouse", "Screen")
+    MouseGetPos(&startX, &startY, &targetWin)
+    
+    ; Cache the window's width and height once so we don't query it inside the loop
+    try WinGetPos(, , &winW, &winH, targetWin)
+    catch
+        return ; Exit if the window handle vanishes
+        
+    WinGetPos(&winX, &winY, , , targetWin)
     
     while GetKeyState("LButton", "P") {
-        MouseGetPos &currentX, &currentY
-        WinMove winX + (currentX - startX), winY + (currentY - startY), , , targetWin
-        Sleep 10 ; Smooth tracking without eating CPU
-    }
-}
-
-CheckWindowed() {
-    global GameTitle, MonWidth, MonHeight
-    
-    if !WinExist(GameTitle)
-        return false
-
-    ; 1. Refresh your monitor metrics to get the target screen's width/height
-    UpdateMonitorMetrics() 
-    
-    ; 2. Fetch the actual current width and height of the game window
-    WinGetClientPos(, , &gameWidth, &gameHeight, GameTitle)
-    
-    ; 3. If it's smaller than the monitor's full canvas, it is in Windowed Mode
-    if (gameWidth < MonWidth || gameHeight < MonHeight) {
-        return true  ; Yes, it is Windowed
-    }
-    
-    return false ; No, it matches screen size (Borderless Fullscreen)
-}
-
-CheckLocked() {
-    global GameTitle
-
-    if !WinExist(GameTitle)
-        return false
-
-    if WinGetStyle(GameTitle) & 0x08000000
-        return true
-    else
-        return false
-}
-
-CheckAlwaysOnTop() {
-    global GameTitle
-    
-    if !WinExist(GameTitle)
-        return false
-
-    if WinGetExStyle(GameTitle) & 0x8
-        return true
-    else
-        return false
-}
-
-; ══════════════════════════════════════════════
-;  MISC SETTINGS
-; ══════════════════════════════════════════════
-
-; Calculates the similarity percentage between two strings (0 to 100)
-GetTextSimilarity(str1, str2) {
-    s := Format("{:L}", str1) ; Convert to lowercase for case-insensitivity
-    t := Format("{:L}", str2)
-    
-    lenS := StrLen(s)
-    lenT := StrLen(t)
-    
-    if (s == t) 
-        return 100.0
-    if (lenS == 0 || lenT == 0) 
-        return 0.0
-    
-    v0 := []
-    v1 := []
-    loop lenT + 1 {
-        v0.Push(A_Index - 1)
-        v1.Push(0)
-    }
-    
-    loop lenS {
-        i := A_Index
-        v1[1] := i
-        chS := SubStr(s, i, 1)
+        MouseGetPos(&currentX, &currentY)
         
-        loop lenT {
-            j := A_Index
-            chT := SubStr(t, j, 1)
-            cost := (chS == chT) ? 0 : 1
-            v1[j + 1] := Min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost)
-        }
-        loop lenT + 1 {
-            v0[A_Index] := v1[A_Index]
-        }
+        newX := winX + (currentX - startX)
+        newY := winY + (currentY - startY)
+        
+        ; DIRECT WIN32 API CALL: Bypasses AHK window validation entirely.
+        ; Moves the external game client/window smoothly at the driver level.
+        DllCall("User32\MoveWindow", "Ptr", targetWin, "Int", newX, "Int", newY, "Int", winW, "Int", winH, "Int", 1)
+        
+        Sleep(10)
     }
-    
-    maxLen := Max(lenS, lenT)
-    return (1 - (v0[lenT + 1] / maxLen)) * 100
 }
 
-_LinkNoirTelemetry(ctrl, initialValue) {
-    ctrl.DefineProp("Text", {
-        get: (this) => ControlGetText(this.Hwnd, this.Gui.Hwnd),
-        set: (this, val) => (
-            RegExMatch(val, "[—–-]\s*(.*)$", &match) 
-            ? ControlSetText(match[1], this.Hwnd, this.Gui.Hwnd) 
-            : ControlSetText(val, this.Hwnd, this.Gui.Hwnd)
-        )
-    })
-    ctrl.Text := initialValue
-    return ctrl
-}
-
-_CopyToClip(text, label) {
-    A_Clipboard := text
-    ToolTip(label " Copied!`n" text)
-    SetTimer(() => ToolTip(), -2000)
-}
+; ══════════════════════════════════════════════
+;  GAME LAUNCH AND DIRECTORY FUNCTIONS
+; ══════════════════════════════════════════════
 
 LaunchGame(ctrl, *) {
     global GameDir, GameExe
@@ -1379,20 +1010,100 @@ AutoLocateGameDir() {
     return "" 
 }
 
-; SpoofWindowFocus() {
-;     if WinExist(GameTitle) {
-;         ; Only spoof if the game is currently running in the background
-;         if !WinActive(GameTitle) {
-;             gameHwnd := WinExist(GameTitle)
-            
-;             ; 0x0006 = WM_ACTIVATE | wParam = 1 (WA_ACTIVE)
-;             PostMessage(0x0006, 1, 0, , "ahk_id " gameHwnd)
-            
-;             ; 0x001C = WM_ACTIVATEAPP | wParam = 1 (True)
-;             PostMessage(0x001C, 1, 0, , "ahk_id " gameHwnd)
-;         }
-;     }
-; }
+; ══════════════════════════════════════════════
+;  INI I/O FUNCTIONS
+; ══════════════════════════════════════════════
+
+WriteMacroIni(Section, Key, Value) {
+    global MacroIni, RepoName
+
+    Base := EnvGet("USERPROFILE") "\Documents\"
+    
+    targetDir := Base RepoName
+    try {
+        if (!DirExist(targetDir))
+            DirCreate(targetDir)
+        IniWrite(Value, targetDir "\" MacroIni, Section, Key)
+    }
+}
+
+ReadMacroIni(Section, Key, DefaultValue := "") {
+    global MacroIni, RepoName
+    
+    Base := EnvGet("USERPROFILE") "\Documents\"
+        
+    targetFile := Base RepoName "\" MacroIni
+    if FileExist(targetFile) {
+        try {
+            return IniRead(targetFile, Section, Key)
+        }
+    }
+    
+    return DefaultValue ; Returns this if no file or key was found
+}
+
+; ══════════════════════════════════════════════
+;  MISC FUNCTIONS
+; ══════════════════════════════════════════════
+
+; Calculates the similarity percentage between two strings (0 to 100)
+GetTextSimilarity(str1, str2) {
+    s := Format("{:L}", str1) ; Convert to lowercase for case-insensitivity
+    t := Format("{:L}", str2)
+    
+    lenS := StrLen(s)
+    lenT := StrLen(t)
+    
+    if (s == t) 
+        return 100.0
+    if (lenS == 0 || lenT == 0) 
+        return 0.0
+    
+    v0 := []
+    v1 := []
+    loop lenT + 1 {
+        v0.Push(A_Index - 1)
+        v1.Push(0)
+    }
+    
+    loop lenS {
+        i := A_Index
+        v1[1] := i
+        chS := SubStr(s, i, 1)
+        
+        loop lenT {
+            j := A_Index
+            chT := SubStr(t, j, 1)
+            cost := (chS == chT) ? 0 : 1
+            v1[j + 1] := Min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost)
+        }
+        loop lenT + 1 {
+            v0[A_Index] := v1[A_Index]
+        }
+    }
+    
+    maxLen := Max(lenS, lenT)
+    return (1 - (v0[lenT + 1] / maxLen)) * 100
+}
+
+_LinkNoirTelemetry(ctrl, initialValue) {
+    ctrl.DefineProp("Text", {
+        get: (this) => ControlGetText(this.Hwnd, this.Gui.Hwnd),
+        set: (this, val) => (
+            RegExMatch(val, "[—–-]\s*(.*)$", &match) 
+            ? ControlSetText(match[1], this.Hwnd, this.Gui.Hwnd) 
+            : ControlSetText(val, this.Hwnd, this.Gui.Hwnd)
+        )
+    })
+    ctrl.Text := initialValue
+    return ctrl
+}
+
+_CopyToClip(text, label) {
+    A_Clipboard := text
+    ToolTip(label " Copied!`n" text)
+    SetTimer(() => ToolTip(), -2000)
+}
 
 ; Register a Shell Hook to monitor window changes instantly
 DllCall("RegisterShellHookWindow", "Ptr", A_ScriptHwnd)
@@ -1412,32 +1123,4 @@ WindowChangedEvent(wParam, lParam, *) {
             PostMessage(0x0086, 1, 0, , "ahk_id " gameHwnd)      ; WM_NCACTIVATE
         }
     }
-}
-
-WriteMacroIni(Section, Key, Value) {
-    global GameExe, MacroIni
-
-    Base := EnvGet("USERPROFILE") "\Documents\My Mods\SpecialK\Profiles\"
-    
-    targetDir := Base GameExe
-    try {
-        if (!DirExist(targetDir))
-            DirCreate(targetDir)
-        IniWrite(Value, targetDir "\" MacroIni, Section, Key)
-    }
-}
-
-ReadMacroIni(Section, Key, DefaultValue := "") {
-    global GameExe, MacroIni
-    
-    Base := EnvGet("USERPROFILE") "\Documents\My Mods\SpecialK\Profiles\"
-        
-    targetFile := Base GameExe "\" MacroIni
-    if FileExist(targetFile) {
-        try {
-            return IniRead(targetFile, Section, Key)
-        }
-    }
-    
-    return DefaultValue ; Returns this if no file or key was found
 }
