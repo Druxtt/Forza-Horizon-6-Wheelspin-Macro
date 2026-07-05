@@ -3,9 +3,9 @@
 Welcome to the ultimate progression companion for Forza Horizon 6! This is a highly modular, high-performance automation tool built on **AutoHotkey v2** designed to eliminate repetitive in-game tasks. Whether you want to skip the grind, farm credits, or stack up Super Wheelspins, this macro fully automates your workflow using optical character recognition (OCR), pixel-aware session tracking, and background play execution.
 
 <p align="center">
-  <img width="272" height="828" alt="Main Dashboard UI" src="https://github.com/user-attachments/assets/497cbe98-6285-4111-86f4-b996f895eadd" />
-  <img width="274" height="953" alt="Settings Configuration" src="https://github.com/user-attachments/assets/993f22f2-7095-4538-a710-bdc098750774" />
-  <img width="272" height="828" alt="Targets & Telemetry" src="https://github.com/user-attachments/assets/001cc969-0b0f-40ba-a797-22db6bc01621" />
+  <img width="272" height="818" alt="Main Dashboard UI" src="https://github.com/user-attachments/assets/83ab1cde-1c95-4677-895c-d4f11a19135e" />
+  <img width="272" height="941" alt="Spin Interface & Settings Configuration" src="https://github.com/user-attachments/assets/664e1006-5d16-4cc5-8c4c-842278842b6d" />
+  <img width="272" height="818" alt="Targets & Telemetry" src="https://github.com/user-attachments/assets/67a73c20-bbae-4bbe-9371-9b2bb4749592" />
 </p>
 
 ---
@@ -325,12 +325,17 @@ The upper portion of the **Input** tab allows you to define processing boundarie
 #### 2. Vehicle Selection & Dynamic Vehicle Database Editor Guide
 
 <p align="center">
-  <img width="270" height="132" alt="optimization switches" src="https://github.com/user-attachments/assets/d26e6009-6e3e-4cb0-ac42-6e69f1c4ce30" />
+  <img width="272" height="50" alt="Vehicle Selection" src="https://github.com/user-attachments/assets/369dce08-c1e4-465f-8b2a-d637d9d4239a" />
 </p>
 
 Directly underneath the parameter matrix are the optimization switches used to align the macro's navigation paths with your specific game profile:
 
 * **Vehicle Dropdown Menu & Quick Editor:** Selects the precise target vehicle schema (e.g., `Impreza 22B-STi` or `#123 Mad Mike 808`). **New in v1.9.2:** Clicking the adjacent contextual control buttons (`＋` and `✎`) launches the live, built-in **Vehicle Database Editor UI** to instantly create, adjust, or clean out profiles right from the panel.
+
+<p align="center">
+  <img width="312" height="492" alt="Add car" src="https://github.com/user-attachments/assets/2c820d8e-2ca5-4c62-88dd-a2f064b5dc99" />
+  <img width="312" height="492" alt="Edit car" src="https://github.com/user-attachments/assets/6e39f84e-48c2-4ad0-8d11-61636f1198ef" />
+</p>
 
 With the release of **v1.9.2**, the macro framework has transitioned away from rigid, hardcoded car configurations to a fully dynamic database-driven model. You can now add your own custom farming vehicles, update navigation sequences, or delete profiles seamlessly directly from the new graphical interface manager.
 
@@ -341,11 +346,22 @@ Open the primary control dashboard (**Main GUI**). In the vehicle selection sect
 
 2. Configuration Fields Explained
 
+
     When creating or modifying a profile, you will need to fill out or verify the following telemetry and routing properties:
 
     #### Profile Metadata & Rewards
-    * **Profile ID / Vehicle Name:** The exact matching string identifier displayed in the main menu selection dropdown.
-    * **Alternative OCR Name (AltName):** A case-insensitive fuzzy matching text fallback string used by the text-similarity engine (`GetTextSimilarity`) during real-time vehicle validation screens.
+    <p align="center">
+      <img width="1280" height="720" alt="Car Journal" src="https://github.com/user-attachments/assets/6ff316c9-dfc0-42f6-9c7d-646f145260a2" />
+    </p>
+
+    * **Profile ID / Vehicle Name:** The car's name that will displayed in the main menu selection dropdown and scanned by OCR during Buy mode for real-time vehicle validation screens (e.g., `#123 Mad Mike 808`). 
+    * **AltName:** The car's alternative name that will also be scanned by OCR during Buy mode for real-time vehicle validation screens (e.g., `1974 Mazda`). 
+
+    <p align="center">
+      <img width="227" height="500" alt="Stats Number" src="https://github.com/user-attachments/assets/87afb184-d989-452b-ab9e-5246f9f1357d" />
+    </p>
+
+    * **Stats Number:** A combination of the selected vehicle stats number scanned by OCR during Unlock mode for real-time vehicle validation screens (e.g., `725047495145`).
     * **Skill Points Cost:** The absolute volume of skill points required to complete a single mastery loop block for this vehicle.
     * **Super Wheelspins / Regular Wheelspins / Credit Yields:** The specific payout matrix assigned to the vehicle's mastery tree. This dynamically recalculates and styles your session progress outputs.
 
@@ -354,7 +370,7 @@ Open the primary control dashboard (**Main GUI**). In the vehicle selection sect
     * **Buy Car Path (`BuyCarPath`):** The sequence of inputs required to maneuver the cursor from the manufacturer directly to the targeted car's purchase tile.
     * **Unlock Path (`UnlockPath`):** The exact multi-directional layout array sequence that guides the virtual hardware cursor across the vehicle's Mastery Tree nodes to unlock the target perks.
 
-3. Database Integrity & Validation Guardrails
+4. Database Integrity & Validation Guardrails
 
     To prevent data corruption, menu desynchronization, or accidental loss of in-game resources, the built-in validator enforces absolute input rules before saving updates:
 
@@ -392,6 +408,10 @@ Clicking the purple interface trigger transforms the center of the dashboard int
 * **RUN WHEELSPIN (`=`):** Fires the automated hardware routine to continuously clear out your accumulated wheelspin cache.
 
 #### 5. Delay Engine Calibration
+
+<p align="center">
+  <img width="272" height="68" alt="image" src="https://github.com/user-attachments/assets/0c6ec90b-b999-4f1e-b137-b620c6feddc7" />
+</p>
 
 * **Delay Multiplier Slider:** Provides an analog scaling slider ranging from **0.25x to 4.0x** mapped directly to the active multiplier list bounds. If your system experiences sudden background frame drops, disk read latency, or server connection lag, slide this modifier upward to scale all internal sleep buffers of key inputs safely.
 
