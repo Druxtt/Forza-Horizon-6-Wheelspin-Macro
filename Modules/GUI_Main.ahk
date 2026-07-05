@@ -272,7 +272,7 @@ BuildMainGui(savedVals := "") {
     RaceBtn.OnEvent("Click",    (*) => StartRace())
     BuyBtn.OnEvent("Click",     (*) => StartBuy())
     UnlockBtn.OnEvent("Click",  (*) => StartUnlock())
-    AllBtn.OnEvent("Click",     (*) => ToggleAll())
+    AllBtn.OnEvent("Click",     (*) => StartFullLoop())
     OpenSpinWindowBtn.OnEvent("Click", (*) => OpenSpinPanel())
 
     ; ── Custom Slider Matrix ──

@@ -71,11 +71,14 @@ Select your preferred target car on the dashboard dropdown menu depending on you
 | **1998 Subaru Impreza 22B-STi Version** | 86,000 CR | 81,700 CR | 1x Super Wheelspin | 30 Points | **Budget Wheelspins:** Great low-cost choice for farming steady Super Wheelspins. |
 | **2024 Lamborghini Revuelto** | 365,000 CR | 346,750 CR | 1x Super Wheelspin + 3x Regular Wheelspins | 39 Points | **Max Yield Fast:** Dumps heavy credits to maximize total wheelspin volume as fast as possible. |
 | **1999 Dodge Viper GTS ACR** | 68,000 CR | 64,600 CR | 150,000 Cash Credits | 30 Points | **Credit Flipping:** Quickly converts your skill points back into raw cash credits. |
-| **1974 Mazda #123 Mad Mike 808 Wagon 'FURSTY'** | 100,000 CR | 95,000 CR | 1x Super Wheelspin | 21 Points | **Point-Efficient Wheelspins:** Requires the fewest skill points to unlock a Super Wheelspin, making it the fastest way to burn through a point bank. |
+| **1974 Mazda #123 Mad Mike 808 Wagon 'FURSTY' \*** | 100,000 CR | 95,000 CR | 1x Super Wheelspin | 21 Points | **Point-Efficient Wheelspins:** Requires the fewest skill points to unlock a Super Wheelspin, making it the fastest way to burn through a point bank. |
 
-> \* **Note on 1974 Mazda #123 Mad Mike 808 Wagon 'FURSTY':** This is a Car Pass only car! Make sure to select it only if you owned it via Premium Edition, Car Pass pack or single add-on purchase.  
-> \* **Note on Premium Edition:** If you are running a premium edition account that alters this vehicle's placement layout inside the Journal, make sure to click the **PREMIUM** button layout on the UI dashboard to safely adjust menu tracking layers.  
-> \* **Note on Standard Edition with Car Pass:** If you are running a standard edition account with additional Car Pass, Buy Mode might not work properly as the vehicle's placement layout inside the Journal might be different than usual, make sure to raise Issues if that happens.
+> \* **Note on the 1974 Mazda #123 Mad Mike 808 Wagon "FURSTY":** This vehicle is **Car Pass-exclusive**. Only select it if you own it through the **Premium Edition**, **Car Pass**, or as a **standalone DLC purchase**.
+>
+> \* **Note – Premium Edition / Additional Cars:**
+> If your game includes vehicles beyond the **Standard Edition** roster (such as **Premium Edition**, **Car Pass**, or other DLC), the vehicle order in the **Journal** may differ from the default layout.
+> **Buy Mode** relies on the default Standard Edition vehicle order. If your Journal layout is different, you will need to update the **car profile** by editing the **Manufacturer Path** and **Car Path** for the affected vehicle(s) to match your Journal layout. Failure to do so may cause Buy Mode to select the wrong vehicle.
+
 
 ---
 
@@ -87,13 +90,10 @@ This automation utility balances low-level Windows API hooks with a highly refin
 * **Direct Background Composition OCR:** Fully replaced legacy foreground-dependent hooks (`OCR.FromWindow`) with an integrated low-level GDI Canvas rendering engine (`GetBackgroundOCR`). It captures background window frames via `PrintWindow` utilizing composition flag `2`, executing fast hardware crop transfers via `BitBlt` even when the game window is entirely covered or out of focus.
 * **Direct Memory Pixel Color Engine:** Refactored `WaitForPixel` and `GetPixelColor` subsystems to intercept graphics buffers directly from memory device contexts using `gdi32\GetPixel`. It translates native GDI BGR structures into an RGB conversion array utilizing native BGR-to-RGB color matrix transformation blocks.
 * **Precise Client Coordinate Calibration:** Refactored the calibration system to query canvas boundaries via `WinGetClientPos` instead of relying on standard application window properties (`WinGetPos`). This strips out inconsistent OS-level window borders and title bars, stabilizing background canvas evaluation tracking.
-* **Guaranteed Memory & Handle Protection:** Enforces clean memory states using structural `try...finally` resource disposition routines tracking all dynamic GDI canvas resource handlers to completely eliminate handle tracking or thread leaks across all GDI Bitmaps and Device Contexts (`DeleteObject`, `DeleteDC`, `ReleaseDC`).
 * **Proactive Anti-Pause Window Spammer:** Intercepts specific focus activation signals—specifically checking for certain Windows Shell Hook event messages. If the game client loses focus, the macro instantly bypasses the game engine's default window-focus suspension loop by flooding the application thread with explicit activation directives before the game can register the defocus state and pause itself.
-* **Strict Handle Pointer Targeting:** Abandons fragile text title tracking in favor of binding directly to a unique window descriptor identification token (`HWND`). This ensures background micro-automation sequences remain fully isolated from desktop focus changes, overlapping apps, or title string renames.
 
 ### 🎨 CyberNoir UI & Feature-Rich Dashboard Suite
 * **Dynamic Vehicle Database Editor:** Integrated an on-screen profile manager (`EditorGUI.ahk`) directly into the main interface layout. Users can now natively register, update, or clear out personalized car profiles on-the-fly, mapping out distinct layout execution scripts, financial overhead bounds, and unlock matrices.
-* **Input Integrity Guardrails:** Embedded rigorous data verification layers into the profile creator. The script enforces absolute rules—ensuring vehicle stats digits match a strict 12-character footprint, point distribution thresholds evaluate above 1, target coordinate vectors follow structured regex boundaries, and protected primary system configurations stay safe from accidental removal.
 * **Dynamic Theme Engine:** Switch seamlessly between a customized, cyber-styled **Dark Mode** and **Light Mode** workspace layout on-the-fly. The manual theme selector toggle is cleanly located within the top-left window header utility space.
 * **Execution Speed Control (Analog Delay Multiplier):** Features a highly adjustable analog slider supporting expanded **0.25x to 4.0x** scaling based natively on multiplier array bounds. This allows users to dynamically expand or contract script menu delay buffers and pixel detection timeouts to match their storage drive speed (SSD vs. HDD) and system throughput performance.
 * **DPI-Safe Interface & Drag Logic:** Replaced native OS configuration layouts with a streamlined asynchronous thread drag loop (`DragActiveGui`) to eliminate clipping, rendering offsets, or interface stuttering caused by high Windows display scaling.
@@ -150,10 +150,11 @@ The core macro pipeline is divided into independent operational modules that can
 
 | Keybind | Action Performed |
 | --- | --- |
-| `\` | Start standalone **Race Loop** |
-| `[` | Start standalone **Buy Loop** |
-| `]` | Start standalone **Unlock Loop** |
 | `/` | Initialize Continuous **Full Automation Loop** (`FULL LOOP`) |
+| `\` | Start standalone **Race Mode** |
+| `[` | Start standalone **Buy Mode** |
+| `]` | Start standalone **Unlock Mode** |
+| `=` | Start standalone **Spin Mode** |
 | `` ` `` (Backtick) | **Pause / Unpause** active macro tracking states instantly |
 | `F5` | Toggle visual **Detection Zone Diagnostic Overlay** panels |
 | `F12` | Force a complete hard **Reload** of the application workspace modules |
@@ -285,7 +286,7 @@ When executing the **Unlock Mode** standalone macro sequence manually (Hotkey: `
   2. Press `X` to adjust your listing filter parameters, switch your sort layout structure to **Recently Added**, and confirm the layout.
   3. Enter your active vehicle collection grid view.
   4. **CRITICAL BASELINE STEP:** Use your directional arrow keys to **hover over and highlight the specific car slot you want the macro to start processing with—but DO NOT press Enter to select it.** Keep the cursor cleanly highlighting that specific car square, and then fire your standalone unlock script via your hotkey.
-  5. **REMINDER:** Choose only the first or second car in the row!!!
+  5. **REMINDER:** Choose only the second/middle car in the first column!!!
 
 <p align="center">
   <img width="2559" height="1439" alt="Unlock Mode Base Position" src="https://github.com/user-attachments/assets/d824e130-6672-4a3c-a7bd-94dc4f0155fb" />

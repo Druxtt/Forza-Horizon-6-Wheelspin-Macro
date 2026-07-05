@@ -3,7 +3,7 @@
 ; ║            Cyber Noir Edition           ║
 ; ╚═════════════════════════════════════════╝
 
-;@Ahk2Exe-SetVersion 1.9.2
+;@Ahk2Exe-SetVersion 1.9.3
 ;@Ahk2Exe-SetDescription MHI - FH6 Wheelspin Macro
 ;@Ahk2Exe-SetMainIcon assets\icon.ico
 
@@ -11,7 +11,7 @@
 ;  ENVIRONMENT & GAME SETTINGS
 ; ══════════════════════════════════════════════
 
-global CurrentVersion := "v1.9.2"
+global CurrentVersion := "v1.9.3"
 global RepoOwner      := "M-Haziq-Iqbal"
 global RepoName       := "Forza-Horizon-6-Wheelspin-Macro"
 
@@ -78,48 +78,48 @@ global DefaultProfiles := []   ; Holds the automatically collected default names
 global IsScriptStarting := true ; Track if the script is running its initial startup setup
 
 RegisterCar("Impreza 22B-STi", {
-    SkillPtsCost: 30,
     AltName: "1998 Subaru",
     StatsNum: 594970474057,
     BuyMfrPath: [["Up", 3], ["Right", 3]],
     BuyCarPath: [["Down", 1]],
     UnlockPath: [["Right", 1], ["Up", 3], ["Left", 1]],
+    SkillPtsCost: 30,
     UnlockSWheel: 1,
     UnlockWheel: 0,
     UnlockCredit: 0
 })
 
 RegisterCar("Revuelto", {
-    SkillPtsCost: 39,
     AltName: "2024 Lamborghini",
     StatsNum: 867299107749,
     BuyMfrPath: [["Down", 10], ["Right", 1]],
     BuyCarPath: [["Left", 1]],
     UnlockPath: [["Up", 3], ["Right", 2]],
+    SkillPtsCost: 39,
     UnlockSWheel: 1,
     UnlockWheel: 3,
     UnlockCredit: 0
 })
 
 RegisterCar("Viper GTS ACR", {
-    SkillPtsCost: 30,
     AltName: "1999 Dodge",
     StatsNum: 694952414050,
     BuyMfrPath: [["Down", 5], ["Right", 2]],
     BuyCarPath: [["Down", 1]],
     UnlockPath: [["Right", 1], ["Up", 3], ["Right", 1]],
+    SkillPtsCost: 30,
     UnlockSWheel: 0,
     UnlockWheel: 0,
     UnlockCredit: 85400
 })
 
 RegisterCar("#123 Mad Mike 808", {
-    SkillPtsCost: 21,
     AltName: "1974 Mazda",
     StatsNum: 725047495145,
     BuyMfrPath: [["Up", 10]],
     BuyCarPath: [["Down", 1], ["Left", 2]],  
     UnlockPath: [["Right", 2], ["Up", 3]],
+    SkillPtsCost: 21,
     UnlockSWheel: 1,
     UnlockWheel: 0,
     UnlockCredit: 0

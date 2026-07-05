@@ -109,7 +109,7 @@ UnlockLoop() {
                 ShowNotif("fail", "Reward Unlock", "Unable to scan Current Skill Points amount. `nManual input required.")
 
             if CheckAbort()
-                return           
+                return
 
             Process("Returning to Campaign Menu...")
             PressKey("Esc", 1500) ; Navigate to Upgrades Menu

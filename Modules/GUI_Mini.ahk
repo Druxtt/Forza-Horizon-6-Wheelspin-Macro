@@ -173,7 +173,7 @@ MiniStopMacro(ctrl) {
     global MasterMode, ActiveMode, PauseBtn
 
     if MasterMode
-        ToggleAll()
+        StartFullLoop()
     else
         switch ActiveMode {
             case "Race": StartRace()
@@ -190,7 +190,7 @@ MiniStopMacro(ctrl) {
 MiniInitStartMacro(ctrl) {
 
     ctrl.Opt("c22C55E")
-    ToggleAll()
+    StartFullLoop()
     ctrl.Opt("c94A3B8")
 }
 
