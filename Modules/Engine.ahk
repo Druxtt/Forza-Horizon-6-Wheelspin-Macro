@@ -227,12 +227,13 @@ UnlockTimerTick() {
 }
 
 spinTimerTick() {
-    global SpinRunSeconds, SpinRunTime_UI, cHighlight
+    global SpinRunSeconds, SpinRunTime_UI, MiniSpinRunTime_UI, cHighlight
     SpinRunSeconds++
     mins := SpinRunSeconds // 60
     secs := Mod(SpinRunSeconds, 60)
 
     SpinRunTime_UI.Value := Format("{:02d}:{:02d}", mins, secs)
+    MiniSpinRunTime_UI.Value := Format("{:02d}:{:02d}", mins, secs)
 }
 
 ; ══════════════════════════════════════════════
@@ -582,16 +583,16 @@ BGColorCompare(color1, color2, variation) {
 PressKey(key, delay := 500) {
     global Key_UI, MiniKey_UI, cHighlight, cIdle, KeyMultiplier, GameTitle, GameHwnd, GameExe
 
-    switch key {
-        case "Down":      displayname := "↓"
-        case "Up":        displayname := "↑"
-        case "Left":      displayname := "←"
-        case "Right":     displayname := "→"
-        case "Enter":     displayname := "Enter ↵" 
-        case "Backspace": displayname := "⬅ Backspace"
-        case "w down", "w up": displayname := "W"
-        case "s down", "s up": displayname := "S"
-        default:          displayname := key
+    switch StrLower(key) {
+        case "down":            displayname := "↓"
+        case "up":              displayname := "↑"
+        case "left":            displayname := "←"
+        case "right":           displayname := "→"
+        case "enter":           displayname := "Enter ↵" 
+        case "backspace":       displayname := "⬅ Backspace"
+        case "w down", "w up":  displayname := "W"
+        case "s down", "s up":  displayname := "S"
+        default:                displayname := key
     }
 
     if IsSet(Key_UI) && Key_UI
@@ -1077,4 +1078,65 @@ WindowChangedEvent(wParam, lParam, *) {
             PostMessage(0x0086, 1, 0, , "ahk_id " gameHwnd)      ; WM_NCACTIVATE
         }
     }
+}
+
+ScanMenu(timeoutDuration := 5000) {
+    global ActiveMode, MasterMode, MasterStart
+    PressKey("up", 1000) ; Stop idling
+
+    StartTime := A_TickCount
+    Process("Scanning for Menus...")
+
+    menuProfiles := [
+        { x: 0.027, y: 0.190, w: 0.221, h: 0.091, menu: "Home Menu", 
+          keywords: Map("Campaign", "Home Menu - Campaign", 
+                        "Buy & Sell", "Home Menu - Buy & Sell", 
+                        "Cars", "Home Menu - Cars", 
+                        "Custom", "Home Menu - Customizable Garage", 
+                        "Character", "Home Menu - Character") },
+
+        { x: 0.130, y: 0.508, w: 0.137, h: 0.105, menu: "Free Roam Menu", 
+          keywords: Map("Collection Journal", "Free Roam Menu - Campaign", 
+                        "Buy New & Used", "Free Roam Menu - Cars", 
+                        "Super Wheelspin", "Free Roam Menu - My Horizon", 
+                        "Convoy", "Free Roam Menu - Online", 
+                        "Estates", "Free Roam Menu - Creative Hub") },
+
+        { x: 0.730, y: 0.240, w: 0.134, h: 0.063, menu: "Free Roam Menu", 
+          keywords: Map("Car Pass", "Free Roam Menu - Store") },
+
+        { x: 0.069, y: 0.933, w: 0.030, h: 0.025, menu: "Free Roam", 
+          keywords: Map("ANNA", "Free Roam") } ; Defaulted submenu to Free Roam here
+    ]
+
+    while (A_TickCount - StartTime <= timeoutDuration) {
+        for profile in menuProfiles {
+            ocrText := ScanOCR(profile.x, profile.y, profile.w, profile.h, 200)
+            
+            for keyword, subMenuValue in profile.keywords {
+                if InStr(ocrText, keyword) {
+                    ; Return both as an object
+                    return { menu: profile.menu, submenu: subMenuValue }
+                }
+            }
+        }
+        Sleep(50)
+    }
+
+    Process("Timeout Error...")
+    ShowNotif("warning", "EventLab Race", "Scanning timed out!")
+    ActiveMode := "", MasterMode := "", MasterStart := ""
+    return { menu: "", submenu: "" } ; Return empty object on timeout
+}
+
+EmergencyExit(LogDetails := "Unknown safety violation.") {
+    SoundBeep(400, 500)
+    MsgBox(
+        "CRITICAL SAFETY INTERCEPT!`n`n" 
+        LogDetails "`n`n"
+        "Script has been reset to IDLE state to protect your account.", 
+        "MHI Emergency System",
+        "IconX"
+    )
+    Reload() 
 }

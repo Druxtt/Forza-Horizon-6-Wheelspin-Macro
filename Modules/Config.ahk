@@ -130,6 +130,12 @@ IsScriptStarting := false
 _iniCar                 := ReadMacroIni("Settings", "Car", "")
 global SelectedCar      := _iniCar ? _iniCar : CarList[1]
 
+_iniSpinInFullMode      := ReadMacroIni("Settings", "SpinInFullLoop", "")
+global SpinInFullLoop   := _iniSpinInFullMode ? _iniSpinInFullMode : 0
+
+_iniSpinType            := ReadMacroIni("Settings", "SpinType", "")
+global SpinType         := _iniSpinType ? _iniSpinType : "SUPER"
+
 _iniSpinMode            := ReadMacroIni("Settings", "SpinMode", "")
 global SpinMode         := _iniSpinMode ? _iniSpinMode : "KEEP"
 

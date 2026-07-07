@@ -36,6 +36,15 @@ StartFullLoop() {
         if !MasterMode
             break
 
+        if SpinInFullLoop {
+            OpenSpinPanel()
+            StartSpin()
+            ActiveMode := ""
+            if !MasterMode
+                break
+            OnSpinClose()
+        }
+
         Process("Restarting Race...")
         LoopCount_In.Value -= 1
     }

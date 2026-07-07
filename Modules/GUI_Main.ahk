@@ -84,20 +84,6 @@ GetPalette() {
 }
 
 ; ══════════════════════════════════════════════
-;  TOGGLE BUTTON PAIR
-; ═════════════════════════════════════════════
-
-ToggleSpinMode(chosenValue, &targetVar, activeBtn, inactiveBtn, p) {
-    targetVar := chosenValue
-    activeBtn.Opt("Background" p["activeBg"])
-    inactiveBtn.Opt("Background" p["inactiveBg"])
-    activeBtn.Redraw()
-    inactiveBtn.Redraw()
-
-    WriteMacroIni("Settings", "SpinMode", targetVar)
-}
-
-; ══════════════════════════════════════════════
 ;  FONT HELPER
 ; ══════════════════════════════════════════════
 SetFixedFont(guiObj, pointSize, options := "", fontName := "Segoe UI") {
@@ -219,15 +205,15 @@ BuildMainGui(savedVals := "") {
     MainGUI.Add("Text", "x" Round(30*ScaleX) " yp+" Round(3*ScaleY) " w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Desired Skill Points")
 
     CarCount_In := MainGUI.Add("Edit", "x" Round(179*ScaleX) " y" Round(214*ScaleY) " w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], savedVals ? savedVals[3] : Floor(MaxPoints / CarData[SelectedCar].SkillPtsCost))
-    MainGUI.Add("Text", "x" Round(30*ScaleX) " yp+" Round(3*ScaleY) " w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Car Purchase")
+    MainGUI.Add("Text", "x" Round(30*ScaleX) " yp+" Round(3*ScaleY) " w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Car Amount")
 
     LoopCount_In := MainGUI.Add("Edit", "x" Round(179*ScaleX) " y" Round(240*ScaleY) " w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], savedVals ? savedVals[4] : 99)
     MainGUI.Add("Text", "x" Round(30*ScaleX) " yp+" Round(3*ScaleY) " w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Sequence Loop")
 
-    SkillPtsCount_In.OnEvent("Change", (ctrl, *) => UpdateSkillPts(ctrl))
-    SkillPtsCount_In.OnEvent("LoseFocus", (ctrl, *) => ValidateSkillPts(ctrl))
+    SkillPtsCount_In.OnEvent("Change", (ctrl, *) => UpdateSkillPtsCount(ctrl))
     SkillPtsWant_In.OnEvent("Change", (ctrl, *) => UpdateSkillPtsWant(ctrl))
-    SkillPtsWant_In.OnEvent("LoseFocus", (ctrl, *) => ValidateSkillPtsWant(ctrl))
+    CarCount_In.OnEvent("Change", (ctrl, *) => UpdateCarCount(ctrl))
+    LoopCount_In.OnEvent("Change", (ctrl, *) => UpdateLoopCount(ctrl))
 
     ; ── Cyber Car Dropdown & Database Controls ────
     SetFixedFont(MainGUI, 9, "bold")
@@ -547,89 +533,6 @@ BuildMainGui(savedVals := "") {
 }
 
 ; ══════════════════════════════════════════════
-;  POPOUT INTERFACE: SPIN MANAGEMENT PANEL
-; ══════════════════════════════════════════════
-OpenSpinPanel(*) {
-    global SpinGUI, SpinRunTime_UI, SpinOpenCount_UI, SpinLeftCount_UI, SpinLoop_In, SpinWants_In, MainGUI, ActiveMode, SpinMode
-    global ScaleX, ScaleY
-    
-    try {
-        if IsSet(SpinGUI) && SpinGUI && WinExist("ahk_id " SpinGUI.Hwnd) {
-            WinActivate("ahk_id " SpinGUI.Hwnd)
-            return
-        }
-    } catch {
-        ; Handle edge-case windowless errors
-    }
-
-    p := GetPalette()
-    SpinGUI := Gui("+AlwaysOnTop -MaximizeBox -DPIScale -Caption +Border", "MHI | SPIN MODULE")
-    SpinGUI.BackColor := p["bg"]
-
-    SetFixedFont(SpinGUI, 10, "bold")
-    SpinMin := SpinGUI.Add("Text", "x" Round(205*ScaleX) " y" Round(12*ScaleY) " w" Round(16*ScaleX) " h" Round(16*ScaleY) " Center BackgroundTrans c" p["textDim"], "─")
-    ; FIXED: Replaced non-existent internal method with safe native call
-    SpinMin.OnEvent("Click", (*) => WinMinimize(SpinGUI.Hwnd))
-
-    SpinX := SpinGUI.Add("Text", "x" Round(225*ScaleX) " y" Round(12*ScaleY) " w" Round(16*ScaleX) " h" Round(16*ScaleY) " Center BackgroundTrans c" p["textDim"], "✕")
-
-    OnSpinClose(*) {
-        global SpinGUI, ActiveMode
-        if (ActiveMode == "Spin") {
-            StartSpin()
-        }
-        SpinGUI.Destroy()
-        SpinGUI := 0
-    }
-    SpinX.OnEvent("Click", OnSpinClose)
-
-    ; ── Interface Content ──
-    SetFixedFont(SpinGUI, 12, "bold", "Light")
-    SpinGUI.Add("Text", "x0 y" Round(30*ScaleY) " w" Round(250*ScaleX) " Center c" p["accent"], "SPIN CONTROLLER")
-
-    SetFixedFont(SpinGUI, 9, "norm", "Light")
-    SpinLoop_In := SpinGUI.Add("Edit", "x" Round(170*ScaleX) " y+" Round(15*ScaleY) " w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], 99)
-    SpinGUI.Add("Text", "x" Round(20*ScaleX) " yp+" Round(3*ScaleY) " w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Spin Loop")
-        
-    SpinWants_In := SpinGUI.Add("Edit", "x" Round(170*ScaleX) " y+" Round(6*ScaleY) " w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], 99)
-    SpinGUI.Add("Text", "x" Round(20*ScaleX) " yp+" Round(3*ScaleY) " w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Desired Spins")
-
-    SpinGUI.Add("Text", "x" Round(5*ScaleX) " y+" Round(5*ScaleY) " w" Round(240*ScaleX) " Center BackgroundTrans c" p["divider"], "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    
-    SetFixedFont(SpinGUI, 9, "norm", "Light")
-    SpinGUI.Add("Text", "x" Round(20*ScaleX) " y+" Round(5*ScaleY) " w" Round(130*ScaleX) " c" p["textDim"], "🕓   Spin Runtime")
-    SpinRunTime_UI := SpinGUI.Add("Text", "x" Round(150*ScaleX) " yp w" Round(80*ScaleX) " Right c" p["text"], "00:00")
-
-    SpinGUI.Add("Text", "x" Round(20*ScaleX) " y+6 w" Round(130*ScaleX) " c" p["textDim"], "🎊   Spins Opened")
-    SpinOpenCount_UI := SpinGUI.Add("Text", "x" Round(150*ScaleX) " yp w" Round(80*ScaleX) " Right c" p["text"], "0")
-
-    SpinGUI.Add("Text", "x" Round(20*ScaleX) " y+6 w" Round(130*ScaleX) " c" p["textDim"], "🎁   Spins Remaining")
-    SpinLeftCount_UI := SpinGUI.Add("Text", "x" Round(150*ScaleX) " yp w" Round(80*ScaleX) " Right c" p["text"], "0")
-
-    SetFixedFont(SpinGUI, 9, "bold", "Semibold")
-    KeepBtnBG := SpinMode = "KEEP" ? p["activeBg"] : p["inactiveBg"]
-    SellBtnBG := SpinMode = "SELL" ? p["activeBg"] : p["inactiveBg"]
-    KeepBtn := SpinGUI.Add("Text", "x" Round(15*ScaleX) " y+16 w" Round(105*ScaleX) " h" Round(26*ScaleY) " Center 0x200 Background" KeepBtnBG " c" p["text"], "💾   KEEP")
-    SellBtn := SpinGUI.Add("Text", "x" Round(130*ScaleX) " yp w" Round(105*ScaleX) " h" Round(26*ScaleY) " Center 0x200 Background" SellBtnBG " c" p["text"], "🏷️   SELL")
-
-    KeepBtn.OnEvent("Click", (*) => ToggleSpinMode("KEEP", &SpinMode, KeepBtn, SellBtn, p))
-    SellBtn.OnEvent("Click", (*) => ToggleSpinMode("SELL", &SpinMode, SellBtn, KeepBtn, p))
-
-    SetFixedFont(SpinGUI, 10, "bold", "Semibold")
-    SpinBtn := SpinGUI.Add("Text", "x" Round(15*ScaleX) " y+10 w" Round(220*ScaleX) " h" Round(35*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🎲   RUN WHEELSPIN   =")
-    SpinBtn.OnEvent("Click", (*) => StartSpin())
-
-    sW := Round(250 * ScaleX)
-    sH := Round(290 * ScaleY)
-    
-    MainGUI.GetPos(&mX, &mY, &mW, &mH)
-    sX := mX + (mW // 2) - (sW // 2)
-    sY := mY + (mH // 2) - (sH // 2)
-    
-    SpinGUI.Show("x" sX " y" sY " w" sW " h" sH)
-}
-
-; ══════════════════════════════════════════════
 ;  BACKGROUND ASYNC WORKER LOOPS
 ; ══════════════════════════════════════════════
 DragSliderTimer() {
@@ -748,7 +651,6 @@ UpdateEventLab(ctrl, *) {
     CodeEventLab    := data.CodeEvent
     
     SkillPtsWant_In.Value := UpdateSkillPtsWant({Value: MaxPoints}, false)
-    CarCount_In.Value     := Floor(PointsTotal / CarData[SelectedCar].SkillPtsCost)
 
     WriteMacroIni("Settings", "EventLab", EventLab)
 }
@@ -765,7 +667,7 @@ UpdateReso(ctrl, *) {
 ;  UPDATE VALUE INPUT
 ; ══════════════════════════════════════════════
 
-UpdateSkillPts(ctrl, ManualInput:= true, *) {
+UpdateSkillPtsCount(ctrl, ManualInput:= true, *) {
     global TimeTotal, PointsTotal, CarCount_In, SkillPtsWant_In, AveragePoints, PointsGain, MaxPoints
     global PointsLabel_UI, TimeLabel_UI, CarsLabel_UI, SectorLabel_UI, ActiveMode, CustomSkillPts
     global CarData, SelectedCar
@@ -775,84 +677,138 @@ UpdateSkillPts(ctrl, ManualInput:= true, *) {
         ShowNotif("info", "EventLab Race", "Mode: Automatic Desired Skill Point.")
     }
 
-    value := ctrl.value
+    if ManualInput {
+        CustomSkillPts := true
+        ShowNotif(
+            "info", "Current Skill Points Input", 
+            "Mode: Automatic Desired Skill Points." 
+            "`nPlease edit Desired Skill Points to revert."
+        )
+        global CustomCarCount := true
+    }
+
+
+    value := ctrl.Value
     value := (value = "") ? 0 : Min(999, value)
+
+    ; FIX: Strict string check detects leading zeros ("02" != "2")
+    if !(ctrl.Value == String(value)) {
+        ctrl.Value := value
+        
+        ; Only force caret to the end if the text was actually modified/cleaned up
+        len := StrLen(String(value))
+        SendMessage(0xB1, len, len, ctrl.Hwnd)  ; EM_SETSEL
+    }
     
+    ; Update other UI
     SkillPtsWant_In.Value := (999 - value > MaxPoints) ? MaxPoints : 999 - value
 
     PointsGain  := GetMinScore(SkillPtsWant_In.Value)    
     PointsTotal := Min(PointsGain + value, 999)
 
     PointsLabel_UI.Value := PointsGain
-    SectorLabel_UI.Value := Ceil(PointsGain / AveragePoints)
+    SectorLabel_UI.Value := (AveragePoints > 0) ? Ceil(PointsGain / AveragePoints) : 0
         
-    CarCount_In.Value    := Floor(PointsTotal / CarData[SelectedCar].SkillPtsCost)
+    carCost := CarData[SelectedCar].SkillPtsCost
+    CarCount_In.Value    := (carCost > 0) ? Floor(PointsTotal / carCost) : 0
     CarsLabel_UI.Value   := CarCount_In.Value
 
     TimeTotal            := CalcTimeRace(SkillPtsWant_In.Value) + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
-    TimeLabel_UI.Value   := Format("{:02}:{:02}", Floor(TimeTotal), Round((TimeTotal - Floor(TimeTotal)) * 60))
+    
+    TotalSubUnits        := Round(TimeTotal * 60)
+    MainUnit             := Floor(TotalSubUnits / 60)
+    SubUnit              := Mod(TotalSubUnits, 60)
+    TimeLabel_UI.Value   := Format("{:02}:{:02}", MainUnit, SubUnit)
 
     return value
 }
-    
+
 UpdateSkillPtsWant(ctrl, ManualInput:= true, *) {
-    global TimeTotal, PointsTotal, CarCount_In, SkillPtsCount_In, AveragePoints, PointsGain, MaxPoints
+    global TimeTotal, PointsTotal, CarCount_In, SkillPtsCount_In, SkillPtsWant_In, AveragePoints, PointsGain, MaxPoints
     global PointsLabel_UI, TimeLabel_UI, CarsLabel_UI, PointsCount_UI, SectorLabel_UI, CustomSkillPts
     global CarData, SelectedCar
 
     if ManualInput {
         CustomSkillPts := true
-        ShowNotif("info", "EventLab Race", "Mode: Custom Desired Skill Point.")
+        ShowNotif(
+            "info", "Current Skill Points Input", 
+            "Mode: Custom Desired Skill Points." 
+            "`nPlease edit Current Skill Points to revert."
+        )
+        global CustomCarCount := true
     }
 
-    value := ctrl.value
-    
-    if (value = "") 
-        value := 0
-    else if (value + SkillPtsCount_In.Value > 999)
-        value := 999 - SkillPtsCount_In.Value
-    else if (value > MaxPoints)
-        value := MaxPoints
+    value := ctrl.Value
+    value := (value = "") ? 0 : value
+    value := Min(value, 999 - SkillPtsCount_In.Value)
+    value := Min(value, MaxPoints)
 
+    ; FIX: Strict string check detects leading zeros ("02" != "2")
+    if !(ctrl.Value == String(value)) {
+        ctrl.Value := value
+        
+        ; Only force caret to the end if the text was actually modified/cleaned up
+        len := StrLen(String(value))
+        SendMessage(0xB1, len, len, ctrl.Hwnd)  ; EM_SETSEL
+    }
+    
+    ; Update other UI
     PointsGain  := GetMinScore(value)
     PointsTotal := Min(PointsGain + SkillPtsCount_In.Value, 999)
 
     PointsLabel_UI.Value := PointsGain
-    SectorLabel_UI.Value := Ceil(PointsGain / AveragePoints)
+    SectorLabel_UI.Value := (AveragePoints > 0) ? Ceil(PointsGain / AveragePoints) : 0
     
-    CarCount_In.Value    := Floor(PointsTotal / CarData[SelectedCar].SkillPtsCost)
+    carCost := CarData[SelectedCar].SkillPtsCost
+    CarCount_In.Value    := (carCost > 0) ? Floor(PointsTotal / carCost) : 0
     CarsLabel_UI.Value   := CarCount_In.Value
 
     TimeTotal            := CalcTimeRace(value) + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
-    TimeLabel_UI.Value   := Format("{:02}:{:02}", Floor(TimeTotal), Round((TimeTotal - Floor(TimeTotal)) * 60))
+    
+    TotalSubUnits        := Round(TimeTotal * 60)
+    MainUnit             := Floor(TotalSubUnits / 60)
+    SubUnit              := Mod(TotalSubUnits, 60)
+    TimeLabel_UI.Value   := Format("{:02}:{:02}", MainUnit, SubUnit)
 
     return value
 }
 
-ValidateSkillPts(ctrl, *) {
-    global SkillPtsCount_In
-    value := ctrl.value
-    
-    if (value = "") 
-        value := 0
-    else if (value > 999)
-        value := 999
-    
-    ctrl.value := value
+UpdateCarCount(ctrl) {
+    global CarData, PointsTotal
+    ; global CustomCarCount := true
+    ; ShowNotif(
+    ;     "info", "Car Amount Input", 
+    ;     "Mode: Custom Car Amount." 
+    ;     "`nPlease edit Current/Desired Skill Points to revert."
+    ; )
+
+    data := CarData[SelectedCar]
+
+    value := ctrl.Value
+    value := Floor(PointsTotal / CarData[SelectedCar].SkillPtsCost)
+
+    ; FIX: Strict string check detects leading zeros ("02" != "2")
+    if !(ctrl.Value == String(value)) {
+        ctrl.Value := value
+        
+        ; Only force caret to the end if the text was actually modified/cleaned up
+        len := StrLen(String(value))
+        ; SendMessage(0xB1, len, len, ctrl.Hwnd)  ; EM_SETSEL
+    }
 }
 
-ValidateSkillPtsWant(ctrl, *) {
-    global SkillPtsCount_In, MaxPoints
-    value := ctrl.value
-    
-    if (value = "") 
-        value := 0
-    else if (value + SkillPtsCount_In.Value > 999)
-        value := 999 - SkillPtsCount_In.Value
-    else if (value > MaxPoints)
-        value := MaxPoints
-    
-    ctrl.value := value
+UpdateLoopCount(ctrl) {
+    value := ctrl.Value
+    value := (value = "") ? 0 : Min(value, 999)
+
+    ; FIX: Strict string check detects leading zeros ("02" != "2")
+    if !(ctrl.Value == String(value)) {
+        ctrl.Value := value
+        
+        ; Only force caret to the end if the text was actually modified/cleaned up
+        len := StrLen(String(value))
+        SendMessage(0xB1, len, len, ctrl.Hwnd)  ; EM_SETSEL
+    }
 }
 
 ; ==========================================

@@ -79,7 +79,6 @@ Select your preferred target car on the dashboard dropdown menu depending on you
 > If your game includes vehicles beyond the **Standard Edition** roster (such as **Premium Edition**, **Car Pass**, or other DLC), the vehicle order in the **Journal** may differ from the default layout.
 > **Buy Mode** relies on the default Standard Edition vehicle order. If your Journal layout is different, you will need to update the **car profile** by editing the **Manufacturer Path** and **Car Path** for the affected vehicle(s) to match your Journal layout. Failure to do so may cause Buy Mode to select the wrong vehicle.
 
-
 ---
 
 ## ✨ Key Features & Architecture
@@ -91,13 +90,15 @@ This automation utility balances low-level Windows API hooks with a highly refin
 * **Direct Memory Pixel Color Engine:** Refactored `WaitForPixel` and `GetPixelColor` subsystems to intercept graphics buffers directly from memory device contexts using `gdi32\GetPixel`. It translates native GDI BGR structures into an RGB conversion array utilizing native BGR-to-RGB color matrix transformation blocks.
 * **Precise Client Coordinate Calibration:** Refactored the calibration system to query canvas boundaries via `WinGetClientPos` instead of relying on standard application window properties (`WinGetPos`). This strips out inconsistent OS-level window borders and title bars, stabilizing background canvas evaluation tracking.
 * **Proactive Anti-Pause Window Spammer:** Intercepts specific focus activation signals—specifically checking for certain Windows Shell Hook event messages. If the game client loses focus, the macro instantly bypasses the game engine's default window-focus suspension loop by flooding the application thread with explicit activation directives before the game can register the defocus state and pause itself.
+* **Heuristic Menu Awareness Engine (`ScanMenu`):** Dynamically identifies active in-game navigation environments ("Home Menu", "Free Roam", "Free Roam Menu"). This replaces blind macro delays with responsive menu awareness, gracefully routing paths if the game gets knocked out of alignment.
 
 ### 🎨 CyberNoir UI & Feature-Rich Dashboard Suite
 * **Dynamic Vehicle Database Editor:** Integrated an on-screen profile manager (`EditorGUI.ahk`) directly into the main interface layout. Users can now natively register, update, or clear out personalized car profiles on-the-fly, mapping out distinct layout execution scripts, financial overhead bounds, and unlock matrices.
 * **Dynamic Theme Engine:** Switch seamlessly between a customized, cyber-styled **Dark Mode** and **Light Mode** workspace layout on-the-fly. The manual theme selector toggle is cleanly located within the top-left window header utility space.
 * **Execution Speed Control (Analog Delay Multiplier):** Features a highly adjustable analog slider supporting expanded **0.25x to 4.0x** scaling based natively on multiplier array bounds. This allows users to dynamically expand or contract script menu delay buffers and pixel detection timeouts to match their storage drive speed (SSD vs. HDD) and system throughput performance.
 * **DPI-Safe Interface & Drag Logic:** Replaced native OS configuration layouts with a streamlined asynchronous thread drag loop (`DragActiveGui`) to eliminate clipping, rendering offsets, or interface stuttering caused by high Windows display scaling.
-* **Responsive MiniGUI Overlay:** Minimizing the primary dashboard shrinks the environment into a highly responsive, floating overlay widget tracking runtime, key states, credits, and wheelspins. It features an optimized **2x2 alignment grid tree** to clean up overlapping elements alongside quick-access action toggles to trigger diagnostics, game locks, or environment resets.
+* **Strict Numeric Text Validation:** Integrated an explicit value-normalizer into text control edit fields. This intercepts text strings instantly, cleans out rogue characters/leading zeros, and recalculates associated progression values programmatically without displacing the blinking text-selection cursor caret.
+* **Responsive MiniGUI Overlay & Wheelspin Monitor:** Minimizing the primary dashboard shrinks the environment into a floating overlay tracking live stats. Upgraded with an adaptive **Section 4: WHEELSPINS** panel, the interface scales its physical boundaries automatically to provide real-time tracking for spin runtimes, openings, and remaining inventory queues.
 * **Interactive Share Code Footer:** Includes a click-to-copy integration built right into the GUI footer. Selecting your active track profile from the dropdown menu dynamically updates the footer text with the correct blueprint and tuning codes, copying them instantly to your clipboard for effortless in-game pasting.
 
 ### 📊 Telemetry, Safety, & Async Update Lifecycles
@@ -106,6 +107,7 @@ This automation utility balances low-level Windows API hooks with a highly refin
 * **Asynchronous GitHub Updater Engine:** Implements an integrated software update checker pipeline mapping into the GitHub Releases API. It evaluates live semantic version arrays, detects system architectures (x32/x64), streams data packages in the background, and dynamically invokes local PowerShell scripts to extract assets, cleanly overwrite running binaries, and reboot.
 * **Pre-Purchase OCR Verification Tripwire:** Integrates a real-time optical verification sweep (`ScanOCR`) directly before finalizing any transaction loop inside `Task_Buy.ahk`. This acts as a protective shield to guarantee the script never accidentally buys an unmapped vehicle profile or gets stuck on misaligned index entries.
 * **Accidental Deletion & Auction Interceptor:** Triggers a hard modal intercept, plays an audible system alarm, and kills the runtime loop instantly if a `"Remove Car From Garage"` text or a dangerous `"Create Auction"` prompt is caught by the background scanning thread.
+* **Automated Gift Delivery System:** Features an integrated gifting macro wrapper workflow (`GIFT` mode) that bypasses manual car duplication management by programmatically routing gift filters, confirming randomized recipient pools, and detecting successful deliveries via explicit OCR strings.
 * **Deterministic Math Models & Data Mapping:** Maps track metadata and vehicle configurations into explicit dictionary structures, allowing the pipeline to easily scale and adapt to custom records. Rather than relying on volatile runtime estimates, the program utilizes internal mathematical formulas based on empirical loading baselines to accurately project session completion times.
 * **Dual-Phase Validation Scans:** Captures an OCR area snapshot right **before a race initializes** to log your starting balance, and runs a mirror calculation check **immediately after the match finishes**. This calculates exact performance updates per sequence interval and verifies that network disconnects didn't drop your match rewards.
 * **Adaptive Progress Tracking:** Standardized the unlock readout display system to dynamically style status logs and text metrics based on the specific reward structures allocated to your active vehicle schema.
@@ -124,7 +126,7 @@ The core macro pipeline is divided into independent operational modules that can
 
 ### 🏁 Race Mode (Hotkey: `\`)
 * **Purpose:** Automates your skill point farming loops.
-* **Logic:** Automatically targets and launches the EventLab track positioned at the **very top of your Favorites list**. It drives using profile-specific telemetry parameters and handles loading state menus to avoid lockups.
+* **Logic:** Automatically maps contextual positioning via `ScanMenu()` checks, moves efficiently across menu pages directly to the **Creative Hub** dashboard tab, and loads your favored EventLab track positioned at the **very top of your Favorites list**.
 
 ### 🚗 Buy Mode (Hotkey: `[`)
 * **Purpose:** Automates volume vehicle purchasing from the Autoshow.
@@ -136,13 +138,13 @@ The core macro pipeline is divided into independent operational modules that can
 
 ### ♾️ Full Loop Automation (Hotkey: `/`)
 * **Purpose:** Fully unattended, continuous farming.
-* **Logic:** Continuously chains all three main modes together (**Race → Buy → Unlock → Repeat**) for your specified count of loops, safely managing your residual skill point offsets across full cycles.
+* **Logic:** Continuously chains all core operational modes together (**Race → Buy → Unlock → Repeat**) for your specified count of loops. Features dynamic inline checking for **Full Loop Spinning**; if enabled, the macro will spawn the embedded spin engine and automatically process accumulated wheelspins within the runtime cycle.
 
     🎥 [Watch the Full Loop Demonstration](https://www.youtube.com/watch?v=6ezhyNeIYko)
 
 ### 🎰 Spin Mode (Hotkey: `=`)
 * **Purpose:** Automatically burns through your backlog of accumulated wheelspins.
-* **Logic:** Designed to be activated while hovering over your wheelspin tiles inside the game's **My Horizon** pause menu. It logs live reward statistics and respects your GUI toggle settings to automatically **KEEP** new prize vehicles or **SELL** duplicates for cash.
+* **Logic:** Designed to be activated while hovering over your wheelspin tiles inside the game's **My Horizon** pause menu. Leverages layout safety toggles to selectively **KEEP** prizes, **SELL** duplicates for instant liquidation, or deploy automated **GIFT** routing trees to hand off vehicles efficiently.
 
 ---
 
@@ -320,7 +322,7 @@ The upper portion of the **Input** tab allows you to define processing boundarie
 
 * **Current Skill Points:** Displays or allows manual override entry for your active vehicle mastery balance.
 * **Desired Skill Points:** Sets your ultimate resource ceiling target (e.g., `980`). Once reached, the automation engine cleanly finishes its active cycle and transitions out of racing states.
-* **Car Purchase:** Specifies the exact volumetric block size of inventory assets to purchase in bulk during a single standalone "Buy" routine loop.
+* **Car Amount:** Specifies the exact volumetric block size of inventory assets to purchase in bulk during a single standalone "Buy" routine loop.
 * **Sequence Loop:** Sets the total absolute iteration count for continuous automated cycles when running multi-stage loops.
 
 #### 2. Vehicle Selection & Dynamic Vehicle Database Editor Guide
@@ -402,10 +404,14 @@ The primary control buttons launch individual automation modes or initialize the
 
 Clicking the purple interface trigger transforms the center of the dashboard into an isolated bulk opening terminal.
 
-* **Spin Loop Input Box:** The number of wheelspins that will be opened before returning to free roam to avoid inactivity warning.
-* **Desired Spins Input Box:** The number of total wheelspins throughout the whole process that will opened before ending the mode.
+* **Spins Count Input Box:** Sets the targeted inventory allocation volume to execute before concluding activities.
+* **Full Loop Execution Toggle:** Interactive field overlay (`▰ FULL LOOP: INCLUDE` / `▱ FULL LOOP: EXCLUDE`) allowing you to link wheelspin routines directly inside ongoing Full Loop cycles automatically.
+* **Spin Type Selection Track:** Dedicated layout selectors (`✨ SUPER` / `🎫 REGULAR`) to accurately adjust menu calibration to match your targeted pool.
 * **Live Teleview Readouts:** Tracks real-time session statistics including total **Spin Runtime**, total **Spins Opened**, and **Spins Remaining** in the active backlog queue.
-* **KEEP / SELL Optimization Buttons:** Sets the structural rule engine for duplicate prize car drops. Choosing **SELL** auto-converts duplicates back to liquid in-game credits instantly, while **KEEP** passes them into your garage structure.
+* **KEEP / GIFT / SELL Optimization Toggles:** Multi-tiered rule management engine for duplicate or unwanted prize drops:
+  * **KEEP:** Drops item updates directly into your main garage framework.
+  * **GIFT:** Activates the structural automated gifting tree to offload duplicate vehicles seamlessly.
+  * **SELL:** Auto-converts duplicates back to liquid in-game credits instantly.
 * **RUN WHEELSPIN (`=`):** Fires the automated hardware routine to continuously clear out your accumulated wheelspin cache.
 
 #### 5. Delay Engine Calibration

@@ -9,7 +9,7 @@
 BuildMiniGui() {
 
     Global
-    Global RaceControls := [], BuyControls := [], UnlockControls := []
+    Global RaceControls := [], BuyControls := [], UnlockControls := [], SpinControls := []
     global previewGui := ""
 
     MiniGui := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale")
@@ -109,6 +109,20 @@ BuildMiniGui() {
 
     UnlockControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "💲  Credits Earned"))
     UnlockControls.Push(MiniCreditCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(145*ScaleX) " yp w" Round(70*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0 CR"))
+
+    ; --- ADAPTIVE SECTION 4: WHEELSPINS ---
+    MiniGui.SetFont("s" (7 * FontScale) " bold c566273", "Segoe UI")
+    SpinControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y" StartY " w" Round(190*ScaleX) " h" Round(12*ScaleY) " BackgroundTrans c00D2FF", "◼ WHEELSPINS"))
+
+    MiniGui.SetFont("s" (9 * FontScale) " norm c8A99AD", "Segoe UI")
+    SpinControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(6*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🕓  Spin Runtime"))
+    SpinControls.Push(MiniSpinRunTime_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "00:00"))
+
+    SpinControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🎊  Spins Opened"))
+    SpinControls.Push(MiniSpinOpenCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0"))
+
+    SpinControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🎁  Spins Remaining"))
+    SpinControls.Push(MiniSpinLeftCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(145*ScaleX) " yp w" Round(70*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0"))
 }
 
 ; ══════════════════════════════════════════════
@@ -116,13 +130,15 @@ BuildMiniGui() {
 ; ══════════════════════════════════════════════
 UpdateMiniWidgetMode(activeMode) {
     global CurrentWidgetHeight, LeftAccentBar, MiniGui, ScaleY
-    global RaceControls, BuyControls, UnlockControls
+    global RaceControls, BuyControls, UnlockControls, SpinControls
     
     for ctrl in RaceControls
         ctrl.Visible := false
     for ctrl in BuyControls
         ctrl.Visible := false
     for ctrl in UnlockControls
+        ctrl.Visible := false
+    for ctrl in SpinControls
         ctrl.Visible := false
 
     switch StrLower(activeMode) {
@@ -140,6 +156,11 @@ UpdateMiniWidgetMode(activeMode) {
             for ctrl in UnlockControls
                 ctrl.Visible := true
             targetHeight := Round(215 * ScaleY)
+
+        case "spin":
+            for ctrl in SpinControls
+                ctrl.Visible := true
+            targetHeight := Round(195 * ScaleY)
             
         default:
             targetHeight := Round(100 * ScaleY)

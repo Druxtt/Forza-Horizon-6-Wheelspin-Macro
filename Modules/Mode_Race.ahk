@@ -58,36 +58,24 @@ RaceLoop() {
 
     While (ActiveMode = "Race") {
         RaceStart := true
-        
-        PressKey("up") ; Stop idling
-        Sleep(1000)
-        PressKey("Esc") ; Return to Free Roam
 
-        if !WaitForPixel("Returning to Free Roam...", 0.137, 0.950, "0xFFFFFF", , 20000, 1000) {
-            Process("Sync Error: Unable to return to Free Roam!")
-            break
-        }
+        Process("Scanning Menu...")
+        RaceNav("EventLab Race")
 
         if CheckAbort()
             break
-            
-        Process("Navigating Menu...")
-        PressKey("Esc", 1000) ; Open Menu
-        PressKey("PgDn", 100) ; Navigate to Cars Menu
 
         Process("Scanning Skill Points")
-        ; SkillPtsRaceScan(0.283, 0.708, 0.060, 0.041)
         SkillPtsRaceScan(0.280, 0.698, (0.437-0.280), (0.756-0.698))
 
         if CheckAbort()
             break
 
-        Process("Navigating to EventLab Menu")
-        Loop 2
-            PressKey("PgDn", 100) ; Navigate to EventLab Menu
-        PressKey("PgDn")
+        Process("Navigating to Creative Hub Menu")
+        Loop 3
+            PressKey("PgDn", 100) ; Navigate to Creative Hub  Menu
 
-        Process("Opening EventLab Menu...")
+        Process("Opening EventLab Menu...", 500)
         PressKey("Enter", 1000) ; Select EventLab
         PressKey("Enter", 3000) ; Select Play Event
 
@@ -370,4 +358,59 @@ SkillPtsRaceScan(ratioX, ratioY, ratioW, ratioH, waitTime:= 1000) {
     }
 
     return points
+}
+
+RaceNav(NotifTitle) {
+    Scanned := ScanMenu()
+
+    ShowNotif("info", NotifTitle, "Navigating to Cars Menu...")
+
+    ; 1. Safety Check: Handle timeout immediately
+    if (Scanned.menu == "") {
+        Process("Navigation aborted: Menu could not be identified.")
+        return 
+    }
+
+    ; 2. Define page movements needed to reach "Cars" from any tab
+    FreeRoamNav := Map(
+        "Free Roam Menu - Campaign",     { key: "PgDn", count: 1 },
+        "Free Roam Menu - Cars",         { key: "",     count: 0 },
+        "Free Roam Menu - My Horizon",   { key: "PgUp", count: 1 },
+        "Free Roam Menu - Online",       { key: "PgUp", count: 2 },
+        "Free Roam Menu - Creative Hub", { key: "PgUp", count: 3 },
+        "Free Roam Menu - Store",        { key: "PgUp", count: 4 }
+    )
+
+    ; 3. State Normalization (Get everything into the Free Roam Menu state)
+    switch Scanned.menu {
+        case "Home Menu":
+            Process("Navigating to Free Roam...")
+            ShowNotif("info", NotifTitle, "Home Menu detected. `nReturning to free roam...")
+            PressKey("Esc") ; Return to Free Roam
+            
+            WaitForPixel("Returning to Free Roam...", 0.137, 0.950, "0xFFFFFF", , 20000, 1000)
+            
+            PressKey("Esc", 1000) ; Open Free Roam Menu (Lands on default Campaign tab)
+            Scanned.submenu := "Free Roam Menu - Campaign"
+
+        case "Free Roam":
+            Process("Navigating to Free Roam Menu...")
+            ShowNotif("info", NotifTitle, "Free Roam detected! `nNavigating to Free Roam Menu...")
+            PressKey("Esc", 1000) ; Open Free Roam Menu (Lands on default Campaign tab)
+            Scanned.submenu := "Free Roam Menu - Campaign"
+            
+        case "Free Roam Menu":
+            ; Already in the menu structure; Scanned.submenu is already accurately set by ScanMenu()
+            ShowNotif("info", NotifTitle, "Free Roam Menu detected!")
+    }
+
+    ; 4. Unified Tab Navigation Execution
+    Process("Navigating to My Horizon Menu...")
+
+    if FreeRoamNav.Has(Scanned.submenu) {
+        nav := FreeRoamNav[Scanned.submenu]
+        Loop nav.count {
+            PressKey(nav.key, 100)
+        }
+    }
 }
