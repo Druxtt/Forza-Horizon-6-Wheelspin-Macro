@@ -83,6 +83,8 @@ GetPalette() {
     return p
 }
 
+global p := GetPalette()
+
 ; ══════════════════════════════════════════════
 ;  FONT HELPER
 ; ══════════════════════════════════════════════
@@ -102,15 +104,15 @@ SetFixedFont(guiObj, pointSize, options := "", fontName := "Segoe UI") {
 ;  THEME TOGGLE
 ; ══════════════════════════════════════════════
 ToggleTheme() {
-    global DarkMode, MainGUI, SkillPtsCount_In, SkillPtsWant_In, CarCount_In, ActiveMode, LoopCount_In
-    global SpinGUI 
+    ; Added ', p' to the global declarations here
+    global DarkMode, SpinGUI, MainGUI, p
+    global ActiveMode, SkillPtsCount_In, SkillPtsWant_In, CarCount_In, LoopCount_In
     
     saved := [SkillPtsCount_In.Value, SkillPtsWant_In.Value, CarCount_In.Value, LoopCount_In.Value]
 
     if ActiveMode {
         ActiveMode  := ""
         MasterMode  := ""
-        MasterStart := ""
         Sleep(1250)
     }
 
@@ -126,6 +128,7 @@ ToggleTheme() {
     }
 
     DarkMode := !DarkMode
+    p := GetPalette() ; ◄─ REFRESH PALETTE DICTIONARY HERE WITH NEW COLORS
     MainGUI.Destroy()
     BuildMainGui(saved)
     
@@ -140,89 +143,192 @@ ToggleTheme() {
 ;  INTERFACE GENERATION ENGINE
 ; ══════════════════════════════════════════════
 BuildMainGui(savedVals := "") {
-    ; Elevates all internal assignments to global scope automatically
-    global 
-    global CarData, SelectedCar
+    ; Explicitly scoped globals for structural integrity and layout scaling
+    Global MainGUI, TabControl, ThemeBtn, CustomMin, CustomX, StatusText
+    Global SkillPtsCount_In, SkillPtsWant_In, LoopCount_In, CarCount_In
+    Global CarSelect_UI, AddCarBtn, EditCarBtn, RadioRace, RadioBuy, RadioUnlock
+    Global AllBtn, RaceBtn, BuyBtn, UnlockBtn, OpenSpinWindowBtn
+    Global PointsLabel_UI, SectorLabel_UI, TimeLabel_UI, CarsLabel_UI
+    Global RaceRunTime_UI, PointsCount_UI, SectorCount_UI, BuyRunTime_UI
+    Global CarCount_UI, UnlockRunTime_UI, SWheelCount_UI, WheelCount_UI, CreditCount_UI
+    Global Key_UI, Process_UI, TotalRunTime_UI, EventLabSelect_UI
+    Global CodeTune_UI, CodeEventLab_UI, ToggleBtn, ResoSelect_UI
+    Global BrowseBtn, LaunchBtn, SpecialKCheck_UI, UpdateLink
+    Global ScaleX, ScaleY, DarkMode, ActiveMode, StartLoopMode
+    Global CarList, SelectedCar, CarCount, EventLabList, EventLab
+    Global PointsGain, PointsTotal, TimeTotal, ResoList, SelectedReso
+    Global GameExe, CodeTune, CodeEventLab
 
-    p          := GetPalette()
-    cActive    := p["cActive"]
-    cHighlight := p["cHighlight"]
-    cIdle      := p["cIdle"]
-    cTextDim   := p["cTextDim"]
-    cPaused    := p["cPaused"]
-    cStat      := ActiveMode ? p["accent"] : p["textDim"]
-    sLabel     := ActiveMode ? "⬤   Running..." : "⬤   Stopped"
+    ; 1. Environment & Theme Matrix Resolution
+    global cStat      := ActiveMode ? p["accent"] : p["textDim"]
+    global sLabel     := ActiveMode ? "⬤   Running..." : "⬤   Stopped"
+    tabW       := Round(260 * ScaleX)
 
-    ; ── Window Container ──
+    ; 2. Frame Container Instantiation
     MainGUI := Gui("+AlwaysOnTop -MaximizeBox -DPIScale -Caption +Border", "MHI | FH6 MACRO")
     MainGUI.BackColor := p["bg"]
 
-    ; ── Top-Left Header Window Utility ─────────
-    SetFixedFont(MainGUI, 10, "norm") ; Slightly larger icon fits nicely at the top
+    ; 3. Structural Segment Compositions
+    _AddHeader()
+    
+    ; Establish Tab Framework Control Engine
+    TabControl := MainGUI.Add("Tab2", "x" Round(5*ScaleX) " y+15 w" tabW " +Buttons +0x400 c" p["accent"], ["📥 Inputs", "📊 Stats"])
+    SendMessage(0x1329, 0, Floor((tabW - 12) / 2) | (Round(26 * ScaleY) << 16), TabControl)
+
+    ; 1. RENDER TAB CONTENTS (Instantiates controls, but does not hardcode global divider)
+    _AddInputTab(savedVals)
+    _AddStatsTab()
+    
+    ; 2. DYNAMIC HEIGHT RESOLUTION ENGINE
+    ; Determine the maximum layout bounds between both tabs
+    TabControl.UseTab(1)
+    SpeedLabel_UI.GetPos(&InpX, &InpY, &InpW, &InpH)
+    Tab1Bottom := InpY + InpH + Round(16 * ScaleY) ; Bottom boundary of Tab 1
+
+    TabControl.UseTab(2)
+    CreditCount_UI.GetPos(&StX, &StY, &StW, &StH)
+    Tab2Bottom := StY + StH + Round(16 * ScaleY)   ; Bottom boundary of Tab 2
+
+    ; Compute the absolute maximum boundary point
+    MaxTabHeight := Max(Tab1Bottom, Tab2Bottom)
+    
+    ; 3. COMPENSATE & VERTICALLY CENTER CONTENT IN TAB 2
+    if (Tab1Bottom > Tab2Bottom) {
+        ; Calculate missing whitespace height inside Tab 2
+        VerticalOffset := (Tab1Bottom - Tab2Bottom) // 2
+        
+        ; Push Tab 2 elements down down cleanly to center them perfectly matching Tab 1
+        ; (Targets the first rendered text control inside Tab 2)
+        StatsHeader_UI.Move(, StatsHeaderOrigY + VerticalOffset)
+        
+        ; Re-align all subsequent children metrics relatively to the header shift
+        _RepositionStatsControls(VerticalOffset)
+    }
+
+    ; Clear Tab contextual scope to bind shared global elements underneath
+    TabControl.UseTab()
+
+    ; 4. RENDER CONTEXTUAL FRAME DIVIDER ACCORDING TO MAX HEIGHT
+    SetFixedFont(MainGUI, 9, "bold", "Semibold")
+    MainGUI.Add("Text", "x" Round(14*ScaleX) " y" MaxTabHeight + Round(10*ScaleX) " w" Round(242*ScaleX) " Center BackgroundTrans c" p["divider"], "___________:━━━━━━━━━━━━━━━━:___________")
+
+    ; Build Shared Controls and Dashboard Panels (Rendered below our dynamic divider)
+    _AddSharedDashboard(MaxTabHeight + 20)
+    OptionsControls := _AddCollapsibleOptions()
+    FooterControls  := _AddFooterLayout()
+
+    ; 4. Native Layout Compilation & Collapsible Animation Offsets
+    MainGUI.Show("w" Round(270*ScaleX) " Hide")
+    ToggleBtn.GetPos(, &tY, , &tH)
+    FooterControls[1].GetPos(, &fY) ; Targeting F_Divider
+    shiftY := fY - (tY + tH + Round(15*ScaleY))
+    
+    footerOrigY := []
+    for ctrl in FooterControls {
+        ctrl.GetPos(, &cY)
+        footerOrigY.Push(cY)
+    }
+
+    MainGUI.GetPos(,, &w, &expandedH)
+    compactH := expandedH - shiftY
+
+    ; 5. Define Contextual Local Toggling Function
+    _OnOptionsToggle(btnObj, *) {
+        static isOpen := false
+        isOpen := !isOpen
+        for ctrl in OptionsControls
+            ctrl.Visible := isOpen
+        for i, ctrl in FooterControls
+            ctrl.Move(, isOpen ? footerOrigY[i] : (footerOrigY[i] - shiftY))
+        MainGUI.Move(,,, isOpen ? expandedH : compactH)
+        btnObj.Opt("Background" (isOpen ? p["activeBg"] : p["btnBg2"]))
+        btnObj.Text := isOpen ? "⚙️   OPTIONS   ⏶" : "⚙️   OPTIONS   ⏷"
+        btnObj.Redraw()
+    }
+
+    ; Bind and Initializing Starting Compact Sizing
+    ToggleBtn.OnEvent("Click", _OnOptionsToggle)
+    for ctrl in OptionsControls
+        ctrl.Visible := false
+    for i, ctrl in FooterControls
+        ctrl.Move(, footerOrigY[i] - shiftY)
+
+    ; Window Runtime Assignments
+    MainGUI.OnEvent("Close", (*) => ExitApp())
+    MainGUI.OnEvent("Size", MainGUI_SizeChange)
+    MainGUI.Move(MonLeft + MonWidth - w - Round(35*ScaleX), MonTop + Round(35*ScaleX), w, compactH)
+    MainGUI.Show()
+}
+
+; ══════════════════════════════════════════════
+;  UI STRUCTURAL SUB-COMPONENTS
+; ══════════════════════════════════════════════
+
+_AddHeader() {
+    Global MainGUI, ThemeBtn, CustomMin, CustomX, StatusText, ScaleX, ScaleY, DarkMode
+    Global Key_UI, Process_UI, TotalRunTime_UI
+    
+    SetFixedFont(MainGUI, 10, "norm")
     ThemeBtn := MainGUI.Add("Text", "x" Round(12*ScaleX) " y" Round(12*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center 0x200 Background" p["btnBg2"] " c" p["btnText2"], DarkMode ? "☀" : "🌙")
     ThemeBtn.OnEvent("Click", (*) => ToggleTheme())
 
-    ; ── Custom Window Controls ──
     SetFixedFont(MainGUI, 10, "bold")
     CustomMin := MainGUI.Add("Text", "x" Round(225*ScaleX) " y" Round(12*ScaleY) " w" Round(16*ScaleX) " h" Round(16*ScaleY) " Center BackgroundTrans c" p["textDim"], "─")
-    ; FIXED: Replaced non-existent internal .Minimize() method with safe Win API control
     CustomMin.OnEvent("Click", (*) => WinMinimize(MainGUI.Hwnd))
 
     CustomX := MainGUI.Add("Text", "x" Round(245*ScaleX) " y" Round(12*ScaleY) " w" Round(16*ScaleX) " h" Round(16*ScaleY) " Center BackgroundTrans c" p["textDim"], "✕")
     CustomX.OnEvent("Click", (*) => ExitApp())
 
-    ; ── Header Layout ──
     SetFixedFont(MainGUI, 14, "bold", "Light")
     MainGUI.Add("Text", "x0 y" Round(30*ScaleY) " w" Round(270*ScaleX) " Center BackgroundTrans c" p["accent"], "WHEELSPIN MACRO")
     SetFixedFont(MainGUI, 7, "norm")
     MainGUI.Add("Text", "x0 y+" Round(1*ScaleY) " w" Round(270*ScaleX) " Center BackgroundTrans c" p["textDim"], "FORZA HORIZON 6   ✦   AFK FARM")
 
-    ; ── Status Layout ──
     SetFixedFont(MainGUI, 10, "bold", "Semibold")
     StatusText := MainGUI.Add("Text", "x0 y+" Round(10*ScaleY) " w" Round(270*ScaleX) " Center BackgroundTrans c" cStat, sLabel)
 
-    ; ── Tab Control Engine ──
-    tabW := Round(260 * ScaleX)
-    tabH := Round(485 * ScaleY) 
-    TabControl := MainGUI.Add("Tab2", "x" Round(5*ScaleX) " y+" Round(15*ScaleY) " w" tabW " h" tabH " +Buttons +0x400 c" p["accent"], ["Input", "Stats"])
-    
-    itemW := Floor((tabW - 12) / 2)
-    itemH := Round(26 * ScaleY)
-    SendMessage(0x1329, 0, itemW | (itemH << 16), TabControl)
-
-    ; ══════════════════════════════════════════
-    ;  TAB 1 — INPUT
-    ; ══════════════════════════════════════════
-    TabControl.UseTab(1)
-    MainGUI.Add("Text", "x0 y+" Round(5*ScaleY) " w" Round(270*ScaleX) " h" Round(5*ScaleY) " BackgroundTrans c" p["footer"], "")
-
-    ; ── Numeric Inputs ──
+    ; ══════════════════════════════════════════════
+    ;  GLOBAL LIVE DASHBOARD 
+    ; ══════════════════════════════════════════════
     SetFixedFont(MainGUI, 9, "norm", "Light")
-    SkillPtsCount_In := MainGUI.Add("Edit", "x" Round(179*ScaleX) " y" Round(162*ScaleY) " w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], savedVals ? savedVals[1] : 0)
-    MainGUI.Add("Text", "x" Round(30*ScaleX) " yp+" Round(3*ScaleY) " w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Current Skill Points")
+    TotalRunTime_UI := MainGUI.Add("Text", "x0 y+8 w" Round(270*ScaleX) " Center BackgroundTrans c" p["cIdle"], "⏱   00:00")
+    Key_UI          := MainGUI.Add("Text", "x0 y+4 w" Round(270*ScaleX) " Center BackgroundTrans c" p["cIdle"], "⌨   [   ]")
+    Process_UI      := MainGUI.Add("Text", "x0 y+4 w" Round(270*ScaleX) " Center BackgroundTrans c" p["cIdle"], "⚙️   Waiting...")
+}
 
-    SkillPtsWant_In := MainGUI.Add("Edit", "x" Round(179*ScaleX) " y" Round(188*ScaleY) " w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], savedVals ? savedVals[2] : MaxPoints)
-    MainGUI.Add("Text", "x" Round(30*ScaleX) " yp+" Round(3*ScaleY) " w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Desired Skill Points")
+_AddInputTab(savedVals) {
+    Global MainGUI, TabControl, SkillPtsCount_In, SkillPtsWant_In, LoopCount_In, CarCount_In
+    Global SkillPtsCountText, SkillPtsWantText, LoopCountText, CarCountText
+    Global CarSelect_UI, AddCarBtn, EditCarBtn, RadioRace, RadioBuy, RadioUnlock
+    Global AllBtn, RaceBtn, BuyBtn, UnlockBtn, OpenSpinWindowBtn
+    Global ScaleX, ScaleY, SkillPtsCount, SkillPtsWant, LoopCount, CarCount, CarList, SelectedCar, StartLoopMode
 
-    CarCount_In := MainGUI.Add("Edit", "x" Round(179*ScaleX) " y" Round(214*ScaleY) " w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], savedVals ? savedVals[3] : Floor(MaxPoints / CarData[SelectedCar].SkillPtsCost))
-    MainGUI.Add("Text", "x" Round(30*ScaleX) " yp+" Round(3*ScaleY) " w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Car Amount")
+    TabControl.UseTab(1)
+    MainGUI.Add("Text", "x0 y+5 w" Round(270*ScaleX) " h5 BackgroundTrans c" p["footer"], "")
 
-    LoopCount_In := MainGUI.Add("Edit", "x" Round(179*ScaleX) " y" Round(240*ScaleY) " w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], savedVals ? savedVals[4] : 99)
-    MainGUI.Add("Text", "x" Round(30*ScaleX) " yp+" Round(3*ScaleY) " w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Sequence Loop")
+    SetFixedFont(MainGUI, 9, "norm", "Light")
+    SkillPtsCount_In := MainGUI.Add("Edit", "x" Round(179*ScaleX) " y+5 w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], savedVals ? savedVals[1] : SkillPtsCount)
+    SkillPtsCountText := MainGUI.Add("Text", "x" Round(30*ScaleX) " yp+3 w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "✦   Current Skill Points")
+
+    SkillPtsWant_In := MainGUI.Add("Edit", "x" Round(179*ScaleX) " yp+26 w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], savedVals ? savedVals[2] : SkillPtsWant)
+    SkillPtsWantText := MainGUI.Add("Text", "x" Round(30*ScaleX) " yp+3 w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Desired Skill Points")
+
+    LoopCount_In := MainGUI.Add("Edit", "x" Round(179*ScaleX) " yp+26 w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], savedVals ? savedVals[4] : LoopCount)
+    LoopCountText := MainGUI.Add("Text", "x" Round(30*ScaleX) " yp+3 w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Sequence Loop")
+
+    CarCount_In := MainGUI.Add("Edit", "x" Round(179*ScaleX) " yp+26 w" Round(63*ScaleX) " h" Round(20*ScaleY) " -E0x200 Center Number Background" p["editBg"] " c" p["text"], savedVals ? savedVals[3] : CarCount)
+    CarCountText := MainGUI.Add("Text", "x" Round(30*ScaleX) " yp+3 w" Round(155*ScaleX) " BackgroundTrans c" p["text"], "⟡   Car Amount")
 
     SkillPtsCount_In.OnEvent("Change", (ctrl, *) => UpdateSkillPtsCount(ctrl))
     SkillPtsWant_In.OnEvent("Change", (ctrl, *) => UpdateSkillPtsWant(ctrl))
-    CarCount_In.OnEvent("Change", (ctrl, *) => UpdateCarCount(ctrl))
     LoopCount_In.OnEvent("Change", (ctrl, *) => UpdateLoopCount(ctrl))
+    CarCount_In.OnEvent("Change", (ctrl, *) => UpdateCarCount(ctrl))
 
-    ; ── Cyber Car Dropdown & Database Controls ────
+    ; Profile Database Dropdown
     SetFixedFont(MainGUI, 9, "bold")
-    
-    ; Left Edge Action: Add Profile
-    AddCarBtn := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(20) " w" Round(25*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["btnBg2"] " c" p["btnText2"], "＋")
+    AddCarBtn := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+20 w" Round(25*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["btnBg2"] " c" p["btnText2"], "＋")
     AddCarBtn.OnEvent("Click", (*) => ShowCarEditorGUI("New"))
 
-    ; Car Selector Dropdown
     CarSelect_UI := MainGUI.Add("Text", "x" Round(45*ScaleX) " yp w" Round(180*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["editBg"] " c" p["text"])
     CarSelect_UI.DefineProp("Value", {
         get: (this) => this.HasOwnProp("ctrlIndex") ? this.ctrlIndex : 1,
@@ -239,142 +345,150 @@ BuildMainGui(savedVals := "") {
             break
         }
     }
-
     CarSelect_UI.Value := startupIndex
     CarSelect_UI.OnEvent("Click", ShowCarMenu)
 
-    ; Right Edge Action: Edit Profile
     EditCarBtn := MainGUI.Add("Text", "x" Round(231*ScaleX) " yp w" Round(25*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["btnBg2"] " c" p["btnText2"], "✎")
     EditCarBtn.OnEvent("Click", (*) => ShowCarEditorGUI("Edit"))
 
-    ; ── Action Buttons ──
+    ; ══════════════════════════════════════════════
+    ;  LOOP ENTRY POINT SELECTOR
+    ; ══════════════════════════════════════════════
     SetFixedFont(MainGUI, 9, "bold", "Semibold")
-    AllBtn    := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(20*ScaleY) " w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnMainBg"] " c" p["btnMainText"], "⟲   FULL LOOP     /")
-    RaceBtn   := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🏁   RACE      \")
-    BuyBtn    := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(119*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🚗   BUY     [")
-    UnlockBtn := MainGUI.Add("Text", "x" Round(137*ScaleX) " yp w" Round(119*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🛞   UNLOCK     ]")
-    OpenSpinWindowBtn := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg3"] " c" p["btnText3"], "🎰   OPEN SPIN INTERFACE")
+    MainGUI.Add("Text", "x" Round(14*ScaleX) " y+5 w" Round(242*ScaleX) " Center BackgroundTrans c" p["divider"], "___________:━━━━━━━━━━━━━━━━:___________")
 
-    RaceBtn.OnEvent("Click",    (*) => StartRace())
-    BuyBtn.OnEvent("Click",     (*) => StartBuy())
-    UnlockBtn.OnEvent("Click",  (*) => StartUnlock())
-    AllBtn.OnEvent("Click",     (*) => StartFullLoop())
+    SetFixedFont(MainGUI, 8, "bold", "Semibold")
+    MainGUI.Add("Text", "x" Round(14*ScaleX) " y+5 w" Round(242*ScaleX) " c" p["textDim"] " Center", "LOOP ENTRY POINT")
+    
+    segW := Round(78 * ScaleX)
+    segH := Round(24 * ScaleY)
+    
+    RadioRace   := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+6 w" segW " h" segH " Center 0x200 Background" p["btnBg2"] " c" p["text"], "🏁 RACE")
+    RadioBuy    := MainGUI.Add("Text", "x+4 yp w" segW " h" segH " Center 0x200 Background" p["btnBg2"] " c" p["textDim"], "🚗 BUY")
+    RadioUnlock := MainGUI.Add("Text", "x+4 yp w" segW " h" segH " Center 0x200 Background" p["btnBg2"] " c" p["textDim"], "🛞 UNLOCK")
+    
+    RadioRace.OnEvent("Click",   (obj, *) => _UpdateStartLoop(obj, "Race"))
+    RadioBuy.OnEvent("Click",    (obj, *) => _UpdateStartLoop(obj, "Buy"))
+    RadioUnlock.OnEvent("Click", (obj, *) => _UpdateStartLoop(obj, "Unlock"))
+    
+    if (StartLoopMode == "Buy")
+        _UpdateStartLoop(RadioBuy, "Buy")
+    else if (StartLoopMode == "Unlock")
+        _UpdateStartLoop(RadioUnlock, "Unlock")
+    else
+        _UpdateStartLoop(RadioRace, "Race")
+    
+    ; ══════════════════════════════════════════════
+    ;  ACTION MACRO TRIGGERS (PROPERLY HOOKED)
+    ; ══════════════════════════════════════════════
+    SetFixedFont(MainGUI, 9, "bold", "Semibold")
+    AllBtn := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+6 w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnMainBg"] " c" p["btnMainText"], "⟲     FULL LOOP     /")
+
+    MainGUI.Add("Text", "x" Round(14*ScaleX) " y+3 w" Round(242*ScaleX) " Center BackgroundTrans c" p["divider"], "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+    RaceBtn   := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+3 w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🏁     RACE     \")
+    BuyBtn    := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+6 w" Round(119*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🚗     BUY     [")
+    UnlockBtn := MainGUI.Add("Text", "x" Round(137*ScaleX) " yp w" Round(119*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg"] " c" p["btnText"], "🛞     UNLOCK     ]")
+    
+    OpenSpinWindowBtn := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+6 w" Round(242*ScaleX) " h" Round(32*ScaleY) " Center 0x200 Background" p["btnBg3"] " c" p["btnText3"], "🎰   OPEN SPIN INTERFACE")
+
+    AddCustomSpeedSlider(MainGUI)
+
+    ; CRITICAL FIX: Explicitly bind the Click events to their automation routines
+    AllBtn.OnEvent("Click", (*) => StartFullLoop())
+    RaceBtn.OnEvent("Click", (*) => StartRace())
+    BuyBtn.OnEvent("Click", (*) => StartBuy())
+    UnlockBtn.OnEvent("Click", (*) => StartUnlock())
     OpenSpinWindowBtn.OnEvent("Click", (*) => OpenSpinPanel())
+}
 
-    ; ── Custom Slider Matrix ──
-    SliderCfg := {
-        TrackX: Round(45 * ScaleX),
-        TrackY: Round(520 * ScaleY),
-        TrackW: Round(180 * ScaleX),
-        TrackH: Round(4 * ScaleY),
-        KnobW:  Round(10 * ScaleX),
-        KnobH:  Round(16 * ScaleY),
-        MinVal: 1,
-        MaxVal: Multipliers.Length
-    }
+_AddStatsTab() {
+    Global MainGUI, TabControl, PointsLabel_UI, SectorLabel_UI, TimeLabel_UI, CarsLabel_UI
+    Global RaceRunTime_UI, PointsCount_UI, SectorCount_UI, BuyRunTime_UI, CarCount_UI
+    Global UnlockRunTime_UI, SWheelCount_UI, WheelCount_UI, CreditCount_UI
+    ; ══════════════════════════════════════════════
+    ;  SPIN INTERFACE METRICS GLOBALS
+    ; ══════════════════════════════════════════════
+    Global MainSpinRunTime_UI, MainSpinOpenCount_UI, MainSpinLeftCount_UI
+    Global ScaleX, ScaleY, PointsGain, TimeTotal, AveragePoints, CarCount
+    Global StatsHeader_UI, StatsHeaderOrigY, StatsControlsList := []
 
-    SetFixedFont(MainGUI, 9, "norm")
-    SpeedLabel_UI := MainGUI.Add("Text", "x0 y+" Round(20*ScaleY) " w" Round(270*ScaleX) " Center c" p["text"], "Key Delay Multiplier: " KeyMultiplier "x")
-    
-    DelaySliderIndex := 4
-    for index, name in Multipliers {
-        if (name == KeyMultiplier) {
-            DelaySliderIndex := index
-            break
-        }
-    }
-    DelaySlider_UI := {Value: DelaySliderIndex}
-    knobY := SliderCfg.TrackY - (SliderCfg.KnobH // 2) + (SliderCfg.TrackH // 2)
-    minX  := SliderCfg.TrackX - (SliderCfg.KnobW // 2)
-    maxX  := SliderCfg.TrackX + SliderCfg.TrackW - (SliderCfg.KnobW // 2)
-    startProgress := (DelaySlider_UI.Value - SliderCfg.MinVal) / (SliderCfg.MaxVal - SliderCfg.MinVal)
-    startKnobX     := minX + (startProgress * (maxX - minX))
-
-    SetFixedFont(MainGUI, 7, "norm") 
-    MainGUI.Add("Text", "x" Round(22*ScaleX) " y" (SliderCfg.TrackY - Round(12*ScaleY)) " w" Round(12*ScaleX) " Center BackgroundTrans c" p["textDim"], "1")
-    MainGUI.Add("Text", "x" Round(22*ScaleX) " y" (SliderCfg.TrackY - Round(6*ScaleY))  " w" Round(12*ScaleX) " Center BackgroundTrans c" p["textDim"], "─")
-    MainGUI.Add("Text", "x" Round(22*ScaleX) " y" SliderCfg.TrackY " w" Round(12*ScaleX) " Center BackgroundTrans c" p["textDim"], "4")
-    
-    SetFixedFont(MainGUI, 8, "norm") 
-    MainGUI.Add("Text", "x" Round(35*ScaleX) " y" (SliderCfg.TrackY - Round(6*ScaleY))  " w" Round(10*ScaleX) " Left BackgroundTrans c" p["textDim"], "x")
-    
-    SliderTrack := MainGUI.Add("Text", "x" SliderCfg.TrackX " y" SliderCfg.TrackY " w" SliderCfg.TrackW " h" SliderCfg.TrackH " +0x100 Background" p["divider"])
-    SliderKnob  := MainGUI.Add("Text", "x" startKnobX " y" knobY " w" SliderCfg.KnobW " h" SliderCfg.KnobH " +0x100 Background" p["accent"])
-    MainGUI.Add("Text", "x" Round(230*ScaleX) " y" (SliderCfg.TrackY - Round(6*ScaleY)) " w" Round(25*ScaleX) " Left c" p["textDim"], "4x")
-
-    ; ══════════════════════════════════════════
-    ;  TAB 2 — STATS
-    ; ══════════════════════════════════════════
     TabControl.UseTab(2)
+    SetFixedFont(MainGUI, 9, "bold")
+    
+    StatsHeaderOrigY := Round(175 * ScaleY)
+    StatsHeader_UI   := MainGUI.Add("Text", "x" Round(14*ScaleX) " y" StatsHeaderOrigY " w" Round(242*ScaleX) " Center BackgroundTrans c" p["header"],  "TARGETS")
+    
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(14*ScaleX) " y+0 w" Round(242*ScaleX) " Center BackgroundTrans c" p["divider"], "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"))
+
+    SectorCountEst := Ceil(PointsGain / AveragePoints)
+    TimeTotalText  := Format("{:02}:{:02}", Floor(TimeTotal), Round((TimeTotal - Floor(TimeTotal)) * 60))
+
+    SetFixedFont(MainGUI, 9, "norm", "Light")
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(22*ScaleX) " y+6 w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "⟡   Est. Points Gain"))
+    StatsControlsList.Push(PointsLabel_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), PointsGain))
+
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(22*ScaleX) " y+4 w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "⟡   Est. Sectors"))
+    StatsControlsList.Push(SectorLabel_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), SectorCountEst))
+
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(22*ScaleX) " y+4 w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "⟡   Est. Total Time"))
+    StatsControlsList.Push(TimeLabel_UI   := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), TimeTotalText))
+
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(22*ScaleX) " y+4 w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "⟡   Recommended Car"))
+    StatsControlsList.Push(CarsLabel_UI   := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), CarCount))
+
+    ; Live Engine Metrics Panel
+    SetFixedFont(MainGUI, 9, "bold")
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(14*ScaleX) " y+18 w" Round(242*ScaleX) " Center BackgroundTrans c" p["header"],  "LIVE TELEMETRY"))
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(14*ScaleX) " y+0 w" Round(242*ScaleX) " Center BackgroundTrans c" p["divider"], "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"))
+
+    SetFixedFont(MainGUI, 9, "norm", "Light")
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(22*ScaleX) " y+6 w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🕓   Race Runtime"))
+    StatsControlsList.Push(RaceRunTime_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), "00:00"))
+
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(22*ScaleX) " y+4 w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "💎   Points Gained"))
+    StatsControlsList.Push(PointsCount_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["accent"]), "0"))
+
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(22*ScaleX) " y+4 w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🏁   Sectors Cleared"))
+    StatsControlsList.Push(SectorCount_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), "0"))
+
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(22*ScaleX) " y+12 w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🕓   Buy Runtime"))
+    StatsControlsList.Push(BuyRunTime_UI  := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), "00:00"))
+
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(22*ScaleX) " y+4 w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "📦   Cars Purchased"))
+    StatsControlsList.Push(CarCount_UI    := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), "0"))
+
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(22*ScaleX) " y+12 w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🕓   Unlock Runtime"))
+    StatsControlsList.Push(UnlockRunTime_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), "00:00"))
+
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(22*ScaleX) " y+4 w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🌟   Super Wheelspins"))
+    StatsControlsList.Push(SWheelCount_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["accent"]), "0"))
+
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(22*ScaleX) " y+4 w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🛞   Regular Wheelspins"))
+    StatsControlsList.Push(WheelCount_UI  := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["accent"]), "0"))
+
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(22*ScaleX) " y+4 w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "💲   Credits Earned"))
+    StatsControlsList.Push(CreditCount_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["accent"]), "0 CR"))
+
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(22*ScaleX) " y+12 w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🕓   Spin Runtime"))
+    StatsControlsList.Push(MainSpinRunTime_UI   := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), "00:00"))
+
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(22*ScaleX) " y+4 w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🎊   Spins Opened"))
+    StatsControlsList.Push(MainSpinOpenCount_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), "0"))
+
+    StatsControlsList.Push(MainGUI.Add("Text", "x" Round(22*ScaleX) " y+4 w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🎁   Spins Remaining"))
+    StatsControlsList.Push(MainSpinLeftCount_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), "0"))
+}
+
+_AddSharedDashboard(DividerYPosition) {
+    Global MainGUI, TabControl, ToggleBtn, ScaleX, ScaleY, EventLab, EventLabList, CodeTune, CodeEventLab
+    Global EventLabSelect_UI, CodeTune_UI, CodeEventLab_UI
+
+    SetFixedFont(MainGUI, 8, "bold", "Semibold")
+    MainGUI.Add("Text", "x" Round(14*ScaleX) " y" (DividerYPosition + Round(10 * ScaleY)) " w" Round(242*ScaleX) " Center BackgroundTrans c" p["textDim"], "EVENTLAB PROFILE")
 
     SetFixedFont(MainGUI, 9, "bold")
-    MainGUI.Add("Text", "x" Round(14*ScaleX) " y" Round(175*ScaleY) " w" Round(242*ScaleX) " Center BackgroundTrans c" p["header"],  "TARGETS")
-    MainGUI.Add("Text", "x" Round(14*ScaleX) " y+0 w" Round(242*ScaleX) " Center BackgroundTrans c" p["divider"], "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-
-    PointsGain  := GetMinScore(SkillPtsWant_In.Value)
-    PointsTotal := Min(PointsGain + SkillPtsCount_In.Value, 999)
-    TimeTotal   := CalcTimeRace(SkillPtsWant_In.Value) + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
-
-    SetFixedFont(MainGUI, 9, "norm", "Light")
-    MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(6*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "⟡   Est. Points Gain")
-    PointsLabel_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), PointsGain)
-
-    MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "⟡   Est. Sectors")
-    SectorLabel_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), Ceil(PointsGain / AveragePoints))
-
-    MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "⟡   Est. Total Time")
-    TimeLabel_UI   := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), Format("{:02}:{:02}", Floor(TimeTotal), Round((TimeTotal - Floor(TimeTotal)) * 60)))
-
-    MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "⟡   Recommended Car")
-    CarsLabel_UI   := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), Floor(PointsTotal / CarData[SelectedCar].SkillPtsCost))
-
-    ; ── Live Progress Telemetry ──
-    SetFixedFont(MainGUI, 9, "bold")
-    MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(18*ScaleY) " w" Round(242*ScaleX) " Center BackgroundTrans c" p["header"],  "LIVE TELEMETRY")
-    MainGUI.Add("Text", "x" Round(14*ScaleX) " y+0 w" Round(242*ScaleX) " Center BackgroundTrans c" p["divider"], "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-
-    SetFixedFont(MainGUI, 9, "norm", "Light")
-    MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(6*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🕓   Race Runtime")
-    RaceRunTime_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), "00:00")
-
-    MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "💡   Points Gained")
-    PointsCount_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["accent"]), "0")
-
-    MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🏁   Sectors Cleared")
-    SectorCount_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), "0")
-
-    MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(12*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🕓   Buy Runtime")
-    BuyRunTime_UI  := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), "00:00")
-
-    MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "📦   Cars Purchased")
-    CarCount_UI    := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), "0")
-
-    MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(12*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🕓   Unlock Runtime")
-    UnlockRunTime_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["text"]), "00:00")
-
-    MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🌟   Super Wheelspins")
-    SWheelCount_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["accent"]), "0")
-
-    MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "🛞   Regular Wheelspins")
-    WheelCount_UI  := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["accent"]), "0")
-
-    MainGUI.Add("Text", "x" Round(22*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " Left BackgroundTrans c" p["textDim"], "💲   Credits Earned")
-    CreditCount_UI := _LinkNoirTelemetry(MainGUI.Add("Text", "x" Round(162*ScaleX) " yp w" Round(86*ScaleX) " Right BackgroundTrans c" p["accent"]), "0 CR")
-
-    ; ── Shared Content (outside tabs) ──────────
-    TabControl.UseTab()
-
-    MainGUI.Add("Text", "x" Round(14*ScaleX) " y" Round(540*ScaleY) " w" Round(242*ScaleX) " Center BackgroundTrans c" p["divider"], "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-
-    ; ── Persistent Dashboard Session Info ──
-    SetFixedFont(MainGUI, 9, "norm", "Light")
-    Key_UI          := MainGUI.Add("Text", "x0 y+" Round(15*ScaleY) " w" Round(270*ScaleX) " Center BackgroundTrans c" p["cIdle"], "⌨   [   ]")
-    Process_UI      := MainGUI.Add("Text", "x0 y+" Round(4*ScaleY) " w" Round(270*ScaleX) " Center BackgroundTrans c" p["cIdle"], "⚙️   Waiting...")
-    TotalRunTime_UI := MainGUI.Add("Text", "x0 y+" Round(4*ScaleY) " w" Round(270*ScaleX) " Center BackgroundTrans c" p["cIdle"], "🕓   00:00")
-
-    ; ── Cyber Dropdown: Event Lab Selector ─────────
-    SetFixedFont(MainGUI, 8, "bold")
-    EventLabSelect_UI := MainGUI.Add("Text", "x" Round(85*ScaleX) " y+" Round(14*ScaleY) " w" Round(100*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["editBg"] " c" p["text"])
+    EventLabSelect_UI := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+6 w" Round(242*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["editBg"] " c" p["text"])
     EventLabSelect_UI.DefineProp("Value", {
         get: (this) => this.HasOwnProp("ctrlIndex") ? this.ctrlIndex : 1,
         set: (this, val) => (this.ctrlIndex := val, ControlSetText(EventLabList[val] "   ▼", this.Hwnd, this.Gui.Hwnd))
@@ -383,6 +497,7 @@ BuildMainGui(savedVals := "") {
         get: (this) => EventLabList[this.Value],
         set: (this, val) => ControlSetText(val, this.Hwnd, this.Gui.Hwnd)
     })
+    
     startupIndex := 1
     for index, name in EventLabList {
         if (name == EventLab) {
@@ -393,25 +508,31 @@ BuildMainGui(savedVals := "") {
     EventLabSelect_UI.Value := startupIndex
     EventLabSelect_UI.OnEvent("Click", ShowEventLabMenu)
 
-    ; ── Clickable Code Labels ─────────────────
-    SetFixedFont(MainGUI, 9, "norm", "Emoji")
-    CodeTune_UI     := MainGUI.Add("Text", "x" Round(60*ScaleX) " y+" Round(5*ScaleY) " w" Round(150*ScaleX) " Center BackgroundTrans c" p["cIdle"], "Subaru 22B Tune Code")
-    CodeEventLab_UI := MainGUI.Add("Text", "x" Round(60*ScaleX) " y+0 w" Round(150*ScaleX) " Center BackgroundTrans c" p["cIdle"], "EventLab Race Code")
-
+    SetFixedFont(MainGUI, 8, "bold")
+    CodeTune_UI     := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+4 w" Round(119*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["btnBg2"] " c" p["btnText2"], "📋 TUNE CODE")
+    CodeEventLab_UI := MainGUI.Add("Text", "x" Round(137*ScaleX) " yp w" Round(119*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["btnBg2"] " c" p["btnText2"], "📋 RACE CODE")
+    
     CodeTune_UI.OnEvent("Click", (*) => _CopyToClip(CodeTune, "Subaru 22B Tune Code"))
     CodeEventLab_UI.OnEvent("Click", (*) => _CopyToClip(CodeEventLab, "EventLab Race Code"))
 
-    ; ── Cyber-Noir Styled Toggle Trigger ────────────────
     SetFixedFont(MainGUI, 8, "bold", "Semibold")
-    ToggleBtn := MainGUI.Add("Text", "x" Round(65*ScaleX) " y+" Round(15*ScaleY) " w" Round(140*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["btnBg2"] " c" p["btnText"], "⚙️   OPTIONS   ⏷")
+    ToggleBtn := MainGUI.Add("Text", "x" Round(65*ScaleX) " y+16 w" Round(140*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["btnBg2"] " c" p["btnText"], "⚙️   OPTIONS   ⏷")
+}
 
-    ; ── Collapsible Options Section ─────
+_RepositionStatsControls(yOffset) {
+    global StatsControlsList
+    for ctrl in StatsControlsList {
+        ctrl.GetPos(&cX, &cY)
+        ctrl.Move(, cY + yOffset)
+    }
+}
+
+_AddCollapsibleOptions() {
+    Global MainGUI, ResoSelect_UI, BrowseBtn, LaunchBtn, SpecialKCheck_UI, ScaleX, ScaleY, ResoList, SelectedReso, GameExe
     
-    OptionsControls := []
-
-    ; ── Cyber Dropdown: Resolution Selector ─────────
+    ControlsArray := []
     SetFixedFont(MainGUI, 9, "bold")
-    OptionsControls.Push(ResoSelect_UI := MainGUI.Add("Text", "x" Round(75*ScaleX) " y+" Round(12*ScaleY) " w" Round(120*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["editBg"] " c" p["text"]))
+    ControlsArray.Push(ResoSelect_UI := MainGUI.Add("Text", "x" Round(75*ScaleX) " y+12 w" Round(120*ScaleX) " h" Round(24*ScaleY) " Center 0x200 Background" p["editBg"] " c" p["text"]))
     ResoSelect_UI.DefineProp("Value", {
         get: (this) => this.HasOwnProp("ctrlIndex") ? this.ctrlIndex : 1,
         set: (this, val) => (this.ctrlIndex := val, ControlSetText("     " ResoList[val] "   ▼", this.Hwnd, this.Gui.Hwnd))
@@ -429,107 +550,102 @@ BuildMainGui(savedVals := "") {
     }
     ResoSelect_UI.Value := startupIndex
     ResoSelect_UI.OnEvent("Click", ShowResoMenu)
-    
+   
     SetFixedFont(MainGUI, 8, "bold", "Semibold")
-    OptionsControls.Push(BrowseBtn := MainGUI.Add("Text", "x" Round(70*ScaleX) " y+" Round(8*ScaleY) " w" Round(130*ScaleX) " h" Round(26*ScaleY) " Center 0x200 Background" p["btnBg2"] " c" p["btnText"], "📂   SET GAME PATH"))
+    ControlsArray.Push(BrowseBtn := MainGUI.Add("Text", "x" Round(70*ScaleX) " y+8 w" Round(130*ScaleX) " h" Round(26*ScaleY) " Center 0x200 Background" p["btnBg2"] " c" p["btnText"], "📂   SET GAME PATH"))
     BrowseBtn.OnEvent("Click", (*) => LocateGameDir(true))
 
-    OptionsControls.Push(LaunchBtn := MainGUI.Add("Text", "x" Round(70*ScaleX) " y+" Round(8*ScaleY) " w" Round(130*ScaleX) " h" Round(26*ScaleY) " Center 0x200 Background" p["btnBg2"] " c" p["btnText"], "🚀   LAUNCH GAME"))
+    ControlsArray.Push(LaunchBtn := MainGUI.Add("Text", "x" Round(70*ScaleX) " y+8 w" Round(130*ScaleX) " h" Round(26*ScaleY) " Center 0x200 Background" p["btnBg2"] " c" p["btnText"], "🚀   LAUNCH GAME"))
     LaunchBtn.OnEvent("Click", LaunchGame)
 
-    ; ── Special K Checkbox ─────────
-    ; Read current status to set the correct initialization style
-    isKEnabled := SpecialKCheck() 
+    isKEnabled := SpecialKCheck()
     isGameRunning := ProcessExist(GameExe)
     initColor := isGameRunning ? p["textDim"] : (isKEnabled ? p["text"] : p["textDim"])
     initText  := isGameRunning ? "🔒 SPECIAL K (GAME RUNNING)" : (isKEnabled ? "▰  SPECIAL K: ACTIVE" : "▱  SPECIAL K: INACTIVE")
 
     SetFixedFont(MainGUI, 9, "norm", "Light")
-    SpecialKCheck_UI := MainGUI.Add("Text", "x" Round(20*ScaleX) " y+" Round(8*ScaleY) " w" Round(230*ScaleX) " h" Round(20*ScaleY) " Center 0x200 c" initColor, initText)
-    SpecialKCheck_UI.State := isKEnabled 
-    OptionsControls.Push(SpecialKCheck_UI)
+    SpecialKCheck_UI := MainGUI.Add("Text", "x" Round(20*ScaleX) " y+8 w" Round(230*ScaleX) " h" Round(20*ScaleY) " Center 0x200 c" initColor, initText)
+    SpecialKCheck_UI.State := isKEnabled
+    ControlsArray.Push(SpecialKCheck_UI)
     SpecialKCheck_UI.OnEvent("Click", SpecialKToggle)
 
-    ; ── Clean Center-Aligned Footer ─────────
-    FooterControls := []
+    return ControlsArray
+}
+
+_AddFooterLayout() {
+    Global MainGUI, UpdateLink, ScaleX, ScaleY
     
-    ; Row 1: Divider line
-    FooterControls.Push(F_Divider := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(242*ScaleX) " h" Round(1*ScaleY) " BackgroundTrans", ""))
+    ControlsArray := []
+    ControlsArray.Push(F_Divider := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+6 w" Round(242*ScaleX) " h" Round(1*ScaleY) " BackgroundTrans", ""))
 
     tempImagePath := A_Temp "\fh6_kofi_fallback.png"
-
     try {
-        ; 3. NATIVE EXTRACTION: If compiled, AHK extracts the baked asset to the temp folder.
-        ; If uncompiled (.ahk), it safely copies it from your assets folder.
         FileInstall("assets\kofi.png", tempImagePath, 1)
-        
-        ; 4. Load the image directly from the safe temp file path
-        Kofi_UI := MainGUI.Add("Picture", "x" Round(72*ScaleX) " yp+" Round(0*ScaleY) " w" Round(125*ScaleX) " h" Round(25*ScaleY), tempImagePath)
-    } 
-    catch {
-        ; 5. FALLBACK: If anything blocks the file system, fallback to text cleanly
-        Kofi_UI := MainGUI.Add("Text", "x" Round(72*ScaleX) " yp+" Round(0*ScaleY) " w" Round(125*ScaleX) " h" Round(25*ScaleY) " cBlue", "[ Support on Ko-fi ]")
+        Kofi_UI := MainGUI.Add("Picture", "x" Round(72*ScaleX) " yp+0 w" Round(125*ScaleX) " h" Round(25*ScaleY), tempImagePath)
+    } catch {
+        Kofi_UI := MainGUI.Add("Text", "x" Round(72*ScaleX) " yp+0 w" Round(125*ScaleX) " h" Round(25*ScaleY) " cBlue", "[ Support on Ko-fi ]")
     }
-
-    FooterControls.Push(Kofi_UI)
+    ControlsArray.Push(Kofi_UI)
     Kofi_UI.OnEvent("Click", (*) => Run("https://ko-fi.com/mhaziqiqbal"))
-    
-    ; Row 3: Natively Centered Application Status Bar (Full Width)
+
     SetFixedFont(MainGUI, 8, "norm")
-    FooterControls.Push(UpdateLink := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+" Round(6*ScaleY) " w" Round(242*ScaleX) " Center c" p["btnText2"], "Checking status..."))
-    
-    ; Custom property-based click router (No more parameter index crashes!)
+    UpdateLink := MainGUI.Add("Text", "x" Round(14*ScaleX) " y+6 w" Round(242*ScaleX) " Center c" p["btnText2"], "Checking status...")
+    ControlsArray.Push(UpdateLink)
     UpdateLink.OnEvent("Click", (ctrlObj, *) => (ctrlObj.HasProp("DownloadUrl") && ctrlObj.DownloadUrl != "") ? ProcessUpdate(ctrlObj.DownloadUrl, ctrlObj.AssetType) : Run(ctrlObj.HtmlUrl))
-    
-    ; Launch update check
     CheckForUpdates(UpdateLink)
-    
-    ; Row 4: Bottom boundary spacer
-    FooterControls.Push(BottomSpacer := MainGUI.Add("Text", "x0 yp+" Round(25*ScaleY) " w" Round(270*ScaleX) " h" Round(1*ScaleY) " BackgroundTrans c" p["footer"], ""))
 
-    MainGUI.Show("w" Round(270*ScaleX) " Hide")
-    
-    ToggleBtn.GetPos(, &tY, , &tH)
-    F_Divider.GetPos(, &fY)
-    shiftY := fY - (tY + tH + Round(15*ScaleY))
-    
-    footerOrigY := []
-    for ctrl in FooterControls {
-        ctrl.GetPos(, &cY)
-        footerOrigY.Push(cY)
+    BottomSpacer := MainGUI.Add("Text", "x0 yp+25 w" Round(270*ScaleX) " h" Round(1*ScaleY) " BackgroundTrans c" p["footer"], "")
+    ControlsArray.Push(BottomSpacer)
+
+    return ControlsArray
+}
+
+AddCustomSpeedSlider(parentGui) {
+    global SliderCfg, SliderKnob, SliderTrack, SpeedLabel_UI, DelaySlider_UI
+    global ScaleX, ScaleY, KeyMultiplier, Multipliers
+
+    SliderCfg := {
+        TrackX: Round(45 * ScaleX),
+        TrackW: Round(180 * ScaleX),
+        TrackH: Round(4 * ScaleY),
+        KnobW:  Round(10 * ScaleX),
+        KnobH:  Round(16 * ScaleY),
+        MinVal: 1,
+        MaxVal: Multipliers.Length
     }
-    
-    MainGUI.GetPos(,, &w, &expandedH)
-    compactH := expandedH - shiftY
 
-    _OnOptionsToggle(btnObj, *) {
-        static isOpen := false
-        isOpen := !isOpen
-        
-        for ctrl in OptionsControls
-            ctrl.Visible := isOpen
-             
-        for i, ctrl in FooterControls {
-            ctrl.Move(, isOpen ? footerOrigY[i] : (footerOrigY[i] - shiftY))
+    SetFixedFont(parentGui, 9, "norm")
+    SpeedLabel_UI := parentGui.Add("Text", "x0 y+20 w" Round(270*ScaleX) " Center c" p["text"], "Key Delay Multiplier: " KeyMultiplier "x")
+    
+    DelaySliderIndex := 4
+    for index, name in Multipliers {
+        if (name == KeyMultiplier) {
+            DelaySliderIndex := index
+            break
         }
-        
-        MainGUI.Move(,,, isOpen ? expandedH : compactH)
-        btnObj.Opt("Background" (isOpen ? p["activeBg"] : p["btnBg2"]))
-        btnObj.Text := isOpen ? "⚙️   OPTIONS   ⏶"  : "⚙️   OPTIONS   ⏷"
-        btnObj.Redraw()
     }
-    ToggleBtn.OnEvent("Click", _OnOptionsToggle)
-
-    for ctrl in OptionsControls
-        ctrl.Visible := false
-    for i, ctrl in FooterControls
-        ctrl.Move(, footerOrigY[i] - shiftY)
-
-    MainGUI.OnEvent("Close", (*) => ExitApp())
-    MainGUI.OnEvent("Size",  MainGUI_SizeChange)
+    DelaySlider_UI := {Value: DelaySliderIndex}
     
-    MainGUI.Move(MonLeft + MonWidth - w - Round(35*ScaleX), MonTop + Round(35*ScaleX), w, compactH)
-    MainGUI.Show()
+    SpeedLabel_UI.GetPos(, &labelY, , &labelH)
+    SliderCfg.TrackY := labelY + labelH + Round(12*ScaleY)
+
+    knobY := SliderCfg.TrackY - (SliderCfg.KnobH // 2) + (SliderCfg.TrackH // 2)
+    minX  := SliderCfg.TrackX - (SliderCfg.KnobW // 2)
+    maxX  := SliderCfg.TrackX + SliderCfg.TrackW - (SliderCfg.KnobW // 2)
+    startProgress := (DelaySlider_UI.Value - SliderCfg.MinVal) / (SliderCfg.MaxVal - SliderCfg.MinVal)
+    startKnobX     := minX + (startProgress * (maxX - minX))
+
+    SetFixedFont(parentGui, 7, "norm") 
+    parentGui.Add("Text", "x" Round(22*ScaleX) " y" (SliderCfg.TrackY - Round(12*ScaleY)) " w" Round(12*ScaleX) " Center BackgroundTrans c" p["textDim"], "1")
+    parentGui.Add("Text", "x" Round(22*ScaleX) " y" (SliderCfg.TrackY - Round(6*ScaleY))  " w" Round(12*ScaleX) " Center BackgroundTrans c" p["textDim"], "─")
+    parentGui.Add("Text", "x" Round(22*ScaleX) " y" SliderCfg.TrackY " w" Round(12*ScaleX) " Center BackgroundTrans c" p["textDim"], "4")
+    
+    SetFixedFont(parentGui, 8, "norm") 
+    parentGui.Add("Text", "x" Round(35*ScaleX) " y" (SliderCfg.TrackY - Round(6*ScaleY))  " w" Round(10*ScaleX) " Left BackgroundTrans c" p["textDim"], "x")
+    
+    SliderTrack := parentGui.Add("Text", "x" SliderCfg.TrackX " y" SliderCfg.TrackY " w" SliderCfg.TrackW " h" SliderCfg.TrackH " +0x100 Background" p["divider"])
+    SliderKnob  := parentGui.Add("Text", "x" startKnobX " y" knobY " w" SliderCfg.KnobW " h" SliderCfg.KnobH " +0x100 Background" p["accent"])
+    parentGui.Add("Text", "x" Round(230*ScaleX) " y" (SliderCfg.TrackY - Round(6*ScaleY)) " w" Round(25*ScaleX) " Left c" p["textDim"], "4x")
 }
 
 ; ══════════════════════════════════════════════
@@ -620,28 +736,33 @@ MenuSelectReso(index, *) {
     try UpdateReso(ResoSelect_UI, "")
 }
 
+; ══════════════════════════════════════════════
+;  UPDATE DROPDOWN VALUE
+; ══════════════════════════════════════════════
+
 UpdateCar(ctrl, *) {
     global PointsTotal, CarSelect_UI, CarsLabel_UI, CarCount_In
-    global CarData, SelectedCar
+    global CarData, SelectedCar, CarCount
     
     SelectedCar      := ctrl.Text
 
-    CarPurchaseCount := Floor(PointsTotal / CarData[SelectedCar].SkillPtsCost)
+    CarCount := Floor(PointsTotal / CarData[SelectedCar].SkillPtsCost)
         
-    CarCount_In.Value  := CarPurchaseCount
-    CarsLabel_UI.Value := CarPurchaseCount
+    CarCount_In.Value  := CarCount
+    CarsLabel_UI.Value := CarCount
     
-    TimeTotal            := CalcTimeRace(SkillPtsWant_In.Value) + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
+    TimeTotal            := CalcTotalTime(SkillPtsWant_In.Value, CarCount)
     TimeLabel_UI.Value   := Format("{:02}:{:02}", Floor(TimeTotal), Round((TimeTotal - Floor(TimeTotal)) * 60))
 
     WriteMacroIni("Settings", "Car", SelectedCar)
 }
 
 UpdateEventLab(ctrl, *) {
-    global EventLab, EventLabData, MaxPoints, MaxSections, AveragePoints, SkillPtsWant_In, CarCount_In, PointsTotal, CodeTune, CodeEventLab
+    global EventLab, EventLabData, MaxPoints, MaxSections, AveragePoints, CodeTune, CodeEventLab
     global CarData, SelectedCar
+    global SkillPtsWant_In
 
-    EventLab        := ctrl.Text
+    EventLab := ctrl.Text
 
     data := EventLabData[EventLab]
     MaxSections     := data.MaxSections
@@ -664,56 +785,59 @@ UpdateReso(ctrl, *) {
 }
 
 ; ══════════════════════════════════════════════
-;  UPDATE VALUE INPUT
+;  UPDATE INPUT VALUE
 ; ══════════════════════════════════════════════
 
 UpdateSkillPtsCount(ctrl, ManualInput:= true, *) {
-    global TimeTotal, PointsTotal, CarCount_In, SkillPtsWant_In, AveragePoints, PointsGain, MaxPoints
-    global PointsLabel_UI, TimeLabel_UI, CarsLabel_UI, SectorLabel_UI, ActiveMode, CustomSkillPts
+    global CarCount_In, SkillPtsWant_In, AveragePoints, MaxPoints
+    global PointsLabel_UI, TimeLabel_UI, CarsLabel_UI, SectorLabel_UI, ActiveMode
+    global SkillPtsCountText, SkillPtsWantText, CarCountText
     global CarData, SelectedCar
+    global CustomCarCount, CustomSkillPts
+
+    carCost := CarData[SelectedCar].SkillPtsCost
 
     if ManualInput {
-        CustomSkillPts := false
-        ShowNotif("info", "EventLab Race", "Mode: Automatic Desired Skill Point.")
-    }
-
-    if ManualInput {
-        CustomSkillPts := true
+        global CustomSkillPts := 0
         ShowNotif(
             "info", "Current Skill Points Input", 
             "Mode: Automatic Desired Skill Points." 
             "`nPlease edit Desired Skill Points to revert."
         )
-        global CustomCarCount := true
+        SkillPtsCountText.Value := "✦   Current Skill Points"
+        SkillPtsWantText.Value := "⟡   Desired Skill Points"
+        CarCountText.Value := "⟡   Car Amount"
     }
-
 
     value := ctrl.Value
     value := (value = "") ? 0 : Min(999, value)
 
+    global CustomSkillPts := 0
+    global SkillPtsCount := value
+    global SkillPtsWant := (999 - value > MaxPoints) ? MaxPoints : 999 - value
+    SkillPtsWant_In.Value := SkillPtsWant
+
     ; FIX: Strict string check detects leading zeros ("02" != "2")
-    if !(ctrl.Value == String(value)) {
-        ctrl.Value := value
+    if !(ctrl.Value == String(SkillPtsCount)) {
+        ctrl.Value := SkillPtsCount
         
         ; Only force caret to the end if the text was actually modified/cleaned up
-        len := StrLen(String(value))
+        len := StrLen(String(SkillPtsCount))
         SendMessage(0xB1, len, len, ctrl.Hwnd)  ; EM_SETSEL
     }
-    
-    ; Update other UI
-    SkillPtsWant_In.Value := (999 - value > MaxPoints) ? MaxPoints : 999 - value
 
-    PointsGain  := GetMinScore(SkillPtsWant_In.Value)    
-    PointsTotal := Min(PointsGain + value, 999)
+    global PointsGain  := GetMinScore(SkillPtsWant)    
+    global PointsTotal := Min(PointsGain + value, 999)
 
     PointsLabel_UI.Value := PointsGain
     SectorLabel_UI.Value := (AveragePoints > 0) ? Ceil(PointsGain / AveragePoints) : 0
         
-    carCost := CarData[SelectedCar].SkillPtsCost
-    CarCount_In.Value    := (carCost > 0) ? Floor(PointsTotal / carCost) : 0
-    CarsLabel_UI.Value   := CarCount_In.Value
+    global CarCount := (carCost > 0) ? Floor(PointsTotal / carCost) : 0
 
-    TimeTotal            := CalcTimeRace(SkillPtsWant_In.Value) + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
+    CarCount_In.Value    := CarCount
+    CarsLabel_UI.Value   := CarCount
+
+    global TimeTotal            := CalcTotalTime(SkillPtsWant, CarCount)
     
     TotalSubUnits        := Round(TimeTotal * 60)
     MainUnit             := Floor(TotalSubUnits / 60)
@@ -724,18 +848,22 @@ UpdateSkillPtsCount(ctrl, ManualInput:= true, *) {
 }
 
 UpdateSkillPtsWant(ctrl, ManualInput:= true, *) {
-    global TimeTotal, PointsTotal, CarCount_In, SkillPtsCount_In, SkillPtsWant_In, AveragePoints, PointsGain, MaxPoints
-    global PointsLabel_UI, TimeLabel_UI, CarsLabel_UI, PointsCount_UI, SectorLabel_UI, CustomSkillPts
+    global CarCount_In, SkillPtsCount_In, SkillPtsWant_In, AveragePoints, MaxPoints
+    global PointsLabel_UI, TimeLabel_UI, CarsLabel_UI, PointsCount_UI, SectorLabel_UI
+    global SkillPtsCountText, SkillPtsWantText, CarCountText
     global CarData, SelectedCar
+    global CustomCarCount, CustomSkillPts
 
     if ManualInput {
-        CustomSkillPts := true
+        global CustomSkillPts := 0
         ShowNotif(
-            "info", "Current Skill Points Input", 
+            "info", "Desired Skill Points Input", 
             "Mode: Custom Desired Skill Points." 
             "`nPlease edit Current Skill Points to revert."
         )
-        global CustomCarCount := true
+        SkillPtsCountText.Value := "⟡   Current Skill Points"
+        SkillPtsWantText.Value := "✦   Desired Skill Points"
+        CarCountText.Value := "⟡   Car Amount"
     }
 
     value := ctrl.Value
@@ -743,27 +871,33 @@ UpdateSkillPtsWant(ctrl, ManualInput:= true, *) {
     value := Min(value, 999 - SkillPtsCount_In.Value)
     value := Min(value, MaxPoints)
 
+    global CustomSkillPts := value
+    global SkillPtsWant := value
+    global SkillPtsCount := SkillPtsCount_In.Value
+
     ; FIX: Strict string check detects leading zeros ("02" != "2")
-    if !(ctrl.Value == String(value)) {
-        ctrl.Value := value
+    if !(ctrl.Value == String(SkillPtsWant)) {
+        ctrl.Value := SkillPtsWant
         
         ; Only force caret to the end if the text was actually modified/cleaned up
-        len := StrLen(String(value))
+        len := StrLen(String(SkillPtsWant))
         SendMessage(0xB1, len, len, ctrl.Hwnd)  ; EM_SETSEL
     }
     
     ; Update other UI
-    PointsGain  := GetMinScore(value)
-    PointsTotal := Min(PointsGain + SkillPtsCount_In.Value, 999)
+    global PointsGain  := GetMinScore(SkillPtsWant)
+    global PointsTotal := Min(PointsGain + SkillPtsCount, 999)
 
     PointsLabel_UI.Value := PointsGain
     SectorLabel_UI.Value := (AveragePoints > 0) ? Ceil(PointsGain / AveragePoints) : 0
     
     carCost := CarData[SelectedCar].SkillPtsCost
-    CarCount_In.Value    := (carCost > 0) ? Floor(PointsTotal / carCost) : 0
-    CarsLabel_UI.Value   := CarCount_In.Value
+    global CarCount := (carCost > 0) ? Floor(PointsTotal / carCost) : 0
 
-    TimeTotal            := CalcTimeRace(value) + CalcTimeBuy(CarCount_In.Value) + CalcTimeUnlock(CarCount_In.Value)
+    CarCount_In.Value    := CarCount
+    CarsLabel_UI.Value   := CarCount
+
+    global TimeTotal            := CalcTotalTime(SkillPtsWant, CarCount)
     
     TotalSubUnits        := Round(TimeTotal * 60)
     MainUnit             := Floor(TotalSubUnits / 60)
@@ -773,31 +907,36 @@ UpdateSkillPtsWant(ctrl, ManualInput:= true, *) {
     return value
 }
 
-UpdateCarCount(ctrl) {
+UpdateCarCount(ctrl, *) {
     global CarData, PointsTotal
-    ; global CustomCarCount := true
-    ; ShowNotif(
-    ;     "info", "Car Amount Input", 
-    ;     "Mode: Custom Car Amount." 
-    ;     "`nPlease edit Current/Desired Skill Points to revert."
-    ; )
-
+    global CarCountText
+    global CustomCarCount
+    
+    ShowNotif(
+        "info", "Car Amount Input", 
+        "Mode: Custom Car Amount." 
+        "`nPlease edit Skill Points to revert."
+    )
+    CarCountText.Value := "✦   Car Amount"
+    
     data := CarData[SelectedCar]
 
     value := ctrl.Value
-    value := Floor(PointsTotal / CarData[SelectedCar].SkillPtsCost)
+    value := (value = "") ? 0 : Min(value, 999)
+
+    CustomCarCount := value
 
     ; FIX: Strict string check detects leading zeros ("02" != "2")
-    if !(ctrl.Value == String(value)) {
-        ctrl.Value := value
+    if !(ctrl.Value == String(CustomCarCount)) {
+        ctrl.Value := CustomCarCount
         
         ; Only force caret to the end if the text was actually modified/cleaned up
-        len := StrLen(String(value))
+        len := StrLen(String(CustomCarCount))
         ; SendMessage(0xB1, len, len, ctrl.Hwnd)  ; EM_SETSEL
     }
 }
 
-UpdateLoopCount(ctrl) {
+UpdateLoopCount(ctrl, *) {
     value := ctrl.Value
     value := (value = "") ? 0 : Min(value, 999)
 
@@ -809,6 +948,17 @@ UpdateLoopCount(ctrl) {
         len := StrLen(String(value))
         SendMessage(0xB1, len, len, ctrl.Hwnd)  ; EM_SETSEL
     }
+}
+
+_UpdateStartLoop(clickedObj, modeName) {
+    Global StartLoopMode := modeName
+    RadioRace.Opt("Background" p["btnBg2"] " c" p["textDim"])
+    RadioBuy.Opt("Background" p["btnBg2"] " c" p["textDim"])
+    RadioUnlock.Opt("Background" p["btnBg2"] " c" p["textDim"])
+    clickedObj.Opt("Background" p["btnMainBg"] " c" p["btnMainText"])
+    RadioRace.Redraw(), RadioBuy.Redraw(), RadioUnlock.Redraw()
+
+    WriteMacroIni("Settings", "StartLoopMode", StartLoopMode)
 }
 
 ; ==========================================
@@ -878,7 +1028,7 @@ CheckForUpdates(linkCtrl) {
     } catch {
         linkCtrl.DownloadUrl := ""
         linkCtrl.HtmlUrl := "https://github.com/" RepoOwner "/" RepoName "/releases"
-        linkCtrl.Text := "Check Failed"
+        linkCtrl.Text := CurrentVersion " | Check Failed"
     }
 }
 
@@ -942,5 +1092,51 @@ ProcessUpdate(url, assetType) {
         
     } catch Error as err {
         MsgBox("Update failed:`n" err.Message, "Update Error", "Iconx")
+    }
+}
+
+; ══════════════════════════════════════════════
+;  MOUSE HOVER CURSOR CONTROLLER
+; ══════════════════════════════════════════════
+OnMessage(0x0020, WM_SETCURSOR)
+
+WM_SETCURSOR(wParam, lParam, msg, hwnd) {
+    ; 0x0200 corresponds to mouse move events within the client window area
+    if ((lParam & 0xFFFF) == 1) { 
+        try {
+            ; Check the ClassNN of the control currently under the mouse
+            ctrlClass := ControlGetClassNN(wParam)
+            
+            ; 1. Match native Tab Controls ("SysTabControl32")
+            ; 2. Match text elements ("Static") used as buttons/menus
+            if InStr(ctrlClass, "SysTabControl32") {
+                charHand := DllCall("LoadCursor", "Ptr", 0, "Ptr", 32649, "Ptr")
+                DllCall("SetCursor", "Ptr", charHand)
+                return true
+            }
+            else if InStr(ctrlClass, "Static") {
+                ctrlText := ControlGetText(wParam)
+                
+                ; 1. Filter out known passive text items
+                if (InStr(ctrlText, "━━━━") || InStr(ctrlText, "Forza Horizon"))
+                    return
+                    
+                ; 2. If it is a blank text control, check if it's the slider track or knob
+                if (ctrlText == "") {
+                    try {
+                        ; Only allow the hand cursor if it matches our custom slider handles
+                        if (wParam != SliderTrack.Hwnd && wParam != SliderKnob.Hwnd)
+                            return 
+                    } catch {
+                        return ; Fallback if the slider elements aren't initialized yet
+                    }
+                }
+
+                ; Load the standard Windows System Hand Cursor (IDC_HAND = 32649)
+                charHand := DllCall("LoadCursor", "Ptr", 0, "Ptr", 32649, "Ptr")
+                DllCall("SetCursor", "Ptr", charHand)
+                return true 
+            }
+        }
     }
 }

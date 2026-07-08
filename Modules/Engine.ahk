@@ -8,13 +8,15 @@
 ; ══════════════════════════════════════════════
 
 TogglePause() {
-    global ActiveMode, PauseMode, StatusText, cIdle, cPaused, cStat, MasterMode
+    global ActiveMode, PauseMode, StatusText, cStat, MasterMode
+    p := GetPalette()
+
     Pause(-1)
     ;PauseMode := ActiveMode ? !PauseMode : PauseMode
 
     if !PauseMode && ActiveMode {
         StatusText.Value := "⬤  Paused..."
-        StatusText.SetFont("c" cPaused)
+        StatusText.SetFont("c" p["cPaused"])
         PauseMode := true
         ShowNotif("info", "Macro Paused", "Execution has been temporarily suspended.")
     } else if PauseMode && ActiveMode {
@@ -63,6 +65,10 @@ StartIndicators() {
     global StatusText, Process_UI, Key_UI, TotalRunTime_UI, ActiveMode
     global SkillPtsCount_In, SkillPtsWant_In, CarCount_In, CarSelect_UI
 
+    p := GetPalette()
+    cActive := p["cActive"]
+    cHighlight := P["cHighlight"]
+
     StatusText.Value := "⬤  Running..."
     StatusText.SetFont("c" cActive)
 
@@ -88,9 +94,13 @@ StartIndicators() {
 }
 
 ResetIndicators() {
-    global Key_UI, Process_UI, StatusText, cIdle, cTextDim
+    global Key_UI, Process_UI, StatusText
     global TotalRunTime_UI, RaceRunTime_UI, BuyRunTime_UI, UnlockRunTime_UI, SectorCount_UI, ActiveMode, MasterMode
     global SkillPtsCount_In, SkillPtsWant_In, CarCount_In, CarSelect_UI
+
+    p := GetPalette()
+    cIdle := p["cIdle"]
+    cTextDim := p["cTextDim"]
 
     SetTimer(RaceTimerTick, 0)
     SetTimer(BuyTimerTick, 0)
@@ -120,6 +130,9 @@ ResetIndicators() {
     SWheelCount_UI.SetFont("c" cIdle)
     WheelCount_UI.SetFont("c" cIdle)
     CreditCount_UI.SetFont("c" cIdle)
+    MainSpinOpenCount_UI.SetFont("c" cIdle)
+    MainSpinLeftCount_UI.SetFont("c" cIdle)
+    MainSpinRunTime_UI.SetFont("c" cIdle)
     
     StatusText.Value := "⬤  Stopped"
     StatusText.SetFont("c" cTextDim)
@@ -151,6 +164,10 @@ GetMinScore(score) {
     return Floor(sections * pointsPerSection)
 }
 
+CalcTotalTime(score, car) {
+    return CalcTimeRace(score) + CalcTimeBuy(car) + CalcTimeUnlock(car) + CalcTimeSpin(car) 
+}
+
 CalcTimeRace(score) {
     global MaxSections, EventLab, EventLabData
 
@@ -173,12 +190,17 @@ CalcTimeRace(score) {
 }
 
 CalcTimeBuy(car) {
-    totalTime := car * 3.1
+    totalTime := car * 3.2
     return totalTime / 60
 }
 
 CalcTimeUnlock(car) {
-    totalTime := car * 34
+    totalTime := car * 38.5
+    return totalTime / 60
+}
+
+CalcTimeSpin(car) {
+    totalTime := car * 5.8
     return totalTime / 60
 }
 
@@ -227,13 +249,14 @@ UnlockTimerTick() {
 }
 
 spinTimerTick() {
-    global SpinRunSeconds, SpinRunTime_UI, MiniSpinRunTime_UI, cHighlight
+    global SpinRunSeconds, SpinRunTime_UI, MiniSpinRunTime_UI, MainSpinRunTime_UI, cHighlight
     SpinRunSeconds++
     mins := SpinRunSeconds // 60
     secs := Mod(SpinRunSeconds, 60)
 
     SpinRunTime_UI.Value := Format("{:02d}:{:02d}", mins, secs)
     MiniSpinRunTime_UI.Value := Format("{:02d}:{:02d}", mins, secs)
+    MainSpinRunTime_UI.Value := Format("{:02d}:{:02d}", mins, secs)
 }
 
 ; ══════════════════════════════════════════════
@@ -254,7 +277,7 @@ GetCoordsColor() {
     SetTimer(() => ToolTip(), -3000)
 }
 
-ScanOCR(ratioX, ratioY, ratioW, ratioH, waitTime := 0, targetText := "", searchNumber := false) {
+ScanOCR(ratioX, ratioY, ratioW, ratioH, waitTime := 0, targetText := "", searchNumber := false, notif :=  true) {
     global GameTitle
 
     ; Failsafe: Exit early if the game isn't running
@@ -306,7 +329,7 @@ ScanOCR(ratioX, ratioY, ratioW, ratioH, waitTime := 0, targetText := "", searchN
     }
     
     ; Trigger notifications on timeout
-    if (waitTime > 0) {
+    if (waitTime > 0 && notif) {
         if (targetText != "") {
             ShowNotif("warning", "OCR Timeout", "Failed to find text: '" targetText "' within " Round(waitTime/1000, 1) "s")
         } else if (searchNumber) {
@@ -382,7 +405,7 @@ GetBackgroundOCR(ratioX, ratioY, ratioW, ratioH) {
 }
 
 WaitForPixel(text, ratioX, ratioY, targetColor, targetColorHDR := "", timeoutMs := 8000, postDelayMs := 1000, isFatal := false, variation := 0, note := "", radius := 0) {
-    global ActiveMode, MasterMode, MasterStart, PixelMultiplier, GameTitle
+    global ActiveMode, MasterMode, PixelMultiplier, GameTitle
     
     StartTime := A_TickCount
     LastSec   := -1
@@ -394,10 +417,7 @@ WaitForPixel(text, ratioX, ratioY, targetColor, targetColorHDR := "", timeoutMs 
     nTarget := Integer(targetColor)
     nTargetHDR := targetColorHDR != "" ? Integer(targetColorHDR) : ""
 
-    Loop {
-        if ((ActiveMode != "Race" && ActiveMode != "Buy" && ActiveMode != "Unlock" && ActiveMode != "Spin") || (!MasterMode && MasterStart))
-            return false
-            
+    Loop {  
         hWnd := WinExist(GameTitle)
         if !hWnd
             return false
@@ -499,7 +519,7 @@ WaitForPixel(text, ratioX, ratioY, targetColor, targetColorHDR := "", timeoutMs 
 }
 
 GetPixelColor(ratioX, ratioY, delayMs := 0) {
-    global ActiveMode, MasterMode, MasterStart, PixelMultiplier, GameTitle
+    global ActiveMode, MasterMode, PixelMultiplier, GameTitle
     
     ; Apply multiplier and execute delay ONLY if delayMs is greater than 0
     if (delayMs > 0) {
@@ -1081,7 +1101,7 @@ WindowChangedEvent(wParam, lParam, *) {
 }
 
 ScanMenu(timeoutDuration := 5000) {
-    global ActiveMode, MasterMode, MasterStart
+    global ActiveMode, MasterMode
     PressKey("up", 1000) ; Stop idling
 
     StartTime := A_TickCount
@@ -1125,7 +1145,7 @@ ScanMenu(timeoutDuration := 5000) {
 
     Process("Timeout Error...")
     ShowNotif("warning", "EventLab Race", "Scanning timed out!")
-    ActiveMode := "", MasterMode := "", MasterStart := ""
+    ActiveMode := "", MasterMode := ""
     return { menu: "", submenu: "" } ; Return empty object on timeout
 }
 

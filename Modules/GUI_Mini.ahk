@@ -40,14 +40,14 @@ BuildMiniGui() {
     PreviewBtn := MiniGui.Add("Text", "x" Round(151*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E c94A3B8", "🎞️")
     PreviewBtn.OnEvent("Click", (ctrl, *) => TogglePreview(ctrl))
 
-    LockBtn := MiniGui.Add("Text", "x" Round(195*ScaleX) " y" Round(32*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E " (IsGameLocked ? "cF59E0B" : "c94A3B8"), "🔒")
-    LockBtn.OnEvent("Click", (ctrl, *) => ToggleWindowLock(ctrl))
-
-    AlwaysOnTopBtn := MiniGui.Add("Text", "x" Round(173*ScaleX) " y" Round(32*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E " (IsGameAlwaysOnTop ? "cF7507F" : "c94A3B8"), "📌")
+    AlwaysOnTopBtn := MiniGui.Add("Text", "x" Round(195*ScaleX) " y" Round(32*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E " (IsGameAlwaysOnTop ? "cF7507F" : "c94A3B8"), "📌")
     AlwaysOnTopBtn.OnEvent("Click", (ctrl, *) => AlwaysOnTopEnable(ctrl))
 
+    LockBtn := MiniGui.Add("Text", "x" Round(173*ScaleX) " y" Round(32*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E " (IsGameLocked ? "cF59E0B" : "c94A3B8"), "🔒")
+    LockBtn.OnEvent("Click", (ctrl, *) => ToggleWindowLock(ctrl))
+
     ResoSetBtn := MiniGui.Add("Text", "x" Round(151*ScaleX) " y" Round(32*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E " (IsGameWindowed ? "c3B82F6" : "c94A3B8"), "🗗")
-    ResoSetBtn.OnEvent("Click", (ctrl, *) => SetGameResolution(ctrl))
+    ResoSetBtn.OnEvent("Click", (ctrl, *) => ResizeGameClient(ctrl))
 
     InitStartBtn := MiniGui.Add("Text", "x" Round(195*ScaleX) " y" Round(70*ScaleY) " w" Round(18*ScaleX) " h" Round(18*ScaleY) " Center Background22252E c94A3B8", "⬤")
     InitStartBtn.OnEvent("Click", (ctrl, *) => MiniInitStartMacro(ctrl))
@@ -203,7 +203,7 @@ MiniStopMacro(ctrl) {
             default: 
         }
     
-    if !ActiveMode || (!MasterMode && MasterStart) {
+    if !ActiveMode && !MasterMode {
         ctrl.Opt("c94A3B8")
     }
 }
@@ -295,14 +295,14 @@ ShowNotif(type, title, message := "") {
 ;  GAME WINDOW MANIPULATION
 ; ══════════════════════════════════════════════
 
-SetGameResolution(ctrl) {
+ResizeGameClient(ctrl) {
     global IsGameWindowed, GameTitle, SelectedReso
     global IsGameAlwaysOnTop, AlwaysOnTopBtn
     global MonWidth, MonHeight, MonLeft, MonTop
 
     ; 1. Verify target window exists before executing sizing logic
     if !WinExist(GameTitle) {
-        ShowNotif("error", "Resolution Resizing Error", "Game window could not be found.")
+        ShowNotif("error", "Resize Game Client", "Game window could not be found.")
         return
     }
 
@@ -364,7 +364,7 @@ ToggleWindowLock(ctrl) {
     global IsGameLocked, GameTitle
     
     if !WinExist(GameTitle) {
-        ShowNotif("error","Lock Error", "Game window could not be found.")
+        ShowNotif("error","Lock Game Client", "Game window could not be found.")
         return
     }
     
@@ -425,6 +425,11 @@ TogglePreview(ctrl) {
     global GameTitle, ScaleX, ScaleY, MonRight, MonLeft, MonTop, MonBottom
     global previewGui, MiniGui
     static hThumbnail := 0
+
+    if !WinExist(GameTitle) {
+        ShowNotif("error","Mini Preview", "Game window could not be found.")
+        return
+    }
 
     UpdateMonitorMetrics()
 

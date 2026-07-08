@@ -7,6 +7,7 @@ StartSpin() {
     global ActiveMode, StatusText, cActive, SpinRunSeconds
     global SpinOpenCount_UI, SpinLeftCount_UI, SpinRunTime_UI
     global MiniSpinOpenCount_UI, MiniSpinLeftCount_UI, MiniSpinRunTime_UI
+    global MainSpinOpenCount_UI, MainSpinLeftCount_UI, MainSpinRunTime_UI
     global SuperBtn, RegularBtn
 
     if FindGame() = 0
@@ -33,6 +34,10 @@ StartSpin() {
         MiniSpinOpenCount_UI.Value    := "0" 
         MiniSpinLeftCount_UI.Value    := "0"  
         MiniSpinRunTime_UI.Value  := "00:00"
+
+        MainSpinOpenCount_UI.Value    := "0" 
+        MainSpinLeftCount_UI.Value    := "0"  
+        MainSpinRunTime_UI.Value  := "00:00"
         
         SpinRunTime_UI.SetFont("c" cHighlight)
         SpinLeftCount_UI.SetFont("c" cHighlight)
@@ -50,7 +55,7 @@ StartSpin() {
 
 SpinLoop() {
 
-    global ActiveMode, MasterMode, MasterStart
+    global ActiveMode, MasterMode
     global SpinInFullLoop, SpinType, SpinMode, SpinCount_In
     global TotalSWheel, TotalWheel
 
@@ -58,11 +63,11 @@ SpinLoop() {
     global SpinOpenCount   := 0
 
     SpinLeftCount   := SpinCount
-    LoopCount       := 100
+    SpinLoopCount       := 100
     
     SpinName        := SpinType = "SUPER" ? "Super Wheelspin" : "Regular Wheelspin"
 
-    if MasterMode = true && MasterStart = true {
+    if MasterMode = true{
         SpinCount_In.Value := SpinType = "SUPER" ?  TotalSWheel : TotalWheel
         SpinCount := SpinCount_In.Value
     }
@@ -72,7 +77,7 @@ SpinLoop() {
         return
     }
 
-    CheckAbort() => (ActiveMode != "Spin"  || (!MasterMode && MasterStart))
+    CheckAbort() => ActiveMode != "Spin" && !MasterMode
 
     ShowNotif("info", SpinName , "Starting " SpinName "...")
 
@@ -98,6 +103,9 @@ SpinLoop() {
     MiniSpinOpenCount_UI.Value    := SpinOpenCount
     MiniSpinLeftCount_UI.Value    := SpinLeftCount
 
+    MainSpinOpenCount_UI.Value    := SpinOpenCount
+    MainSpinLeftCount_UI.Value    := SpinLeftCount
+
     Loop {
         loop Min(SpinCount, SpinLeftCount) {            
             Process("Skipping...")
@@ -121,17 +129,19 @@ SpinLoop() {
             SpinOpenCount++
             SpinOpenCount_UI.Value          := SpinOpenCount
             MiniSpinOpenCount_UI.Value      := SpinOpenCount
+            MainSpinOpenCount_UI.Value      := SpinOpenCount
 
             SpinLeftCount--
             SpinLeftCount_UI.Value          := SpinLeftCount
             MiniSpinLeftCount_UI.Value      := SpinLeftCount
+            MainSpinLeftCount_UI.Value      := SpinLeftCount
             
             if CheckAbort()
                 break
             
             Process("Collecting...")
             if InStr(ScanOCR(0.071, 0.915, 0.110-0.070, 0.945-0.915, 4000), "C") {
-                if SpinOpenCount >= SpinCount || SpinOpenCount >= LoopCount {
+                if SpinOpenCount >= SpinCount || SpinOpenCount >= SpinLoopCount {
                     PressKey("Esc", 50) ; Collect Prize
                 } else {
                     PressKey("Enter", 50) ; Collect Prize and Spin Again
@@ -172,7 +182,7 @@ SpinLoop() {
             if Mod(SpinOpenCount, 5) = 0
                 ShowNotif("info", SpinName, "Opened " SpinOpenCount " " SpinName)
 
-            if SpinOpenCount >= SpinCount || SpinOpenCount >= LoopCount
+            if SpinOpenCount >= SpinCount || SpinOpenCount >= SpinLoopCount
                 break
 
             if CheckAbort()

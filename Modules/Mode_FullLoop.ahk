@@ -4,9 +4,12 @@
 ; ╚═════════════════════════════════════════╝
 
 StartFullLoop() {
-    global ActiveMode, MasterMode, MasterStart
-    global SkillPtsCount_In, SkillPtsWant_In, CarCount_In, LoopCount_In
-    global MaxPoints, PointsGain, cHighlight, cIdle, InitStartBtn
+    global ActiveMode, MasterMode, StartLoopMode
+    global LoopCount_In, SkillPtsScanSuccess
+
+    LoopMode := StartLoopMode
+    SkillPtsScanSuccess := false
+    CustomCarCount := 0
 
     if FindGame() = 0
         return
@@ -19,23 +22,34 @@ StartFullLoop() {
     }
 
     while (MasterMode && LoopCount_In.Value > 0) {
-        MasterStart := true
 
-        StartRace()
-        ActiveMode := ""
-        if !MasterMode
-            break
+        if !LoopMode || LoopMode = "Race" {
+            _UpdateStartLoop(RadioRace, "Race")
+            StartRace()
+            ActiveMode := ""
+            LoopMode := ""
+            if !MasterMode
+                break
+        }
 
-        StartBuy()
-        ActiveMode := ""
-        if !MasterMode
-            break
+        if !LoopMode || LoopMode = "Buy" {
+            _UpdateStartLoop(RadioBuy, "Buy")
+            StartBuy()
+            ActiveMode := ""
+            LoopMode := ""
+            if !MasterMode
+                break
+        }
 
-        StartUnlock()
-        ActiveMode := ""
-        if !MasterMode
-            break
-
+        if !LoopMode || LoopMode = "Unlock" {
+            _UpdateStartLoop(RadioUnlock, "Unlock")
+            StartUnlock()
+            ActiveMode := ""
+            LoopMode := ""
+            if !MasterMode
+                break
+        }
+        
         if SpinInFullLoop {
             OpenSpinPanel()
             StartSpin()
@@ -54,6 +68,5 @@ StartFullLoop() {
     }
     
     MasterMode := ""
-    MasterStart := false
     ResetIndicators()
 }

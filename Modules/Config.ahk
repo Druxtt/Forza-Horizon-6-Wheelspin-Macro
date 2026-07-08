@@ -137,7 +137,10 @@ _iniSpinType            := ReadMacroIni("Settings", "SpinType", "")
 global SpinType         := _iniSpinType ? _iniSpinType : "SUPER"
 
 _iniSpinMode            := ReadMacroIni("Settings", "SpinMode", "")
-global SpinMode         := _iniSpinMode ? _iniSpinMode : "KEEP"
+global SpinMode         := _iniSpinMode ? _iniSpinMode : "SELL"
+
+_iniStartLoopMode       := ReadMacroIni("Settings", "StartLoopMode", "")
+global StartLoopMode    := _iniStartLoopMode ? _iniStartLoopMode : "Race"
 
 ; ══════════════════════════════════════════════
 ;  MACRO RUNTIME & OPERATIONAL STATES
@@ -145,19 +148,20 @@ global SpinMode         := _iniSpinMode ? _iniSpinMode : "KEEP"
 global ActiveMode       := ""
 global PauseMode        := ""
 global MasterMode       := ""
-global MasterStart      := ""
 global RaceStart        := ""
-global SkillPtsCount_In := 0
-global SkillPtsWant_In  := 0
-global CarCount_In      := 0
-global LoopCount_In     := 0
+
+global SkillPtsCount := 0
+global SkillPtsWant  := MaxPoints
+global LoopCount     := 99
+global CarCount      := Floor(MaxPoints / CarData[SelectedCar].SkillPtsCost)
+
+global PointsGain       := GetMinScore(SkillPtsWant)
+global PointsTotal      := Min(PointsGain + SkillPtsCount, 999)
+global TimeTotal        := CalcTotalTime(SkillPtsWant, CarCount)
+
+global CustomCarCount := false
 global CustomSkillPts   := false
 global SkillPtsScanSuccess := false
-
-; Performance Tracking Metrics
-global PointsTotal      := 0
-global PointsGain       := 0
-global TimeTotal        := 0
 
 global TotalRunSeconds  := 0
 global RaceRunSeconds   := 0
