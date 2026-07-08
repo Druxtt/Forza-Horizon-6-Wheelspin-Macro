@@ -67,7 +67,7 @@ SpinLoop() {
     
     SpinName        := SpinType = "SUPER" ? "Super Wheelspin" : "Regular Wheelspin"
 
-    if MasterMode = true{
+    if MasterMode {
         SpinCount_In.Value := SpinType = "SUPER" ?  TotalSWheel : TotalWheel
         SpinCount := SpinCount_In.Value
     }

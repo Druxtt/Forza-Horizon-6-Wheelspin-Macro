@@ -112,7 +112,7 @@ ToggleTheme() {
 
     if ActiveMode {
         ActiveMode  := ""
-        MasterMode  := ""
+        MasterMode  := false
         Sleep(1250)
     }
 

@@ -1145,7 +1145,7 @@ ScanMenu(timeoutDuration := 5000) {
 
     Process("Timeout Error...")
     ShowNotif("warning", "EventLab Race", "Scanning timed out!")
-    ActiveMode := "", MasterMode := ""
+    ActiveMode := "", MasterMode := false
     return { menu: "", submenu: "" } ; Return empty object on timeout
 }
 

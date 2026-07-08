@@ -145,10 +145,9 @@ global StartLoopMode    := _iniStartLoopMode ? _iniStartLoopMode : "Race"
 ; ══════════════════════════════════════════════
 ;  MACRO RUNTIME & OPERATIONAL STATES
 ; ══════════════════════════════════════════════
+global MasterMode       := false
 global ActiveMode       := ""
 global PauseMode        := ""
-global MasterMode       := ""
-global RaceStart        := ""
 
 global SkillPtsCount := 0
 global SkillPtsWant  := MaxPoints
@@ -159,7 +158,8 @@ global PointsGain       := GetMinScore(SkillPtsWant)
 global PointsTotal      := Min(PointsGain + SkillPtsCount, 999)
 global TimeTotal        := CalcTotalTime(SkillPtsWant, CarCount)
 
-global CustomCarCount := false
+global RaceStart        := ""
+global CustomCarCount   := false
 global CustomSkillPts   := false
 global SkillPtsScanSuccess := false
 
