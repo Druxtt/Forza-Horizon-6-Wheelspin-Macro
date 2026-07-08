@@ -3,9 +3,8 @@
 Welcome to the ultimate progression companion for Forza Horizon 6! This is a highly modular, high-performance automation tool built on **AutoHotkey v2** designed to eliminate repetitive in-game grinds. Whether you want to skip the race grind, farm credits, or stack up Super Wheelspins, this macro fully automates your workflow using smart screen text recognition (OCR), pixel-aware menu tracking, and background play execution.
 
 <p align="center">
-  <img width="272" height="818" alt="Main Dashboard UI" src="https://github.com/user-attachments/assets/83ab1cde-1c95-4677-895c-d4f11a19135e" />
-  <img width="272" height="941" alt="Spin Interface & Settings Configuration" src="https://github.com/user-attachments/assets/664e1006-5d16-4cc5-8c4c-842278842b6d" />
-  <img width="272" height="818" alt="Targets & Telemetry" src="https://github.com/user-attachments/assets/67a73c20-bbae-4bbe-9371-9b2bb4749592" />
+  <img width="272" height="872" alt="Main Dashboard UI" src="https://github.com/user-attachments/assets/e2373c74-a7de-40eb-a18a-df59f95d78a1" />
+  <img width="272" height="995" alt="Targets & Telemetry" src="https://github.com/user-attachments/assets/3c3e5ee2-cbb7-460f-a015-044d53f72a92" />
 </p>
 
 ---
@@ -224,8 +223,14 @@ Always position your character inside the correct in-game menu structure before 
 
 Thanks to the integrated **Heuristic Menu Awareness Engine (`ScanMenu()`)**, the macro dynamically identifies your active in-game environment [whether you are in the Home Menu, Free Roam, or the Pause Menu].
 
-* **Starting Position:** You can launch the macro from almost any standard game menu or active session state.
+* **Starting Position:** You can launch the macro from within Free Roam session, Free Roam menu or Home menu.
 * **How it works:** Instead of relying on rigid, blind delays that require you to be on a precise tile, the script scans your screen, detects its current alignment, and gracefully routes its own path to the correct menu loop automatically. Just ensure there are no active loading screens or network disconnect alerts blocking the view before you press the hotkey.
+
+<p align="center">
+  <img width="1280" height="720" alt="FreeRoam" src="https://github.com/user-attachments/assets/bd414d82-c751-47c6-9e95-87759cc55b6d" />
+  <img width="1280" height="720" alt="FreeRoamMenu" src="https://github.com/user-attachments/assets/e186280f-73c0-4d4d-91f4-1a0caa6068d6" />
+  <img width="1280" height="720" alt="HomeMenu" src="https://github.com/user-attachments/assets/24128b71-7a4f-4cab-b995-01db556bfed8" />
+</p>
 
 #### For Custom Unlock Mode
 
@@ -249,10 +254,9 @@ Use the main dashboard application window to calibrate timing delays, adjust ses
 #### 1. Session Parameter Setup
 
 <p align="center">
-  <img width="271" height="139" alt="Target Matrix" src="https://github.com/user-attachments/assets/569140dd-ca8a-43cc-a5a1-f51fb80a3cc4" />
+  <img width="272" height="128" alt="Target Matrix" src="https://github.com/user-attachments/assets/1cea8704-0a11-409e-abdd-2b12490fb411" />
 </p>
 
-* **Loop Entry Selection:** Choose where your automated loop begins (`🏁 RACE`, `🚗 BUY`, or `🛞 UNLOCK`).
 * **Current Skill Points:** Type in or check your active skill point total balance.
 * **Desired Skill Points:** Set your goal ceiling target (e.g., `980`). The macro will auto-exit once this point calculation limit is met.
 * **Car Amount:** Define exactly how many vehicles the macro should purchase back-to-back during a standalone Buy loop.
@@ -281,9 +285,10 @@ You can add / edit custom reward cars or adjust underlying movement paths effort
 #### 3. Core Operation Triggers
 
 <p align="center">
-  <img width="268" height="161" alt="primary control buttons" src="https://github.com/user-attachments/assets/d4bae11a-97e5-4b0a-b114-c5bdc9945955" />
+  <img width="272" height="240" alt="primary control buttons" src="https://github.com/user-attachments/assets/abcc932c-3b56-448c-8023-a7497f87a1c6" />
 </p>
 
+* **Loop Entry Selection:** Choose where your automated loop begins (`🏁 RACE`, `🚗 BUY`, or `🛞 UNLOCK`).
 * **FULL LOOP:** Launches the continuous endless chain sequence [**Race ➔ Buy ➔ Unlock**].
 * **RACE / BUY / UNLOCK:** Starts that specific mode immediately as an isolated standalone process.
 * **OPEN SPIN INTERFACE:** Spawns the dedicated prize clearing interface panel.
@@ -291,7 +296,7 @@ You can add / edit custom reward cars or adjust underlying movement paths effort
 #### 4. Automated Bulk Wheelspin Terminal
 
 <p align="center">
-  <img width="253" height="292" alt="image" src="https://github.com/user-attachments/assets/3a50c8b0-ce41-48f5-a298-c147b1642217" />
+  <img width="252" height="352" alt="Wheelspin Interface" src="https://github.com/user-attachments/assets/0232d8be-2036-439f-b1f5-f178550088f1" />
 </p>
 
 * **Spins Count:** Enter your desired target volume to open.
@@ -310,7 +315,7 @@ You can add / edit custom reward cars or adjust underlying movement paths effort
 #### 6. Dynamic Track Profile & Click-To-Copy Share Codes
 
 <p align="center">
-  <img width="270" height="181" alt="footer" src="https://github.com/user-attachments/assets/10180cbf-b658-4620-a57c-c825b7abc9e7" />
+  <img width="272" height="210" alt="footer" src="https://github.com/user-attachments/assets/94dcd57d-df05-4c4d-ab86-41d24b2e2cf2" />
 </p>
 
 * Switch your track selection dropdown to update underlying script paths automatically.
