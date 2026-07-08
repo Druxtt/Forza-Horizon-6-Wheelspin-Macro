@@ -8,13 +8,15 @@
 ; ══════════════════════════════════════════════
 
 TogglePause() {
-    global ActiveMode, PauseMode, StatusText, cIdle, cPaused, cStat, MasterMode
+    global ActiveMode, PauseMode, StatusText, cStat, MasterMode
+    p := GetPalette()
+
     Pause(-1)
     ;PauseMode := ActiveMode ? !PauseMode : PauseMode
 
     if !PauseMode && ActiveMode {
         StatusText.Value := "⬤  Paused..."
-        StatusText.SetFont("c" cPaused)
+        StatusText.SetFont("c" p["cPaused"])
         PauseMode := true
         ShowNotif("info", "Macro Paused", "Execution has been temporarily suspended.")
     } else if PauseMode && ActiveMode {
@@ -40,52 +42,6 @@ ToggleMode(mode) {
     return true
 }
 
-ToggleAll() {
-    global ActiveMode, MasterMode, MasterStart
-    global SkillPtsCount_In, SkillPtsWant_In, CarCount_In, LoopCount_In
-    global MaxPoints, PointsGain, cHighlight, cIdle, InitStartBtn
-
-    if FindGame() = 0
-        return
-
-    StartIndicators()
-    MasterMode := !MasterMode
-
-    if (MasterMode) {
-        ShowNotif("success", "Master Loop Initiated", "Beginning automated event cycles.")
-    }
-
-    while (MasterMode && LoopCount_In.Value > 0) {
-        MasterStart := true
-
-        StartRace()
-        ActiveMode := ""
-        if !MasterMode
-            break
-
-        StartBuy()
-        ActiveMode := ""
-        if !MasterMode
-            break
-
-        StartUnlock()
-        ActiveMode := ""
-        if !MasterMode
-            break
-
-        Process("Restarting Race...")
-        LoopCount_In.Value -= 1
-    }
-    
-    if (MasterMode == "") {
-        ShowNotif("info", "Sequence Complete", "Master loop runs finished or stopped.")
-    }
-    
-    MasterMode := ""
-    MasterStart := false
-    ResetIndicators()
-}
-
 ; ══════════════════════════════════════════════
 ;  COUNTDOWN ENGINE
 ; ══════════════════════════════════════════════
@@ -108,6 +64,10 @@ SmartCountdown(TotalSec, UIEl, ActiveText) {
 StartIndicators() {
     global StatusText, Process_UI, Key_UI, TotalRunTime_UI, ActiveMode
     global SkillPtsCount_In, SkillPtsWant_In, CarCount_In, CarSelect_UI
+
+    p := GetPalette()
+    cActive := p["cActive"]
+    cHighlight := P["cHighlight"]
 
     StatusText.Value := "⬤  Running..."
     StatusText.SetFont("c" cActive)
@@ -134,9 +94,13 @@ StartIndicators() {
 }
 
 ResetIndicators() {
-    global Key_UI, Process_UI, StatusText, cIdle, cTextDim
+    global Key_UI, Process_UI, StatusText
     global TotalRunTime_UI, RaceRunTime_UI, BuyRunTime_UI, UnlockRunTime_UI, SectorCount_UI, ActiveMode, MasterMode
     global SkillPtsCount_In, SkillPtsWant_In, CarCount_In, CarSelect_UI
+
+    p := GetPalette()
+    cIdle := p["cIdle"]
+    cTextDim := p["cTextDim"]
 
     SetTimer(RaceTimerTick, 0)
     SetTimer(BuyTimerTick, 0)
@@ -166,6 +130,9 @@ ResetIndicators() {
     SWheelCount_UI.SetFont("c" cIdle)
     WheelCount_UI.SetFont("c" cIdle)
     CreditCount_UI.SetFont("c" cIdle)
+    MainSpinOpenCount_UI.SetFont("c" cIdle)
+    MainSpinLeftCount_UI.SetFont("c" cIdle)
+    MainSpinRunTime_UI.SetFont("c" cIdle)
     
     StatusText.Value := "⬤  Stopped"
     StatusText.SetFont("c" cTextDim)
@@ -197,6 +164,10 @@ GetMinScore(score) {
     return Floor(sections * pointsPerSection)
 }
 
+CalcTotalTime(score, car) {
+    return CalcTimeRace(score) + CalcTimeBuy(car) + CalcTimeUnlock(car) + CalcTimeSpin(car) 
+}
+
 CalcTimeRace(score) {
     global MaxSections, EventLab, EventLabData
 
@@ -219,12 +190,17 @@ CalcTimeRace(score) {
 }
 
 CalcTimeBuy(car) {
-    totalTime := car * 3
+    totalTime := car * 3.2
     return totalTime / 60
 }
 
 CalcTimeUnlock(car) {
-    totalTime := car * 34
+    totalTime := car * 38.5
+    return totalTime / 60
+}
+
+CalcTimeSpin(car) {
+    totalTime := car * 5.8
     return totalTime / 60
 }
 
@@ -273,12 +249,14 @@ UnlockTimerTick() {
 }
 
 spinTimerTick() {
-    global SpinRunSeconds, SpinRunTime_UI, cHighlight
+    global SpinRunSeconds, SpinRunTime_UI, MiniSpinRunTime_UI, MainSpinRunTime_UI, cHighlight
     SpinRunSeconds++
     mins := SpinRunSeconds // 60
     secs := Mod(SpinRunSeconds, 60)
 
     SpinRunTime_UI.Value := Format("{:02d}:{:02d}", mins, secs)
+    MiniSpinRunTime_UI.Value := Format("{:02d}:{:02d}", mins, secs)
+    MainSpinRunTime_UI.Value := Format("{:02d}:{:02d}", mins, secs)
 }
 
 ; ══════════════════════════════════════════════
@@ -299,7 +277,7 @@ GetCoordsColor() {
     SetTimer(() => ToolTip(), -3000)
 }
 
-ScanOCR(ratioX, ratioY, ratioW, ratioH, waitTime := 0, targetText := "", searchNumber := false) {
+ScanOCR(ratioX, ratioY, ratioW, ratioH, waitTime := 0, targetText := "", searchNumber := false, notif :=  true) {
     global GameTitle
 
     ; Failsafe: Exit early if the game isn't running
@@ -351,7 +329,7 @@ ScanOCR(ratioX, ratioY, ratioW, ratioH, waitTime := 0, targetText := "", searchN
     }
     
     ; Trigger notifications on timeout
-    if (waitTime > 0) {
+    if (waitTime > 0 && notif) {
         if (targetText != "") {
             ShowNotif("warning", "OCR Timeout", "Failed to find text: '" targetText "' within " Round(waitTime/1000, 1) "s")
         } else if (searchNumber) {
@@ -427,7 +405,7 @@ GetBackgroundOCR(ratioX, ratioY, ratioW, ratioH) {
 }
 
 WaitForPixel(text, ratioX, ratioY, targetColor, targetColorHDR := "", timeoutMs := 8000, postDelayMs := 1000, isFatal := false, variation := 0, note := "", radius := 0) {
-    global ActiveMode, MasterMode, MasterStart, PixelMultiplier, GameTitle
+    global ActiveMode, MasterMode, PixelMultiplier, GameTitle
     
     StartTime := A_TickCount
     LastSec   := -1
@@ -439,10 +417,7 @@ WaitForPixel(text, ratioX, ratioY, targetColor, targetColorHDR := "", timeoutMs 
     nTarget := Integer(targetColor)
     nTargetHDR := targetColorHDR != "" ? Integer(targetColorHDR) : ""
 
-    Loop {
-        if ((ActiveMode != "Race" && ActiveMode != "Buy" && ActiveMode != "Unlock" && ActiveMode != "Spin") || (!MasterMode && MasterStart))
-            return false
-            
+    Loop {  
         hWnd := WinExist(GameTitle)
         if !hWnd
             return false
@@ -544,7 +519,7 @@ WaitForPixel(text, ratioX, ratioY, targetColor, targetColorHDR := "", timeoutMs 
 }
 
 GetPixelColor(ratioX, ratioY, delayMs := 0) {
-    global ActiveMode, MasterMode, MasterStart, PixelMultiplier, GameTitle
+    global ActiveMode, MasterMode, PixelMultiplier, GameTitle
     
     ; Apply multiplier and execute delay ONLY if delayMs is greater than 0
     if (delayMs > 0) {
@@ -628,16 +603,16 @@ BGColorCompare(color1, color2, variation) {
 PressKey(key, delay := 500) {
     global Key_UI, MiniKey_UI, cHighlight, cIdle, KeyMultiplier, GameTitle, GameHwnd, GameExe
 
-    switch key {
-        case "Down":      displayname := "↓"
-        case "Up":        displayname := "↑"
-        case "Left":      displayname := "←"
-        case "Right":     displayname := "→"
-        case "Enter":     displayname := "Enter ↵" 
-        case "Backspace": displayname := "⬅ Backspace"
-        case "w down", "w up": displayname := "W"
-        case "s down", "s up": displayname := "S"
-        default:          displayname := key
+    switch StrLower(key) {
+        case "down":            displayname := "↓"
+        case "up":              displayname := "↑"
+        case "left":            displayname := "←"
+        case "right":           displayname := "→"
+        case "enter":           displayname := "Enter ↵" 
+        case "backspace":       displayname := "⬅ Backspace"
+        case "w down", "w up":  displayname := "W"
+        case "s down", "s up":  displayname := "S"
+        default:                displayname := key
     }
 
     if IsSet(Key_UI) && Key_UI
@@ -1123,4 +1098,65 @@ WindowChangedEvent(wParam, lParam, *) {
             PostMessage(0x0086, 1, 0, , "ahk_id " gameHwnd)      ; WM_NCACTIVATE
         }
     }
+}
+
+ScanMenu(timeoutDuration := 5000) {
+    global ActiveMode, MasterMode
+    PressKey("up", 1000) ; Stop idling
+
+    StartTime := A_TickCount
+    Process("Scanning for Menus...")
+
+    menuProfiles := [
+        { x: 0.027, y: 0.190, w: 0.221, h: 0.091, menu: "Home Menu", 
+          keywords: Map("Campaign", "Home Menu - Campaign", 
+                        "Buy & Sell", "Home Menu - Buy & Sell", 
+                        "Cars", "Home Menu - Cars", 
+                        "Custom", "Home Menu - Customizable Garage", 
+                        "Character", "Home Menu - Character") },
+
+        { x: 0.130, y: 0.508, w: 0.137, h: 0.105, menu: "Free Roam Menu", 
+          keywords: Map("Collection Journal", "Free Roam Menu - Campaign", 
+                        "Buy New & Used", "Free Roam Menu - Cars", 
+                        "Super Wheelspin", "Free Roam Menu - My Horizon", 
+                        "Convoy", "Free Roam Menu - Online", 
+                        "Estates", "Free Roam Menu - Creative Hub") },
+
+        { x: 0.730, y: 0.240, w: 0.134, h: 0.063, menu: "Free Roam Menu", 
+          keywords: Map("Car Pass", "Free Roam Menu - Store") },
+
+        { x: 0.069, y: 0.933, w: 0.030, h: 0.025, menu: "Free Roam", 
+          keywords: Map("ANNA", "Free Roam") } ; Defaulted submenu to Free Roam here
+    ]
+
+    while (A_TickCount - StartTime <= timeoutDuration) {
+        for profile in menuProfiles {
+            ocrText := ScanOCR(profile.x, profile.y, profile.w, profile.h, 200)
+            
+            for keyword, subMenuValue in profile.keywords {
+                if InStr(ocrText, keyword) {
+                    ; Return both as an object
+                    return { menu: profile.menu, submenu: subMenuValue }
+                }
+            }
+        }
+        Sleep(50)
+    }
+
+    Process("Timeout Error...")
+    ShowNotif("warning", "EventLab Race", "Scanning timed out!")
+    ActiveMode := "", MasterMode := false
+    return { menu: "", submenu: "" } ; Return empty object on timeout
+}
+
+EmergencyExit(LogDetails := "Unknown safety violation.") {
+    SoundBeep(400, 500)
+    MsgBox(
+        "CRITICAL SAFETY INTERCEPT!`n`n" 
+        LogDetails "`n`n"
+        "Script has been reset to IDLE state to protect your account.", 
+        "MHI Emergency System",
+        "IconX"
+    )
+    Reload() 
 }

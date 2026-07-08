@@ -9,7 +9,7 @@
 BuildMiniGui() {
 
     Global
-    Global RaceControls := [], BuyControls := [], UnlockControls := []
+    Global RaceControls := [], BuyControls := [], UnlockControls := [], SpinControls := []
     global previewGui := ""
 
     MiniGui := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale")
@@ -40,14 +40,14 @@ BuildMiniGui() {
     PreviewBtn := MiniGui.Add("Text", "x" Round(151*ScaleX) " y" Round(10*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E c94A3B8", "🎞️")
     PreviewBtn.OnEvent("Click", (ctrl, *) => TogglePreview(ctrl))
 
-    LockBtn := MiniGui.Add("Text", "x" Round(195*ScaleX) " y" Round(32*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E " (IsGameLocked ? "cF59E0B" : "c94A3B8"), "🔒")
-    LockBtn.OnEvent("Click", (ctrl, *) => ToggleWindowLock(ctrl))
-
-    AlwaysOnTopBtn := MiniGui.Add("Text", "x" Round(173*ScaleX) " y" Round(32*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E " (IsGameAlwaysOnTop ? "cF7507F" : "c94A3B8"), "📌")
+    AlwaysOnTopBtn := MiniGui.Add("Text", "x" Round(195*ScaleX) " y" Round(32*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E " (IsGameAlwaysOnTop ? "cF7507F" : "c94A3B8"), "📌")
     AlwaysOnTopBtn.OnEvent("Click", (ctrl, *) => AlwaysOnTopEnable(ctrl))
 
+    LockBtn := MiniGui.Add("Text", "x" Round(173*ScaleX) " y" Round(32*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E " (IsGameLocked ? "cF59E0B" : "c94A3B8"), "🔒")
+    LockBtn.OnEvent("Click", (ctrl, *) => ToggleWindowLock(ctrl))
+
     ResoSetBtn := MiniGui.Add("Text", "x" Round(151*ScaleX) " y" Round(32*ScaleY) " w" Round(20*ScaleX) " h" Round(20*ScaleY) " Center Background22252E " (IsGameWindowed ? "c3B82F6" : "c94A3B8"), "🗗")
-    ResoSetBtn.OnEvent("Click", (ctrl, *) => SetGameResolution(ctrl))
+    ResoSetBtn.OnEvent("Click", (ctrl, *) => ResizeGameClient(ctrl))
 
     InitStartBtn := MiniGui.Add("Text", "x" Round(195*ScaleX) " y" Round(70*ScaleY) " w" Round(18*ScaleX) " h" Round(18*ScaleY) " Center Background22252E c94A3B8", "⬤")
     InitStartBtn.OnEvent("Click", (ctrl, *) => MiniInitStartMacro(ctrl))
@@ -109,6 +109,20 @@ BuildMiniGui() {
 
     UnlockControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "💲  Credits Earned"))
     UnlockControls.Push(MiniCreditCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(145*ScaleX) " yp w" Round(70*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0 CR"))
+
+    ; --- ADAPTIVE SECTION 4: WHEELSPINS ---
+    MiniGui.SetFont("s" (7 * FontScale) " bold c566273", "Segoe UI")
+    SpinControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y" StartY " w" Round(190*ScaleX) " h" Round(12*ScaleY) " BackgroundTrans c00D2FF", "◼ WHEELSPINS"))
+
+    MiniGui.SetFont("s" (9 * FontScale) " norm c8A99AD", "Segoe UI")
+    SpinControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(6*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🕓  Spin Runtime"))
+    SpinControls.Push(MiniSpinRunTime_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "00:00"))
+
+    SpinControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🎊  Spins Opened"))
+    SpinControls.Push(MiniSpinOpenCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(155*ScaleX) " yp w" Round(60*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0"))
+
+    SpinControls.Push(MiniGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(4*ScaleY) " w" Round(140*ScaleX) " h" Round(16*ScaleY) " BackgroundTrans", "🎁  Spins Remaining"))
+    SpinControls.Push(MiniSpinLeftCount_UI := _LinkNoirTelemetry(MiniGui.Add("Text", "x" Round(145*ScaleX) " yp w" Round(70*ScaleX) " h" Round(16*ScaleY) " Right BackgroundTrans cF3F4F6"), "0"))
 }
 
 ; ══════════════════════════════════════════════
@@ -116,13 +130,15 @@ BuildMiniGui() {
 ; ══════════════════════════════════════════════
 UpdateMiniWidgetMode(activeMode) {
     global CurrentWidgetHeight, LeftAccentBar, MiniGui, ScaleY
-    global RaceControls, BuyControls, UnlockControls
+    global RaceControls, BuyControls, UnlockControls, SpinControls
     
     for ctrl in RaceControls
         ctrl.Visible := false
     for ctrl in BuyControls
         ctrl.Visible := false
     for ctrl in UnlockControls
+        ctrl.Visible := false
+    for ctrl in SpinControls
         ctrl.Visible := false
 
     switch StrLower(activeMode) {
@@ -140,6 +156,11 @@ UpdateMiniWidgetMode(activeMode) {
             for ctrl in UnlockControls
                 ctrl.Visible := true
             targetHeight := Round(215 * ScaleY)
+
+        case "spin":
+            for ctrl in SpinControls
+                ctrl.Visible := true
+            targetHeight := Round(195 * ScaleY)
             
         default:
             targetHeight := Round(100 * ScaleY)
@@ -173,7 +194,7 @@ MiniStopMacro(ctrl) {
     global MasterMode, ActiveMode, PauseBtn
 
     if MasterMode
-        ToggleAll()
+        StartFullLoop()
     else
         switch ActiveMode {
             case "Race": StartRace()
@@ -182,7 +203,7 @@ MiniStopMacro(ctrl) {
             default: 
         }
     
-    if !ActiveMode || (!MasterMode && MasterStart) {
+    if !ActiveMode && !MasterMode {
         ctrl.Opt("c94A3B8")
     }
 }
@@ -190,7 +211,7 @@ MiniStopMacro(ctrl) {
 MiniInitStartMacro(ctrl) {
 
     ctrl.Opt("c22C55E")
-    ToggleAll()
+    StartFullLoop()
     ctrl.Opt("c94A3B8")
 }
 
@@ -274,14 +295,14 @@ ShowNotif(type, title, message := "") {
 ;  GAME WINDOW MANIPULATION
 ; ══════════════════════════════════════════════
 
-SetGameResolution(ctrl) {
+ResizeGameClient(ctrl) {
     global IsGameWindowed, GameTitle, SelectedReso
     global IsGameAlwaysOnTop, AlwaysOnTopBtn
     global MonWidth, MonHeight, MonLeft, MonTop
 
     ; 1. Verify target window exists before executing sizing logic
     if !WinExist(GameTitle) {
-        ShowNotif("error", "Resolution Resizing Error", "Game window could not be found.")
+        ShowNotif("error", "Resize Game Client", "Game window could not be found.")
         return
     }
 
@@ -343,7 +364,7 @@ ToggleWindowLock(ctrl) {
     global IsGameLocked, GameTitle
     
     if !WinExist(GameTitle) {
-        ShowNotif("error","Lock Error", "Game window could not be found.")
+        ShowNotif("error","Lock Game Client", "Game window could not be found.")
         return
     }
     
@@ -404,6 +425,11 @@ TogglePreview(ctrl) {
     global GameTitle, ScaleX, ScaleY, MonRight, MonLeft, MonTop, MonBottom
     global previewGui, MiniGui
     static hThumbnail := 0
+
+    if !WinExist(GameTitle) {
+        ShowNotif("error","Mini Preview", "Game window could not be found.")
+        return
+    }
 
     UpdateMonitorMetrics()
 

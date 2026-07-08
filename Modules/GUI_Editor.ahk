@@ -78,7 +78,8 @@ ShowCarEditorGUI(Mode := "New") {
 
     ; Shared Layout Geometry Tokens
     lblW  := Round(95 * ScaleX)
-    editW := Round(185 * ScaleX)
+    editW := Round(170 * ScaleX)
+    editX := Round(125 * ScaleX) 
     rowH  := Round(22 * ScaleY)
     gapY  := Round(6 * ScaleY)
     
@@ -90,15 +91,15 @@ ShowCarEditorGUI(Mode := "New") {
     
     SetFixedFont(EditorGui, 9, "norm", "Light")
     EditorGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(8*ScaleY) " w" lblW " h" rowH " 0x200 c" p["textDim"], "Profile Name:")
-    EditorGui.eName := EditorGui.Add("Edit", "x" Round(110*ScaleX) " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"] (Mode == "Edit" ? " +ReadOnly" : ""), vName)
+    EditorGui.eName := EditorGui.Add("Edit", "x" editX " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"] (Mode == "Edit" ? " +ReadOnly" : ""), vName)
     if (Mode == "Edit")
         EditorGui.eName.Opt("+Disabled c" p["textDim"])
         
     EditorGui.Add("Text", "x" Round(15*ScaleX) " y+" gapY " w" lblW " h" rowH " 0x200 c" p["textDim"], "Search Name:")
-    EditorGui.eAlt := EditorGui.Add("Edit", "x" Round(110*ScaleX) " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"], vAltName)
+    EditorGui.eAlt := EditorGui.Add("Edit", "x" editX " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"], vAltName)
     
     EditorGui.Add("Text", "x" Round(15*ScaleX) " y+" gapY " w" lblW " h" rowH " 0x200 c" p["textDim"], "Stats Number:")
-    EditorGui.eStats := EditorGui.Add("Edit", "x" Round(110*ScaleX) " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"] " Number", vStats)
+    EditorGui.eStats := EditorGui.Add("Edit", "x" editX " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"] " Number", vStats)
 
     ; =========================================================================
     ; SECTION 2: REWARD BALANCES & VALUATION ECONOMY
@@ -108,16 +109,16 @@ ShowCarEditorGUI(Mode := "New") {
     
     SetFixedFont(EditorGui, 9, "norm", "Light")
     EditorGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(8*ScaleY) " w" lblW " h" rowH " 0x200 c" p["textDim"], "Points Cost:")
-    EditorGui.eCost := EditorGui.Add("Edit", "x" Round(110*ScaleX) " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"] " Number", vCost)
+    EditorGui.eCost := EditorGui.Add("Edit", "x" editX " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"] " Number", vCost)
     
     EditorGui.Add("Text", "x" Round(15*ScaleX) " y+" gapY " w" lblW " h" rowH " 0x200 c" p["textDim"], "Super Spins:")
-    EditorGui.eSWheel := EditorGui.Add("Edit", "x" Round(110*ScaleX) " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"] " Number", vSWheel)
+    EditorGui.eSWheel := EditorGui.Add("Edit", "x" editX " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"] " Number", vSWheel)
     
-    EditorGui.Add("Text", "x" Round(15*ScaleX) " y+" gapY " w" lblW " h" rowH " 0x200 c" p["textDim"], "Reg Spins:")
-    EditorGui.eWheel := EditorGui.Add("Edit", "x" Round(110*ScaleX) " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"] " Number", vWheel)
+    EditorGui.Add("Text", "x" Round(15*ScaleX) " y+" gapY " w" lblW " h" rowH " 0x200 c" p["textDim"], "Regular Spins:")
+    EditorGui.eWheel := EditorGui.Add("Edit", "x" editX " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"] " Number", vWheel)
     
     EditorGui.Add("Text", "x" Round(15*ScaleX) " y+" gapY " w" lblW " h" rowH " 0x200 c" p["textDim"], "Credits (CR):")
-    EditorGui.eCredit := EditorGui.Add("Edit", "x" Round(110*ScaleX) " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"] " Number", vCredit)
+    EditorGui.eCredit := EditorGui.Add("Edit", "x" editX " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"] " Number", vCredit)
 
     ; =========================================================================
     ; SECTION 3: AUTOMATION ROUTE PATHS (Moved to the bottom)
@@ -126,14 +127,14 @@ ShowCarEditorGUI(Mode := "New") {
     EditorGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(14*ScaleY) " w" Round(280*ScaleX) " h" Round(14*ScaleY) " Center c" p["textDim"], "──  AUTOMATION PATHS  ──")
     
     SetFixedFont(EditorGui, 9, "norm", "Light")
-    EditorGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(8*ScaleY) " w" lblW " h" rowH " 0x200 c" p["textDim"], "Mfr Path:")
-    EditorGui.eMfrPath := EditorGui.Add("Edit", "x" Round(110*ScaleX) " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"], vMfrPath)
+    EditorGui.Add("Text", "x" Round(15*ScaleX) " y+" Round(8*ScaleY) " w" lblW " h" rowH " 0x200 c" p["textDim"], "Manufacturer Path:")
+    EditorGui.eMfrPath := EditorGui.Add("Edit", "x" editX " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"], vMfrPath)
 
     EditorGui.Add("Text", "x" Round(15*ScaleX) " y+" gapY " w" lblW " h" rowH " 0x200 c" p["textDim"], "Car Path:")
-    EditorGui.eCarPath := EditorGui.Add("Edit", "x" Round(110*ScaleX) " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"], vCarPath)
+    EditorGui.eCarPath := EditorGui.Add("Edit", "x" editX " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"], vCarPath)
     
     EditorGui.Add("Text", "x" Round(15*ScaleX) " y+" gapY " w" lblW " h" rowH " 0x200 c" p["textDim"], "Unlock Path:")
-    EditorGui.eUnlockPath := EditorGui.Add("Edit", "x" Round(110*ScaleX) " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"], vUnlockPath)
+    EditorGui.eUnlockPath := EditorGui.Add("Edit", "x" editX " yp w" editW " h" rowH " -E0x200 Background" p["editBg"] " c" p["text"], vUnlockPath)
     
     ; VALIDATION: Lock all profile configurations except paths if editing a default profile
     if (Mode == "Edit" && IsDefaultProfile(SelectedCar)) {
@@ -355,7 +356,7 @@ CommitChanges(CtrlObj, *) {
     WheelValue   := Number(EditorGui.eWheel.Value)
     CreditValue  := Number(EditorGui.eCredit.Value)
     if (SWheelValue <= 0 && WheelValue <= 0 && CreditValue <= 0) {
-        MsgBox("Reward payload is empty!`n`nYou must provide a value greater than 0 for at least one of the following fields:`n- Super Spins`n- Reg Spins`n- Credits (CR)", "Input Error", 48)
+        MsgBox("Reward payload is empty!`n`nYou must provide a value greater than 0 for at least one of the following fields:`n- Super Spins`n- Regular Spins`n- Credits (CR)", "Input Error", 48)
         return
     }
     

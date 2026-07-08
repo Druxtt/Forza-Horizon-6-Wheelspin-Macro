@@ -15,24 +15,23 @@
 #MaxThreadsPerHotkey 2
 #SingleInstance Force
 
-#Include Lib\OCR.ahk
-
+#Include lib\OCR.ahk
 #Include modules\Config.ahk
-#Include modules\MainGUI.ahk
-#Include modules\MiniGUI.ahk
+#Include modules\GUI_Main.ahk
+#Include modules\GUI_Mini.ahk
+#Include modules\GUI_Editor.ahk
 #Include modules\Engine.ahk
-#Include modules\Task_Race.ahk
-#Include modules\Task_Buy.ahk
-#Include modules\Task_Unlock.ahk
-#Include modules\Task_Spin.ahk
+#Include modules\Mode_FullLoop.ahk
+#Include modules\Mode_Buy.ahk
+#Include modules\Mode_Race.ahk
+#Include modules\Mode_Spin.ahk
+#Include modules\Mode_Unlock.ahk
 #Include modules\SpecialK.ahk
-#Include modules\EditorGUI.ahk
 
 ; Setup tray icon dynamically
 TraySetIcon(A_IsCompiled ? A_ScriptFullPath : A_ScriptDir "\assets\icon.ico")
 
 UpdateMonitorMetrics()
-
 InitializeDatabase()
 BuildMainGui()
 BuildMiniGui()
@@ -48,7 +47,7 @@ F12::Reload()
 \::StartRace()
 [::StartBuy()
 ]::StartUnlock()
-/::ToggleAll()
+/::StartFullLoop()
 `::TogglePause()
 #HotIf
 

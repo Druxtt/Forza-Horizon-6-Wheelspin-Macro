@@ -6,9 +6,9 @@
 StartUnlock() {
     global ActiveMode, StatusText
     global SkillPtsCount_In, CarCount_In, CarsLabel_UI
-    global SWheelCount_UI, CreditCount_UI, UnlockRunTime_UI, WheelCount_UI
+    global SWheelCount_UI, WheelCount_UI, CreditCount_UI, UnlockRunTime_UI
     global MiniSWheelCount_UI, MiniWheelCount_UI, MiniCreditCount_UI, MiniUnlockRunTime_UI
-    global UnlockRunSeconds, SkillPtsScanSuccess, cHighlight
+    global UnlockRunSeconds, cHighlight
     global CarData, SelectedCar
 
     if (FindGame() == 0)
@@ -24,7 +24,6 @@ StartUnlock() {
     
     if (ActiveMode == "Unlock") {
         UnlockRunSeconds    := 0
-        SkillPtsScanSuccess := false
         CarCount_In.Value   := Floor(SkillPtsCount_In.Value / CarData[SelectedCar].SkillPtsCost)
         CarsLabel_UI.Value  := CarCount_In.Value
 
@@ -48,7 +47,7 @@ StartUnlock() {
 }
 
 UnlockLoop() {
-    global ActiveMode, MasterMode, MasterStart, SkillPtsScanSuccess
+    global ActiveMode, MasterMode, SkillPtsScanSuccess
     global cActive, cHighlight, cIdle
     global SWheelCount_UI, WheelCount_UI, CreditCount_UI, UnlockRunTime_UI
     global SkillPtsCount_In, CarCount_In, MaxPoints
@@ -66,34 +65,36 @@ UnlockLoop() {
     car := CarData[SelectedCar]
 
     ; Initialize Automation Telemetry counters
-    NotiFreqInterv := 5
-    UnlockCount    := 0
-    TotalSWheel    := 0
-    TotalWheel     := 0
+    global TotalSWheel    := 0
+    global TotalWheel     := 0
     TotalCredit    := 0
+    UnlockCount    := 0
+    NotiFreqInterv := 5
 
-    CheckAbort() => (ActiveMode != "Unlock" || (!MasterMode && MasterStart))
+    CheckAbort() => ActiveMode != "Unlock" && !MasterMode
 
     ; DYNAMIC UI STYLING: Highlights matching UI counters if the car rewards them
     if (car.UnlockSWheel > 0) SWheelCount_UI.SetFont("c" cHighlight)
     if (car.UnlockWheel > 0)  WheelCount_UI.SetFont("c" cHighlight)
     if (car.UnlockCredit > 0) CreditCount_UI.SetFont("c" cHighlight)
-
+    
+    Process("Starting Emergency Unlock Check", 500)
     SetTimer(EmergencyUnlockCheck, 400)
-    CarMenu := ScanOCR(0.060, 0.090, 0.096, 0.045)
 
+    CarMenu := ScanOCR(0.060, 0.090, 0.096, 0.045)
     if !InStr(CarMenu, "My Cars") {
-        Process("Navigating Home...")
-        Loop 4
-            PressKey("Up", 50)
+
+        Process("Scanning Menu...")
+        UnlockNav("Reward Unlock")
 
         if CheckAbort()
             return
 
-        if (!MasterMode && !SkillPtsScanSuccess && SkillPtsCount_In.Value == 0) {
+        if !SkillPtsScanSuccess && !SkillPtsCount_In.Value {
             Process("Checking Available Skill Points..")
-            PressKey("PgDn"), PressKey("PgDn")
-            PressKey("Down", 50), PressKey("Enter", 800)
+            PressKey("PgDn") ; Navigate to Cars
+            PressKey("Down", 50) ; Navigate to Upgrades & Tuning
+            PressKey("Enter", 800) ; Select Upgrades & Tuning
             Loop 7 
                 PressKey("Down", 50)
             PressKey("Enter")
@@ -102,20 +103,21 @@ UnlockLoop() {
                 return
             
             Process("Scanning Skill Points...")
-            points := SkillPtsScan(0.331, 0.851, 0.054, 0.033, 1500, 1500)
-            SkillPtsScanSuccess := (points != -1)
+            points := SkillPtsScan(0.331, 0.851, 0.054, 0.033, 2000)
+            SkillPtsScanSuccess := points != -1 ? true : false
             
-            if !SkillPtsScanSuccess
+            if SkillPtsScanSuccess 
+                ShowNotif("info", "Reward Unlock", points " Current Skill Points scanned.")
+            else
                 ShowNotif("fail", "Reward Unlock", "Unable to scan Current Skill Points amount. `nManual input required.")
 
             if CheckAbort()
-                return           
+                return
 
             Process("Returning to Campaign Menu...")
             PressKey("Esc", 1500) ; Navigate to Upgrades Menu
             PressKey("Esc", 1500) ; Navigate to Cars Menu
             PressKey("PgUp", 50) ; Navigate to Buy & Sell Menu
-            PressKey("PgUp") ; Navigate to Campaign Menu
         }
         
         CarCount_In.Value := Floor(SkillPtsCount_In.Value / CarData[SelectedCar].SkillPtsCost)
@@ -136,14 +138,9 @@ UnlockLoop() {
 
         if CheckAbort()
             return
-        
-        PressKey("PgDn") ; Navigate to Buy & Sell Menu
-        PressKey("Down", 50) ; Navigate to Auction House
 
-        if CheckAbort()
-            return
-    
-        Process("Navigating Auction House...")
+        Process("Navigating Auction House...", 500)
+        PressKey("Down", 50) ; Navigate to Auction House
         PressKey("Enter", 800) ; Select Auction House
         PressKey("Down", 50) ; Navigate to Start Auction
         PressKey("Enter", 800) ; Select Start Auction
@@ -159,6 +156,13 @@ UnlockLoop() {
         PressKey("Backspace") ; Jump to Recently Added
         PressKey("Enter") ; Select All Cars
 
+        Process("Filter Cars by Duplicates...")
+        PressKey("y") ; ; Filter
+        Loop 4
+            PressKey("Down", 50) ; Navigate to Duplicates
+        PressKey("Enter") ; Check Duplicates
+        PressKey("Esc") ; Return to All Cars
+
         if CheckAbort()
             return
     }
@@ -167,7 +171,7 @@ UnlockLoop() {
     
     Process("Choosing First Car...")
     PressKey("Enter", 800) ; Select First Car
-    PressKey("Down") ; Navigate to Get in Car
+    PressKey("Down", 50) ; Navigate to Get in Car
     PressKey("Enter", 800) ; Select Get in Car
 
     if !WaitForPixel("Getting in Car...", 0.067, 0.169, "0xFFFFFF", "", 10000, 500) {
@@ -189,24 +193,37 @@ UnlockLoop() {
         if CheckAbort()
             break
         
-        Process("Navigating Upgrade...")
-        PressKey("PgDn") ; Navigate to Cars Menu
+        Process("Navigating to Cars...")
+        PressKey("PgDn", 50) ; Navigate to Cars Menu
+
+        Process("Navigating to Upgrades & Tuning...", 500)
         PressKey("Down", 50) ; Navigate to Upgrades & Tuning
         PressKey("Enter", 800) ; Select Upgrades & Tuning
-        Loop 7 
+        Loop 8 ; Extra Down for safety
             PressKey("Down", 50) ; Navigate to Car Mastery
-        PressKey("Enter") ; Select Car Mastery
+        PressKey("Enter", 800) ; Select Car Mastery
 
-        if !WaitForPixel("Opening Car Mastery...", 0.176, 0.545, "0xFFFFFF", "", 3000, 100) {
-            Process("Sync Error: Car Mastery menu failed to load!")
-            break
+        if !WaitForPixel("Opening Car Mastery...", 0.176, 0.545, "0xFFFFFF", "", 3000, 100, true, , "0") {
+            ShowNotif("error", "Reward Unlock", "Car with unlocked mastery perk detected!`nResetting the Car Mastery position...")
+            Process("Resetting the Car Mastery position")
+            Loop 4 
+                PressKey("Down", 0) ; Navigate to Car Mastery
+            Loop 4 
+                PressKey("Left", 0) ; Navigate to Car Mastery
         }
 
         if CheckAbort()
             break
 
         Process("Unlocking Car Mastery...")
-        UnlockCar(SelectedCar)
+        if UnlockCar(SelectedCar) = false {
+            PressKey("Enter") ; Select Ok (Cannot Afford Perk)
+            PressKey("Esc", 1500) ; Navigate to Upgrades
+            PressKey("Esc", 1500) ; Navigate to Home - Cars
+            PressKey("PgUp") ; Navigate to Home - Buy & Sell
+            break
+        }
+
         UnlockCount++
 
         ; Update internal tracking aggregates
@@ -236,14 +253,20 @@ UnlockLoop() {
 
         SkillPtsCount_In.Value -= CarData[SelectedCar].SkillPtsCost
         SkillPtsWant_In.Value := Min(999 - SkillPtsCount_In.Value, MaxPoints)
+        CarCount_In.Value -= 1
 
         if CheckAbort()
             break
 
         Process("Navigating Home...")
-        PressKey("Esc", 1500) ; Navigate to Upgrades Menu
-        PressKey("Esc", 1500) ; Navigate to Cars Menu
-        PressKey("PgUp") ; Navigate to Buy & Sell Menu
+        PressKey("Esc", 1500) ; Navigate to Upgrades
+        PressKey("Esc", 1500) ; Navigate to Home - Cars
+        PressKey("PgUp") ; Navigate to Home - Buy & Sell
+        
+        ; SubMenuText := ScanOCR(0.030, 0.186, 0.329-0.030, 0.358-0.186)
+        ; if !InStr(SubMenuText, "Buy & Sell")
+        ;     EmergencyUnlockExit("Buy & Sell Menu not detected.")
+
         PressKey("Down", 1000) ; Navigate to Auction House
 
         if CheckAbort()
@@ -263,13 +286,20 @@ UnlockLoop() {
             PressKey("Down", 50) ; Navigate to Recently Added
         PressKey("Enter") ; Select Recently Added
 
+        Process("Filter Cars by Duplicates...")
+        PressKey("y") ; ; Filter
+        Loop 4
+            PressKey("Down", 50) ; Navigate to Duplicates
+        PressKey("Enter") ; Check Duplicates
+        PressKey("Esc") ; Return to All Cars
+
         if CheckAbort()
             break
 
         Process("Choosing Next Car...")
         PressKey("Down") ; Navigate to Next Car
         PressKey("Enter", 800) ; Select Next Car
-        PressKey("Down") ; Navigate to Get in Car 
+        PressKey("Down", 50) ; Navigate to Get in Car 
         PressKey("Enter", 800) ; Select Get in Car
 
         if !WaitForPixel("Getting in Car...", 0.067, 0.169, "0xFFFFFF", "", 10000, 500) {
@@ -294,26 +324,29 @@ UnlockLoop() {
 
         Process("Returning to Home...")
         PressKey("Esc", 1600) ; Navigate to Auction House Menu
-        PressKey("Esc", 1600) ; Navigate to Buy & Sell Menu
+        PressKey("Esc", 1600) ; Navigate to Home - Buy & Sell
     }
 
     ; DYNAMIC FINAL OUTPUT SUMMARY
     FinalRewardsText := BuildRewardString(TotalSWheel, TotalWheel, TotalCredit, " have been obtained.")
     ShowNotif("success", "Reward Unlock", FinalRewardsText)
 
-    PressKey("PgUp")
+    PressKey("PgUp") ; Navigate to Home - Campaign
     SetTimer(EmergencyUnlockCheck, 0)
 }
 
 ; --- NEW HELPER ENGINE: Dynamically strings together active car payouts ---
 BuildRewardString(sWheel, wheel, credit, executionSuffix) {
+    global CarData, SelectedCar
+    car := CarData[SelectedCar]
+
     msgParts := []
     
-    if (sWheel > 0)
+    if (car.UnlockSWheel > 0)
         msgParts.Push(sWheel " Super Wheelspins")
-    if (wheel > 0)
+    if (car.UnlockWheel > 0)
         msgParts.Push(wheel " Wheelspins")
-    if (credit > 0)
+    if (car.UnlockCredit > 0)
         msgParts.Push(FormatCommas(credit) " CR")
         
     compiledMessage := ""
@@ -334,6 +367,9 @@ UnlockCar(SelectedCar) {
             PressKey(keyName, 300)
             PressKey("Enter", 1100)
         }
+
+        if ScanOCR(0.388, 0.424, 0.625-0.388, 0.476-0.424, 1000, "Cannot Afford Perk", , false)
+            return false
     }
 }
 
@@ -347,55 +383,139 @@ EmergencyUnlockCheck() {
     MenuText := ScanOCR(0.362, 0.357, 0.290, 0.092)
     
     if InStr(MenuText, "Create Auction")
-        EmergencyUnlockExit("Create Auction Menu detected.")
+        EmergencyExit("Create Auction Menu detected.")
 
     if !CarSorted && InStr(MenuText, "Remove Car")
-        EmergencyUnlockExit("Remove Car Menu detected.")
+        EmergencyExit("Remove Car Menu detected.")
 
     if CarSorted {
         SubMenuText := ScanOCR(0.062, 0.092, 0.086, 0.040)
         
         if InStr(SubMenuText, "Car Pass")
-            EmergencyUnlockExit("Car Pass Menu detected.")
+            EmergencyExit("Car Pass Menu detected.")
         
         if InStr(SubMenuText, "My Cars") {
-            isMadMike := (SelectedCar == "Mazda #123 Mad Mike 808")
-            StatsNumNew := isMadMike 
-                ? ScanOCR(0.170, 0.455, 0.035, 0.245, , , true) 
-                : ScanOCR(0.177, 0.457, 0.028, 0.250, , , true)
-            
-            if (StrLen(StatsNumNew) < 10)
-                return
-            
-            StatsNum        := StatsNumNew
+            StatsNumNew := 0 ; Initialize clean for this run
             ExpectedNum     := CarData[SelectedCar].StatsNum
-            SimilarityScore := Round(GetTextSimilarity(ExpectedNum, StatsNum))
 
-            if (SimilarityScore <= 80) {
-                Details := "Wrong Car Detected!`n`n"
-                        . "Scanning " SelectedCar " Stats Number...`n"
-                        . "Scanned: " StatsNum "`n"
-                        . "Expected: " ExpectedNum "`n"
-                        . "Similarity: " SimilarityScore "%"
+            Loop 10 {
+                isMadMike := (CarData[SelectedCar].AltName == "1974 Mazda")
                 
-                EmergencyUnlockExit(Details)
+                ; 1. ALWAYS run the scan first so we have data to check
+                StatsNumNew := isMadMike
+                    ? ScanOCR(0.170, 0.455, 0.035, 0.245, , , true) 
+                    : ScanOCR(0.177, 0.457, 0.028, 0.250, , , true)
+                
+                ; 2. If it's a solid read (longer than 10 chars, not -1), break out of loop early
+                if (StrLen(StatsNumNew) > 10 && StatsNumNew != -1) {
+                    StatsNum := StatsNumNew
+                    break
+                }
+
+                Sleep(50)
+            }
+            
+            ; 3. If after 10 loops we actually got a high-quality string, perform the anti-fail safety check
+            if (StrLen(StatsNumNew) > 10 && StatsNumNew != -1) {
+                SimilarityScore := Round(GetTextSimilarity(ExpectedNum, StatsNum))
+
+                if (SimilarityScore <= 80) {
+                    Details := "Wrong Car Detected!`n`n"
+                            . "Scanning " SelectedCar " Stats Number...`n"
+                            . "Scanned: " StatsNum "`n"
+                            . "Expected: " ExpectedNum "`n"
+                            . "Similarity: " SimilarityScore "%"
+                    
+                    EmergencyExit(Details)
+                }
+            }
+
+            ; 4. If the OCR failed or couldn't get a proper string length, DO NOT abort. Just notify.
+            if !StatsNum {
+                ShowNotif("error", "Reward Unlock", "Unable to scan Car Stats numbers. `nPlease make sure Car Stats numbers are visible.")
             }
         }
     }
 }
 
-ShowCritNotif(LogDetails := "Unknown safety violation.") {
-    MsgBox(
-        "CRITICAL SAFETY INTERCEPT!`n`n" 
-        LogDetails "`n`n"
-        "Script has been reset to IDLE state to protect your account.", 
-        "MHI Emergency System",
-        "IconX"
-    )
-}
+UnlockNav(NotifTitle) {
 
-EmergencyUnlockExit(NotifType) {
-    SoundBeep(400, 500)
-    ShowCritNotif(NotifType)
-    Reload() 
+    ; 1. Define page movements needed to reach "Cars" from any Free Roam menu tab
+    FreeRoamNav := Map(
+        "Free Roam Menu - Campaign",     { key: "PgDn", count: 1 },
+        "Free Roam Menu - Cars",         { key: "",     count: 0 },
+        "Free Roam Menu - My Horizon",   { key: "PgUp", count: 1 },
+        "Free Roam Menu - Online",       { key: "PgUp", count: 2 },
+        "Free Roam Menu - Creative Hub", { key: "PgUp", count: 3 },
+        "Free Roam Menu - Store",        { key: "PgUp", count: 4 }
+    )
+
+    ; 2. Define page movements needed to reach "Buy & Sell" from any Home menu tab
+    HomeNav := Map(
+        "Home Menu - Campaign",             { key: "PgDn", count: 1 },
+        "Home Menu - Buy & Sell",           { key: "",     count: 0 },
+        "Home Menu - Cars",                 { key: "PgUp", count: 1 },
+        "Home Menu - Customizable Garage",  { key: "PgUp", count: 2 },
+        "Home Menu - Character",            { key: "PgUp", count: 3 }
+    )
+
+    Scanned := ScanMenu()
+
+    ; 3. Safety Check: Handle timeout immediately
+    if (Scanned.menu == "") {
+        Process("Navigation aborted: Menu could not be identified.")
+        return 
+    }
+
+    ; 4. State Normalization (Get everything into the Home Menu state)
+    switch Scanned.menu {
+        case "Home Menu":
+            ; Already in the menu structure; Scanned.submenu is already accurately set by ScanMenu()
+            ShowNotif("info", NotifTitle, "Home Menu detected.")
+
+        case "Free Roam":
+            Process("Navigating to Free Roam Menu...")
+            ShowNotif("info", NotifTitle, "Free Roam detected! `nNavigating to Free Roam Menu...")
+            PressKey("Esc", 1000) ; Open Free Roam Menu (Lands on default Campaign tab)
+            Scanned.submenu := "Free Roam Menu - Campaign"
+            
+        case "Free Roam Menu":
+            ShowNotif("info", NotifTitle, "Free Roam Menu detected!")
+    }
+
+    ; 5. Unified Tab Navigation Execution
+    Process("Navigating to Cars Menu...")
+    if FreeRoamNav.Has(Scanned.submenu) {
+        nav := FreeRoamNav[Scanned.submenu]
+        Loop nav.count {
+            PressKey(nav.key, 100)
+        }
+        
+        Process("Scanning Skill Points")
+        if SkillPtsRaceScan(0.280, 0.698, (0.437-0.280), (0.756-0.698))
+            global SkillPtsScanSuccess := true
+        
+        Process("Navigating to My Horizon Menu...")
+        PressKey("PgDn") ; Navigate to My Horizon Menu
+        PressKey("Enter") ; Select Return Home
+        PressKey("Enter") ; Confirm Travel to Home
+        WaitForPixel("Returning to Home...", 0.168, 0.722, "0xFFFFFF", "", 20000)
+
+        Process("Navigating to Home Menu - Buy & Sell...")
+        PressKey("PgDn") ; Navigate to Buy & Sell
+    }
+    
+    Process("Navigating to Home Menu - Buy & Sell...")
+    if HomeNav.Has(Scanned.submenu) {
+        nav := HomeNav[Scanned.submenu]
+        Loop nav.count {
+            PressKey(nav.key, 100)
+        }
+        Sleep(500)
+        if nav.count = 0 {
+            Process("Resetting the menu position...")
+            Loop 4
+                PressKey("Up", 50)
+        }
+    }
 }
