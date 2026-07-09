@@ -171,6 +171,7 @@ RaceLoop() {
         }
         else if (EventLab == "AMMAGEDON") {
             StartTime := A_TickCount
+            AlreadyQuit := false
 
             While (PointsCount < PointsGain) {
                 Process("Throttling...")
@@ -216,13 +217,15 @@ RaceLoop() {
                     PressKey("Right")       ; Navigate to Quit
                     PressKey("Enter")       ; Quit Event
                     PressKey("Enter")       ; Confirm Quit
+                    AlreadyQuit := true
                     break
                 }
 
                 if (Mod(SectorCount, 50) == 0 && PointsCount >= PointsGain) {
                     if WaitForPixel("Waiting for leaderboard to load...", 0.166, 0.292, "0xFFFFFF", "", 20000, , true, , "Leaderboard failed to load! `nRestarting event...") {
                         Process("Quitting the Event...")
-                        PressKey("Enter") 
+                        PressKey("Enter")
+                        AlreadyQuit := true
                         break
                     }
                 }
@@ -260,17 +263,22 @@ RaceLoop() {
                         Process("Countdown...", 3000)
                     }
                 }
-            }         
+            }
+
+            if (!AlreadyQuit) {
+                Process("Quitting the Event...", 2000)
+                PressKey("Esc", 1000)   ; Pause Menu
+                PressKey("Right")       ; Navigate to Quit
+                PressKey("Enter")       ; Quit Event
+                PressKey("Enter")       ; Confirm Quit
+            }
         }
+        RaceStart := false
+        
         PressKey("w up")
         ShowNotif("success", "EventLab Race", SectorCount " sectors EventLab Race completed.")
 
-        RaceStart := false
-
-        if !WaitForPixel("Returning to Free Roam...", 0.061, 0.945, "0xFFFFFF", "", 30000) {
-            Process("Sync Error: Unable to return to Free Roam!")
-            break
-        }
+        WaitForPixel("Returning to Free Roam...", 0.061, 0.945, "0xFFFFFF", "", 30000)
 
         if CheckAbort()
             break

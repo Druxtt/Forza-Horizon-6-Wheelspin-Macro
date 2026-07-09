@@ -6,6 +6,7 @@
 StartFullLoop() {
     global ActiveMode, MasterMode, StartLoopMode
     global LoopCount_In, SkillPtsScanSuccess
+    global RadioRace, RadioBuy, RadioUnlock
 
     StartLoop := StartLoopMode
     SkillPtsScanSuccess := false
