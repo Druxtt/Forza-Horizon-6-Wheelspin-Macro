@@ -3,7 +3,7 @@
 ; ║            Cyber Noir Edition           ║
 ; ╚═════════════════════════════════════════╝
 
-;@Ahk2Exe-SetVersion 1.9.3
+;@Ahk2Exe-SetVersion 1.9.3.1
 ;@Ahk2Exe-SetDescription MHI - FH6 Wheelspin Macro
 ;@Ahk2Exe-SetMainIcon assets\icon.ico
 
@@ -11,7 +11,7 @@
 ;  ENVIRONMENT & GAME SETTINGS
 ; ══════════════════════════════════════════════
 
-global CurrentVersion := "v1.9.3"
+global CurrentVersion := "v1.9.3.1"
 global RepoOwner      := "M-Haziq-Iqbal"
 global RepoName       := "Forza-Horizon-6-Wheelspin-Macro"
 

@@ -43,14 +43,14 @@ BuyLoop() {
     global CarData, SelectedCar, CarCount
     global SkillPtsScanSuccess, CustomCarCount
 
-    SkillPtsCount := SkillPtsCount_In.Value
-
     BuyCount := 0
     CheckAbort() => (ActiveMode != "Buy" && !MasterMode)
 
     While (ActiveMode = "Buy") {
         Process("Scanning Menu...")
         BuyNav("Car Purchase")
+
+        SkillPtsCount := SkillPtsCount_In.Value
         
         ; --- Scan Skill Points if Needed ---
         if (!SkillPtsScanSuccess && !CustomCarCount && !SkillPtsCount) {
@@ -197,6 +197,7 @@ SkillPtsScan(ratioX, ratioY, ratioW, ratioH, waitTime := 1000, delay := 1000) {
     global SkillPtsWant, SkillPtsCount, PointsGain, PointsTotal, CarCount, TimeTotal
 
     points := ScanOCR(ratioX, ratioY, ratioW, ratioH, waitTime, , true)
+    points := Integer(SubStr(points, 1, 3))
     SkillPtsCount_In.Value := (points = -1) ? 0 : points
     
     SkillPtsWant   := Min(999 - points, MaxPoints)

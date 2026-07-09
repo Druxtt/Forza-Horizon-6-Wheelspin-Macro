@@ -70,6 +70,7 @@ UnlockLoop() {
     TotalCredit    := 0
     UnlockCount    := 0
     NotiFreqInterv := 5
+    customUnlock   := false
 
     CheckAbort() => ActiveMode != "Unlock" && !MasterMode
 
@@ -82,59 +83,10 @@ UnlockLoop() {
     SetTimer(EmergencyUnlockCheck, 400)
 
     CarMenu := ScanOCR(0.060, 0.090, 0.096, 0.045)
+    
     if !InStr(CarMenu, "My Cars") {
-
         Process("Scanning Menu...")
         UnlockNav("Reward Unlock")
-
-        if CheckAbort()
-            return
-
-        if !SkillPtsScanSuccess && !SkillPtsCount_In.Value {
-            Process("Checking Available Skill Points..")
-            PressKey("PgDn") ; Navigate to Cars
-            PressKey("Down", 50) ; Navigate to Upgrades & Tuning
-            PressKey("Enter", 800) ; Select Upgrades & Tuning
-            Loop 7 
-                PressKey("Down", 50)
-            PressKey("Enter")
-
-            if CheckAbort()
-                return
-            
-            Process("Scanning Skill Points...")
-            points := SkillPtsScan(0.331, 0.851, 0.054, 0.033, 2000)
-            SkillPtsScanSuccess := points != -1 ? true : false
-            
-            if SkillPtsScanSuccess 
-                ShowNotif("info", "Reward Unlock", points " Current Skill Points scanned.")
-            else
-                ShowNotif("fail", "Reward Unlock", "Unable to scan Current Skill Points amount. `nManual input required.")
-
-            if CheckAbort()
-                return
-
-            Process("Returning to Campaign Menu...")
-            PressKey("Esc", 1500) ; Navigate to Upgrades Menu
-            PressKey("Esc", 1500) ; Navigate to Cars Menu
-            PressKey("PgUp", 50) ; Navigate to Buy & Sell Menu
-        }
-        
-        CarCount_In.Value := Floor(SkillPtsCount_In.Value / CarData[SelectedCar].SkillPtsCost)
-        
-        if (CarCount_In.Value > 0) {
-            ; DYNAMIC START NOTIFICATION
-            StartRewardsText := BuildRewardString(
-                CarCount_In.Value * car.UnlockSWheel, 
-                CarCount_In.Value * car.UnlockWheel, 
-                CarCount_In.Value * car.UnlockCredit, 
-                " will be obtained."
-            )
-            ShowNotif("info", "Reward Unlock", StartRewardsText)
-        } else {
-            ShowNotif("error", "Reward Unlock", "Insufficient Skill Points")
-            return
-        }
 
         if CheckAbort()
             return
@@ -147,7 +99,7 @@ UnlockLoop() {
 
         if CheckAbort()
             return
-    
+
         Process("Sort by Recently Added...")
         PressKey("X")
         Loop 6 
@@ -156,19 +108,16 @@ UnlockLoop() {
         PressKey("Backspace") ; Jump to Recently Added
         PressKey("Enter") ; Select All Cars
 
-        Process("Filter Cars by Duplicates...")
-        PressKey("y") ; ; Filter
-        Loop 4
-            PressKey("Down", 50) ; Navigate to Duplicates
-        PressKey("Enter") ; Check Duplicates
-        PressKey("Esc") ; Return to All Cars
-
         if CheckAbort()
             return
-    }
+
+        FilterByDuplicates()
+    } 
 
     CarSorted := true
-    
+
+    CarUnlockCheck()
+
     Process("Choosing First Car...")
     PressKey("Enter", 800) ; Select First Car
     PressKey("Down", 50) ; Navigate to Get in Car
@@ -179,11 +128,60 @@ UnlockLoop() {
         return
     }
 
+    Process("Returning to Cars Menu...")
+    PressKey("Esc", 1500) ; Navigate to Upgrades Menu
+    PressKey("Esc", 1500) ; Navigate to Cars Menu
+
     if CheckAbort()
         return
 
-    PressKey("Esc", 1500) ; Navigate to Auction House Menu
-    PressKey("Esc", 1500) ; Navigate to Buy & Sell Menu
+    Process("Navigate to Car Mastery...")
+    PressKey("PgDn") ; Navigate to Cars
+    PressKey("Down", 50) ; Navigate to Upgrades & Tuning
+    PressKey("Enter", 800) ; Select Upgrades & Tuning
+    Loop 7 
+        PressKey("Down", 50) ; Navigate to Car Mastery
+    PressKey("Enter") ; Select Car Mastery
+
+    if CheckAbort()
+        return
+
+    if !SkillPtsScanSuccess && !SkillPtsCount_In.Value{        
+        Process("Scanning Skill Points...")
+        points := SkillPtsScan(0.331, 0.851, 0.054, 0.033, 2000)
+        SkillPtsScanSuccess := points != -1 ? true : false
+        
+        if SkillPtsScanSuccess {
+            SkillPtsCount_In.Value := points
+            ShowNotif("info", "Reward Unlock", points " Current Skill Points scanned.")
+        }
+        else {
+            ShowNotif("fail", "Reward Unlock", "Unable to scan Current Skill Points amount. `nManual input required.")
+            
+            Process("Returning to Campaign Menu...")
+            PressKey("Esc", 1500) ; Navigate to Upgrades Menu
+            PressKey("Esc", 1500) ; Navigate to Cars Menu
+            PressKey("PgUp", 50) ; Navigate to Buy & Sell Menu
+            PressKey("PgUp", 50) ; Navigate to Campaign
+            return
+        }
+    }
+    
+    CarCount_In.Value := Floor(SkillPtsCount_In.Value / CarData[SelectedCar].SkillPtsCost)
+    
+    if (CarCount_In.Value > 0) {
+        ; DYNAMIC START NOTIFICATION
+        StartRewardsText := BuildRewardString(
+            CarCount_In.Value * car.UnlockSWheel, 
+            CarCount_In.Value * car.UnlockWheel, 
+            CarCount_In.Value * car.UnlockCredit, 
+            " will be obtained."
+        )
+        ShowNotif("info", "Reward Unlock", StartRewardsText)
+    } else {
+        ShowNotif("error", "Reward Unlock", "Insufficient Skill Points")
+        return
+    }
 
     if CheckAbort()
         return
@@ -193,23 +191,25 @@ UnlockLoop() {
         if CheckAbort()
             break
         
-        Process("Navigating to Cars...")
-        PressKey("PgDn", 50) ; Navigate to Cars Menu
+        if UnlockCount > 0 {
+            Process("Navigating to Cars...")
+            PressKey("PgDn", 50) ; Navigate to Cars Menu
 
-        Process("Navigating to Upgrades & Tuning...", 500)
-        PressKey("Down", 50) ; Navigate to Upgrades & Tuning
-        PressKey("Enter", 800) ; Select Upgrades & Tuning
-        Loop 8 ; Extra Down for safety
-            PressKey("Down", 50) ; Navigate to Car Mastery
-        PressKey("Enter", 800) ; Select Car Mastery
+            Process("Navigating to Upgrades & Tuning...", 500)
+            PressKey("Down", 50) ; Navigate to Upgrades & Tuning
+            PressKey("Enter", 800) ; Select Upgrades & Tuning
+            Loop 8 ; Extra Down for safety
+                PressKey("Down", 50) ; Navigate to Car Mastery
+            PressKey("Enter", 800) ; Select Car Mastery
+        }
 
         if !WaitForPixel("Opening Car Mastery...", 0.176, 0.545, "0xFFFFFF", "", 3000, 100, true, , "0") {
             ShowNotif("error", "Reward Unlock", "Car with unlocked mastery perk detected!`nResetting the Car Mastery position...")
             Process("Resetting the Car Mastery position")
             Loop 4 
-                PressKey("Down", 0) ; Navigate to Car Mastery
+                PressKey("Down", 10)
             Loop 4 
-                PressKey("Left", 0) ; Navigate to Car Mastery
+                PressKey("Left", 10)
         }
 
         if CheckAbort()
@@ -286,18 +286,16 @@ UnlockLoop() {
             PressKey("Down", 50) ; Navigate to Recently Added
         PressKey("Enter") ; Select Recently Added
 
-        Process("Filter Cars by Duplicates...")
-        PressKey("y") ; ; Filter
-        Loop 4
-            PressKey("Down", 50) ; Navigate to Duplicates
-        PressKey("Enter") ; Check Duplicates
-        PressKey("Esc") ; Return to All Cars
+        FilterByDuplicates()
 
         if CheckAbort()
             break
 
         Process("Choosing Next Car...")
         PressKey("Down") ; Navigate to Next Car
+
+        CarUnlockCheck()
+
         PressKey("Enter", 800) ; Select Next Car
         PressKey("Down", 50) ; Navigate to Get in Car 
         PressKey("Enter", 800) ; Select Get in Car
@@ -312,6 +310,9 @@ UnlockLoop() {
 
         Process("Removing Car From Garage...")
         PressKey("Up") ; Navigate to First Car
+
+        CarUnlockCheck()
+
         PressKey("Enter") ; Select First Car
         Loop 5 
             PressKey("Down", 50) ; Navigate to Remove from Garage
@@ -365,17 +366,16 @@ UnlockCar(SelectedCar) {
         
         Loop pressCount {
             PressKey(keyName, 300)
-            PressKey("Enter", 1100)
-        }
+            PressKey("Enter", 0)
 
-        if ScanOCR(0.388, 0.424, 0.625-0.388, 0.476-0.424, 1000, "Cannot Afford Perk", , false)
-            return false
+            if ScanOCR(0.388, 0.424, 0.625-0.388, 0.476-0.424, 1000, "Cannot Afford Perk", , false)
+                return false
+        }
     }
 }
 
 EmergencyUnlockCheck() {
-    global GameTitle, ActiveMode, CarData, SelectedCar, CarSorted
-    static StatsNum := 0
+    global GameTitle, ActiveMode, CarData, CarSorted
     
     if (ActiveMode != "Unlock" || !WinExist(GameTitle))
         return
@@ -388,54 +388,62 @@ EmergencyUnlockCheck() {
     if !CarSorted && InStr(MenuText, "Remove Car")
         EmergencyExit("Remove Car Menu detected.")
 
-    if CarSorted {
-        SubMenuText := ScanOCR(0.062, 0.092, 0.086, 0.040)
-        
-        if InStr(SubMenuText, "Car Pass")
-            EmergencyExit("Car Pass Menu detected.")
-        
-        if InStr(SubMenuText, "My Cars") {
-            StatsNumNew := 0 ; Initialize clean for this run
-            ExpectedNum     := CarData[SelectedCar].StatsNum
+    SubMenuText := ScanOCR(0.062, 0.092, 0.086, 0.040)
+    
+    if InStr(SubMenuText, "Car Pass")
+        EmergencyExit("Car Pass Menu detected.")
+}
 
-            Loop 10 {
-                isMadMike := (CarData[SelectedCar].AltName == "1974 Mazda")
-                
-                ; 1. ALWAYS run the scan first so we have data to check
-                StatsNumNew := isMadMike
-                    ? ScanOCR(0.170, 0.455, 0.035, 0.245, , , true) 
-                    : ScanOCR(0.177, 0.457, 0.028, 0.250, , , true)
-                
-                ; 2. If it's a solid read (longer than 10 chars, not -1), break out of loop early
-                if (StrLen(StatsNumNew) > 10 && StatsNumNew != -1) {
-                    StatsNum := StatsNumNew
-                    break
-                }
-
-                Sleep(50)
-            }
-            
-            ; 3. If after 10 loops we actually got a high-quality string, perform the anti-fail safety check
-            if (StrLen(StatsNumNew) > 10 && StatsNumNew != -1) {
-                SimilarityScore := Round(GetTextSimilarity(ExpectedNum, StatsNum))
-
-                if (SimilarityScore <= 80) {
-                    Details := "Wrong Car Detected!`n`n"
-                            . "Scanning " SelectedCar " Stats Number...`n"
-                            . "Scanned: " StatsNum "`n"
-                            . "Expected: " ExpectedNum "`n"
-                            . "Similarity: " SimilarityScore "%"
-                    
-                    EmergencyExit(Details)
-                }
-            }
-
-            ; 4. If the OCR failed or couldn't get a proper string length, DO NOT abort. Just notify.
-            if !StatsNum {
-                ShowNotif("error", "Reward Unlock", "Unable to scan Car Stats numbers. `nPlease make sure Car Stats numbers are visible.")
-            }
-        }
+CarUnlockCheck() {
+    global GameTitle, ActiveMode, CarData, SelectedCar
+    static StatsNum := 0
+    
+    ; Early exit guard clause
+    if (ActiveMode != "Unlock" || !WinExist(GameTitle)) {
+        return
     }
+    
+    ExpectedNum := CarData[SelectedCar].StatsNum
+    
+    ; Define both coordinate presets
+    mazdaCoords    := {x: 0.170, y: 0.455, w: 0.035, h: 0.245}
+    standardCoords := {x: 0.177, y: 0.457, w: 0.028, h: 0.250}
+
+    ; Determine primary and secondary based on selection
+    isMadMike := (CarData[SelectedCar].AltName == "1974 Mazda")
+    primary   := isMadMike ? mazdaCoords : standardCoords
+    secondary := isMadMike ? standardCoords : mazdaCoords
+
+    ; 1. Primary Scan Attempt
+    StatsNumNew := ScanOCR(primary.x, primary.y, primary.w, primary.h, 100, , true, false)
+
+    ; 2. Cross-Scan Fallback (If primary failed, try the other car type's coordinates)
+    if (StrLen(StatsNumNew) < 10 || StatsNumNew = -1) {
+        StatsNumNew := ScanOCR(secondary.x, secondary.y, secondary.w, secondary.h, 100, , true, false)
+    }
+
+    ; 3. Validation Checks (Only if a valid string length was achieved)
+    if (StrLen(StatsNumNew) >= 10 && StatsNumNew != -1) {
+        StatsNum        := StatsNumNew
+        SimilarityScore := Round(GetTextSimilarity(ExpectedNum, StatsNum))
+        
+        ; Match fails threshold -> Emergency Exit
+        if (SimilarityScore <= 80) {
+            Details := "Wrong Car Detected!`n`n"
+                     . "Scanning " SelectedCar " Stats Number...`n"
+                     . "Scanned: " StatsNum "`n"
+                     . "Expected: " ExpectedNum "`n"
+                     . "Similarity: " SimilarityScore "%"
+            EmergencyExit(Details)
+        }
+        
+        ; Match passes threshold -> Success Notification
+        ShowNotif("info", "Reward Unlock", "Car Stats detected: `n- " StatsNum " (" SimilarityScore "% match)")
+        return 
+    }
+
+    ; 4. Total Failure Notification
+    ShowNotif("error", "Reward Unlock", "Unable to read the Car Stats number.`nEnsure it is fully visible.")
 }
 
 UnlockNav(NotifTitle) {
@@ -518,4 +526,13 @@ UnlockNav(NotifTitle) {
                 PressKey("Up", 50)
         }
     }
+}
+
+FilterByDuplicates() {
+    Process("Filter Cars by Duplicates...")
+    PressKey("y") ; Filter
+    Loop 2
+        PressKey("Down", 50) ; Navigate to Duplicates
+    PressKey("Enter", 50) ; Check Duplicates
+    PressKey("Esc") ; Return to All Cars
 }

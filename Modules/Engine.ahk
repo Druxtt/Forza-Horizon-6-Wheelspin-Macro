@@ -64,6 +64,7 @@ SmartCountdown(TotalSec, UIEl, ActiveText) {
 StartIndicators() {
     global StatusText, Process_UI, Key_UI, TotalRunTime_UI, ActiveMode
     global SkillPtsCount_In, SkillPtsWant_In, CarCount_In, CarSelect_UI
+    global RadioRace, RadioBuy, RadioUnlock
 
     p := GetPalette()
     cActive := p["cActive"]
@@ -76,15 +77,10 @@ StartIndicators() {
     Key_UI.SetFont("c" cHighlight)
     TotalRunTime_UI.SetFont("c" cHighlight)
 
-    if (ActiveMode = "Spin") {
-        SkillPtsCount_In.Enabled := false
-        SkillPtsWant_In.Enabled  := false
-        CarCount_In.Enabled      := false
-        CarSelect_UI.Enabled     := false
-        DelaySlider_UI.Enabled   := false
-        LoopCount_In.Enabled     := false
-    }
     EventLabSelect_UI.Enabled := false
+    RadioRace.Enabled := false
+    RadioBuy.Enabled := false
+    RadioUnlock.Enabled := false
 
     StopBtn.Opt("cFF5A5A")
     PauseBtn.Opt("cFFD166")
@@ -136,14 +132,11 @@ ResetIndicators() {
     
     StatusText.Value := "⬤  Stopped"
     StatusText.SetFont("c" cTextDim)
-    
-    SkillPtsCount_In.Enabled := true
-    SkillPtsWant_In.Enabled  := true
-    CarCount_In.Enabled      := true
-    CarSelect_UI.Enabled     := true
-    DelaySlider_UI.Enabled   := true
-    EventLabSelect_UI.Enabled    := true
-    LoopCount_In.Enabled     := true
+
+    EventLabSelect_UI.Enabled := true
+    RadioRace.Enabled := true
+    RadioBuy.Enabled := true
+    RadioUnlock.Enabled := true
 
     StopBtn.Opt("c94A3B8")
     PauseBtn.Opt("c94A3B8")
@@ -600,7 +593,7 @@ BGColorCompare(color1, color2, variation) {
 ;  CONTROL OUTPUTS & HARDWARE ACTIONS
 ; ══════════════════════════════════════════════
 
-PressKey(key, delay := 500) {
+PressKey(key, delay := 500, delayEnable:= true) {
     global Key_UI, MiniKey_UI, cHighlight, cIdle, KeyMultiplier, GameTitle, GameHwnd, GameExe
 
     switch StrLower(key) {
@@ -667,7 +660,12 @@ PressKey(key, delay := 500) {
     }
     
     currentMultiplier := IsSet(KeyMultiplier) ? KeyMultiplier : 1
-    actualDelay := Random(delay, delay + 50)
+
+    if delayEnable
+        actualDelay := Random(delay, delay + 50)
+    else
+        actualDelay := delay
+    
     Sleep(currentMultiplier * actualDelay)
 }
 

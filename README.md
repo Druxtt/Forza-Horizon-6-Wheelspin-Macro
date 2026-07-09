@@ -365,9 +365,19 @@ Session Controls:
 
 **A:** This happens if your game drops frames or experiences loading lag. Increase the dashboard **Delay Multiplier** slider to `1.5x` or `2.0x` to give the game wider, safer time buffers to load menus.
 
-### Q: Why does the macro show a "Menu timed out!" or "Sync Error" window?
+### Q: Why does the macro show a **"Menu Timed Out!"** or **"Sync Error"** message?
 
-**A:** The macro's pixel scanner detected an unexpected menu color. Check that your in-game brightness is exactly `50`, HDR is completely turned `OFF`, and Windows "Night Light" blue-light filters are disabled, as they distort hex color matches.
+**A:** These messages appear when the macro detects that the game is no longer in the expected state. Since the macro relies on pixel color detection, even small visual changes can cause it to lose synchronization.
+
+To prevent this, make sure that:
+
+* **In-game Brightness** is set to **50**.
+* **HDR** is completely **Off**.
+* **Windows Night Light** (or any blue-light/color filter) is **disabled**.
+* You are using the **Third-Person Camera** only, as the macro detects changes in the ground color during the vehicle turnaround.
+* The game is running at your configured resolution without any visual filters or overlays that alter colors.
+
+If the message still appears after checking these settings, simply restart the macro to resynchronize with the game.
 
 ### Q: Can I turn off my display monitor while farming overnight?
 
